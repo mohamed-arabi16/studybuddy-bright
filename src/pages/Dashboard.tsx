@@ -60,15 +60,15 @@ export default function Dashboard() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        // Fetch display_name from profiles table
+        // Fetch name from profiles table - prioritize full_name
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('display_name')
+          .select('display_name, full_name')
           .eq('user_id', user.id)
           .maybeSingle();
 
-        // Use display_name if available, otherwise fallback to email prefix
-        setFirstName(profileData?.display_name || user.email?.split('@')[0] || '');
+        // Use full_name first, then display_name, then email prefix as fallback
+        setFirstName(profileData?.full_name || profileData?.display_name || user.email?.split('@')[0] || '');
 
         const { data: coursesData } = await supabase
           .from('courses')

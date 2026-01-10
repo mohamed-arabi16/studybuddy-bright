@@ -80,8 +80,8 @@ export default function Terms() {
             <h2 className="text-xl font-semibold">{t('termsSubscription')}</h2>
             <p>
               {language === 'ar'
-                ? 'تتم معالجة المدفوعات بشكل آمن عبر Stripe. يتم تجديد الاشتراكات تلقائياً ما لم يتم إلغاؤها قبل تاريخ التجديد. يمكنك إلغاء اشتراكك في أي وقت من إعدادات حسابك.'
-                : 'Payments are processed securely via Stripe. Subscriptions renew automatically unless cancelled before the renewal date. You can cancel your subscription at any time from your account settings.'}
+                ? 'للترقية إلى الخطة الاحترافية، يرجى التواصل معنا. يمكنك إلغاء اشتراكك في أي وقت من إعدادات حسابك.'
+                : 'To upgrade to the Pro plan, please contact us. You can cancel your subscription at any time from your account settings.'}
             </p>
           </section>
 

@@ -80,16 +80,16 @@ export default function Privacy() {
             <p>{language === 'ar' ? 'نشارك البيانات مع الأطراف الثالثة التالية فقط:' : 'We share data with the following third parties only:'}</p>
             <ul className="list-disc list-inside space-y-2">
               <li>
-                <strong>Stripe:</strong>{' '}
-                {language === 'ar'
-                  ? 'لمعالجة المدفوعات بشكل آمن'
-                  : 'For secure payment processing'}
-              </li>
-              <li>
                 <strong>{language === 'ar' ? 'خدمات الذكاء الاصطناعي:' : 'AI Services:'}</strong>{' '}
                 {language === 'ar'
                   ? 'لاستخراج المواضيع من الملفات المرفوعة (البيانات مجهولة الهوية)'
                   : 'For extracting topics from uploaded files (data is anonymized)'}
+              </li>
+              <li>
+                <strong>{language === 'ar' ? 'تقويم جوجل:' : 'Google Calendar:'}</strong>{' '}
+                {language === 'ar'
+                  ? 'لمزامنة جدول الدراسة (اختياري)'
+                  : 'For syncing study schedule (optional)'}
               </li>
             </ul>
             <p>

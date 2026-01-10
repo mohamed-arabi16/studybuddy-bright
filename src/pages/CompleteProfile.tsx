@@ -86,7 +86,9 @@ const CompleteProfile = () => {
 
       const { error } = await supabase
         .from("profiles")
-        .update({
+        .upsert({
+          user_id: session.user.id,
+          email: session.user.email,
           full_name: formData.fullName.trim(),
           display_name: formData.fullName.trim(),
           university: formData.university.trim(),
@@ -94,8 +96,7 @@ const CompleteProfile = () => {
           phone_number: formData.phoneNumber.trim() || null,
           profile_completed: true,
           updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", session.user.id);
+        }, { onConflict: 'user_id' });
 
       if (error) throw error;
 

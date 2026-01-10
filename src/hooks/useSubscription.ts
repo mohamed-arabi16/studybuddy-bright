@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export type PlanLimits = {
   courses: number;
-  topics_total: number;  // Changed from topics_per_course to total topics
+  topics_total: number;
   ai_extractions: number;
 };
 
@@ -13,8 +13,8 @@ export type SubscriptionStatus = {
   limits: PlanLimits;
   usage: {
     courses: number;
-    topics: number;       // Added total topics usage
-    ai_extractions: number; // Added AI extractions usage
+    topics: number;
+    ai_extractions: number;
   };
   isLoading: boolean;
   isTrial: boolean;
@@ -26,14 +26,14 @@ export type SubscriptionStatus = {
 // Updated limits as per requirements: Free: 50 topics, 3 AI | Pro: unlimited, 50 AI
 const FREE_LIMITS: PlanLimits = {
   courses: 3,
-  topics_total: 50,     // 50 total topics across all courses
-  ai_extractions: 3     // 3 AI extractions per month
+  topics_total: 50,
+  ai_extractions: 3
 };
 
 const PRO_LIMITS: PlanLimits = {
-  courses: -1,           // unlimited
-  topics_total: -1,      // unlimited
-  ai_extractions: 50     // 50 AI extractions per month
+  courses: -1,
+  topics_total: -1,
+  ai_extractions: 50
 };
 
 export function useSubscription() {
@@ -84,7 +84,7 @@ export function useSubscription() {
       const topicCount = topicsResult.count || 0;
       const aiExtractionCount = aiJobsResult.count || 0;
 
-      // ALWAYS check admin_overrides first - this takes priority
+      // Check admin_overrides first - this takes priority
       const { data: overrideData } = await supabase
         .from('admin_overrides')
         .select('quota_overrides, trial_extension_days, notes')
@@ -134,7 +134,6 @@ export function useSubscription() {
         const now = new Date();
 
         // If the user already has a trial_end in subscriptions, extend from there.
-        // Otherwise, start the trial from now.
         const { data: subRow } = await supabase
           .from('subscriptions')
           .select('trial_end')
@@ -158,43 +157,7 @@ export function useSubscription() {
         return;
       }
 
-      // Check Stripe subscription
-      const { data: stripeData, error: stripeError } = await supabase.functions.invoke('check-subscription');
-      
-      if (stripeError) {
-        console.error('Error checking Stripe subscription:', stripeError);
-        // Fall back to database check
-        await checkDatabaseSubscription(user.id, courseCount, topicCount, aiExtractionCount);
-        return;
-      }
-
-      const isPro = stripeData?.plan === 'pro' && stripeData?.subscribed;
-      
-      setStatus({
-        planName: isPro ? 'Pro' : 'Free',
-        status: isPro ? 'active' : 'trialing',
-        limits: isPro ? PRO_LIMITS : FREE_LIMITS,
-        usage: {
-          courses: courseCount,
-          topics: topicCount,
-          ai_extractions: aiExtractionCount,
-        },
-        isLoading: false,
-        isTrial: !isPro,
-        isPro,
-        subscriptionEnd: stripeData?.subscription_end || null,
-        billingCycle: stripeData?.billing_cycle || null,
-      });
-
-    } catch (error) {
-      console.error('Error fetching subscription:', error);
-      setStatus(prev => ({ ...prev, isLoading: false }));
-    }
-  }, []);
-
-  const checkDatabaseSubscription = async (userId: string, courseCount: number, topicCount: number, aiExtractionCount: number) => {
-    try {
-      // Fallback: check database subscription
+      // 3) Check database subscription (replaces Stripe check)
       const { data: subData } = await supabase
         .from('subscriptions')
         .select(`
@@ -204,18 +167,20 @@ export function useSubscription() {
             limits
           )
         `)
-        .eq('user_id', userId)
+        .eq('user_id', user.id)
         .maybeSingle();
 
       let limits = FREE_LIMITS;
       let planName = 'Free';
       let subStatus = 'trialing';
+      let isPro = false;
 
       if (subData?.plans) {
         const planLimits = subData.plans.limits as PlanLimits;
         limits = planLimits || FREE_LIMITS;
         planName = subData.plans.name;
         subStatus = subData.status;
+        isPro = planName.toLowerCase() === 'pro';
       }
 
       setStatus({
@@ -229,15 +194,16 @@ export function useSubscription() {
         },
         isLoading: false,
         isTrial: subStatus === 'trialing',
-        isPro: planName.toLowerCase() === 'pro',
-        subscriptionEnd: null,
+        isPro,
+        subscriptionEnd: subData?.current_period_end || null,
         billingCycle: null,
       });
+
     } catch (error) {
-      console.error('Error checking database subscription:', error);
+      console.error('Error fetching subscription:', error);
       setStatus(prev => ({ ...prev, isLoading: false }));
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchSubscription();
