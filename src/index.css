@@ -1,0 +1,377 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   LIQUID GLASS DESIGN SYSTEM
+   Apple-inspired Premium Minimal
+   ============================================ */
+
+@layer base {
+  :root {
+    /* === PRIMARY COLORS (2-Color System) === */
+    /* Primary A: Surface/Background Language */
+    --surface-base: 0 0% 98%;
+    --surface-elevated: 0 0% 100%;
+    --surface-overlay: 0 0% 100%;
+    
+    /* Primary B: Accent/CTA Language */
+    --accent-base: 211 100% 50%;
+    --accent-hover: 211 100% 45%;
+    --accent-muted: 211 100% 50%;
+    
+    /* Text Color (Single) */
+    --text-primary: 220 20% 10%;
+    --text-secondary: 220 10% 40%;
+    --text-muted: 220 8% 55%;
+    --text-on-accent: 0 0% 100%;
+
+    /* === SEMANTIC MAPPINGS === */
+    --background: 220 20% 97%;
+    --foreground: 220 20% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 10%;
+
+    --primary: 211 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 20% 10%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 10% 46%;
+
+    --accent: 211 100% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 211 100% 50%;
+
+    --radius: 1rem;
+
+    /* === LIQUID GLASS TOKENS === */
+    --glass-blur: 24px;
+    --glass-surface-opacity: 0.72;
+    --glass-border-opacity: 0.15;
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    --glass-shadow-elevated: 0 16px 48px rgba(0, 0, 0, 0.12);
+    --glass-specular: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 50%);
+    --glass-edge-highlight: inset 0 1px 0 rgba(255,255,255,0.5);
+
+    /* === SIDEBAR === */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 220 20% 10%;
+    --sidebar-primary: 211 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 211 100% 50%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 211 100% 50%;
+    --sidebar: 0 0% 98%;
+
+    /* === CHARTS === */
+    --chart-1: 211 100% 50%;
+    --chart-2: 211 100% 65%;
+    --chart-3: 211 100% 35%;
+    --chart-4: 211 80% 55%;
+    --chart-5: 211 60% 45%;
+
+    /* === TYPOGRAPHY === */
+    --font-sans: 'Inter', 'IBM Plex Sans Arabic', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+    /* === SHADOWS === */
+    --shadow-2xs: 0 1px 2px rgba(0, 0, 0, 0.03);
+    --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.04);
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+    --shadow-md: 0 6px 16px -2px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 40px -8px rgba(0, 0, 0, 0.12);
+    --shadow-2xl: 0 32px 64px -16px rgba(0, 0, 0, 0.16);
+
+    /* === SPACING === */
+    --section-padding-sm: 4rem;
+    --section-padding-md: 6rem;
+    --section-padding-lg: 8rem;
+    
+    --gap-xs: 0.5rem;
+    --gap-sm: 0.75rem;
+    --gap-md: 1rem;
+    --gap-lg: 1.5rem;
+    --gap-xl: 2rem;
+    --gap-2xl: 3rem;
+
+    /* === MOTION === */
+    --duration-fast: 150ms;
+    --duration-base: 200ms;
+    --duration-slow: 300ms;
+    --duration-slower: 400ms;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* === DARK MODE (DEFAULT) === */
+  .dark {
+    /* Primary A: Surface/Background Language (Dark) */
+    --surface-base: 228 25% 8%;
+    --surface-elevated: 228 25% 11%;
+    --surface-overlay: 228 25% 14%;
+    
+    /* Primary B: Accent/CTA Language (Same hue, adjusted for dark) */
+    --accent-base: 211 100% 55%;
+    --accent-hover: 211 100% 60%;
+    --accent-muted: 211 100% 55%;
+    
+    /* Text Color (Single) */
+    --text-primary: 0 0% 96%;
+    --text-secondary: 220 10% 70%;
+    --text-muted: 220 8% 50%;
+    --text-on-accent: 0 0% 100%;
+
+    /* === SEMANTIC MAPPINGS === */
+    --background: 228 25% 6%;
+    --foreground: 0 0% 96%;
+
+    --card: 228 25% 10%;
+    --card-foreground: 0 0% 96%;
+
+    --popover: 228 25% 10%;
+    --popover-foreground: 0 0% 96%;
+
+    --primary: 211 100% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 228 25% 14%;
+    --secondary-foreground: 0 0% 96%;
+
+    --muted: 228 25% 14%;
+    --muted-foreground: 220 10% 55%;
+
+    --accent: 211 100% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 50%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 55%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 228 20% 18%;
+    --input: 228 20% 18%;
+    --ring: 211 100% 55%;
+
+    /* === LIQUID GLASS TOKENS (Dark) === */
+    --glass-blur: 24px;
+    --glass-surface-opacity: 0.6;
+    --glass-border-opacity: 0.12;
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    --glass-shadow-elevated: 0 24px 64px rgba(0, 0, 0, 0.5);
+    --glass-specular: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 50%);
+    --glass-edge-highlight: inset 0 1px 0 rgba(255,255,255,0.06);
+
+    /* === SIDEBAR (Dark) === */
+    --sidebar-background: 228 25% 8%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 211 100% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 211 100% 55%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 228 20% 18%;
+    --sidebar-ring: 211 100% 55%;
+    --sidebar: 228 25% 8%;
+
+    /* === CHARTS (Dark - Single hue variations) === */
+    --chart-1: 211 100% 55%;
+    --chart-2: 211 100% 70%;
+    --chart-3: 211 100% 40%;
+    --chart-4: 211 80% 60%;
+    --chart-5: 211 60% 50%;
+
+    /* === SHADOWS (Dark) === */
+    --shadow-2xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.25);
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 8px 20px -2px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 16px 32px -4px rgba(0, 0, 0, 0.45);
+    --shadow-xl: 0 24px 48px -8px rgba(0, 0, 0, 0.5);
+    --shadow-2xl: 0 40px 80px -16px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* === BASE STYLES === */
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply dark;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Reduce motion for accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Reduce transparency for accessibility */
+  @media (prefers-reduced-transparency: reduce) {
+    .liquid-glass {
+      backdrop-filter: none !important;
+      background: hsl(var(--card)) !important;
+    }
+  }
+}
+
+/* === COMPONENT STYLES === */
+@layer components {
+  /* Liquid Glass Base */
+  .liquid-glass {
+    background: hsl(var(--card) / var(--glass-surface-opacity));
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid hsl(var(--border) / var(--glass-border-opacity));
+    box-shadow: var(--glass-shadow), var(--glass-edge-highlight);
+    position: relative;
+  }
+
+  .liquid-glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--glass-specular);
+    pointer-events: none;
+  }
+
+  /* Liquid Glass Elevated (Modals, Popovers) */
+  .liquid-glass-elevated {
+    background: hsl(var(--card) / calc(var(--glass-surface-opacity) + 0.1));
+    backdrop-filter: blur(calc(var(--glass-blur) * 1.5));
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.5));
+    border: 1px solid hsl(var(--border) / calc(var(--glass-border-opacity) + 0.05));
+    box-shadow: var(--glass-shadow-elevated), var(--glass-edge-highlight);
+    position: relative;
+  }
+
+  .liquid-glass-elevated::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--glass-specular);
+    pointer-events: none;
+  }
+
+  /* Liquid Glass Subtle (Less prominent surfaces) */
+  .liquid-glass-subtle {
+    background: hsl(var(--card) / calc(var(--glass-surface-opacity) - 0.2));
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.5));
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.5));
+    border: 1px solid hsl(var(--border) / calc(var(--glass-border-opacity) - 0.05));
+  }
+
+  /* Legacy glass support (maps to new system) */
+  .glass-card {
+    @apply liquid-glass rounded-2xl;
+  }
+  
+  .glass-card-hover {
+    @apply liquid-glass rounded-2xl transition-all;
+    transition-duration: var(--duration-base);
+    transition-timing-function: var(--ease-out);
+  }
+
+  .glass-card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--glass-shadow-elevated), var(--glass-edge-highlight);
+    border-color: hsl(var(--primary) / 0.2);
+  }
+
+  /* Gradient text using accent color only */
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent;
+  }
+
+  /* RTL-aware utilities */
+  .flip-rtl {
+    @apply rtl:scale-x-[-1];
+  }
+}
+
+/* === RTL SUPPORT === */
+[dir="rtl"] {
+  font-family: 'IBM Plex Sans Arabic', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0;
+}
+
+[dir="rtl"] .font-sans {
+  font-family: 'IBM Plex Sans Arabic', 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+[dir="rtl"] body {
+  line-height: 1.8;
+}
+
+/* === ANIMATIONS === */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in var(--duration-slow) var(--ease-out);
+}
+
+.animate-scale-in {
+  animation: scale-in var(--duration-base) var(--ease-out);
+}

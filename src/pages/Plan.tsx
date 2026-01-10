@@ -1,0 +1,309 @@
+import { useState } from 'react';
+import { format, isToday, isTomorrow } from 'date-fns';
+import { ar, enUS } from 'date-fns/locale';
+import { 
+  Calendar, Clock, CheckCircle2, 
+  ChevronDown, ChevronUp, Loader2, Sparkles
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { usePlanGeneration } from '@/hooks/usePlanGeneration';
+import { useToast } from '@/hooks/use-toast';
+import { RescheduleCard } from '@/components/RescheduleCard';
+import { useLanguage } from '@/contexts/LanguageContext';
+
+export default function Plan() {
+  const { 
+    planDays, 
+    courseInfo,
+    missedDays,
+    totalMissedItems,
+    isLoading, 
+    isGenerating, 
+    error,
+    generatePlan,
+    recreatePlan,
+    toggleItemCompletion 
+  } = usePlanGeneration();
+  const { toast } = useToast();
+  const { t, dir, language } = useLanguage();
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
+  const dateLocale = language === 'ar' ? ar : enUS;
+
+  const handleGenerate = async () => {
+    try {
+      const result = await generatePlan();
+      toast({
+        title: t('planCreated'),
+        description: t('planCreatedDesc').replace('{days}', String(result.plan_days)).replace('{items}', String(result.plan_items)),
+      });
+    } catch {
+      toast({
+        title: t('planFailed'),
+        description: error || t('tryAgain'),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleReplan = async () => {
+    try {
+      const result = await recreatePlan();
+      toast({
+        title: t('weekReplanned'),
+        description: t('missedItemsDistributed').replace('{count}', String(result.plan_items || 0)),
+      });
+    } catch {
+      toast({
+        title: t('replanFailed'),
+        description: error || t('tryAgain'),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleToggle = async (itemId: string, checked: boolean) => {
+    try {
+      await toggleItemCompletion(itemId, checked);
+    } catch {
+      toast({
+        title: t('updateFailed'),
+        description: t('tryAgain'),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const toggleDay = (dayId: string) => {
+    setExpandedDays(prev => {
+      const next = new Set(prev);
+      if (next.has(dayId)) {
+        next.delete(dayId);
+      } else {
+        next.add(dayId);
+      }
+      return next;
+    });
+  };
+
+  const getDayLabel = (dateStr: string) => {
+    const date = new Date(dateStr);
+    if (isToday(date)) return t('today');
+    if (isTomorrow(date)) return t('tomorrow');
+    return format(date, 'EEEE', { locale: dateLocale });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6" dir={dir}>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{t('studyPlan')}</h1>
+          <p className="text-muted-foreground">
+            {t('customScheduleDesc')}
+          </p>
+        </div>
+        <Button 
+          onClick={planDays.length > 0 ? handleReplan : handleGenerate} 
+          disabled={isGenerating}
+          className="gap-2"
+        >
+          {isGenerating ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Sparkles className="w-4 h-4" />
+          )}
+          {planDays.length > 0 ? t('recreatePlan') : t('createPlan')}
+        </Button>
+      </div>
+
+      {/* Reschedule Card - shows when there are missed items */}
+      {totalMissedItems > 0 && planDays.length > 0 && (
+        <RescheduleCard
+          missedDays={missedDays}
+          totalMissedItems={totalMissedItems}
+          onReplan={handleReplan}
+          isReplanning={isGenerating}
+        />
+      )}
+
+      {/* Course Overview */}
+      {courseInfo.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {courseInfo.map(course => (
+            <Card key={course.id} className="bg-gradient-to-br from-primary/5 to-primary/10">
+              <CardContent className="p-4">
+                <h3 className="font-semibold truncate">{course.title}</h3>
+                <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                  <div className="flex justify-between">
+                    <span>{t('daysUntilExam')}:</span>
+                    <Badge variant={Number(course.days_left) <= 7 ? 'destructive' : 'secondary'}>
+                      {course.days_left}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>{t('dailyHours')}:</span>
+                    <span className="font-medium">{course.daily_hours} {t('hours')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>{t('remainingTopics')}:</span>
+                    <span className="font-medium">{course.remaining_topics}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {planDays.length === 0 && !isGenerating && (
+        <Card className="border-dashed">
+          <CardContent className="py-12 text-center">
+            <Calendar className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-semibold mb-2">{t('noPlanYet')}</h3>
+            <p className="text-muted-foreground mb-4">
+              {t('noPlanDesc')}
+            </p>
+            <Button onClick={handleGenerate} disabled={isGenerating}>
+              <Sparkles className="w-4 h-4 me-2" />
+              {t('createPlan')}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Plan Days */}
+      <div className="space-y-3">
+        {planDays.map((day, index) => {
+          const isExpanded = expandedDays.has(day.id) || index < 3;
+          const completedCount = day.items.filter(i => i.is_completed).length;
+          const totalCount = day.items.length;
+          const allComplete = completedCount === totalCount && totalCount > 0;
+
+          return (
+            <Collapsible
+              key={day.id}
+              open={isExpanded}
+              onOpenChange={() => toggleDay(day.id)}
+            >
+              <Card className={`transition-colors ${allComplete ? 'bg-green-500/5 border-green-500/20' : ''}`}>
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`
+                          w-10 h-10 rounded-full flex items-center justify-center
+                          ${isToday(new Date(day.date)) 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'bg-muted'
+                          }
+                        `}>
+                          <span className="text-sm font-bold">
+                            {format(new Date(day.date), 'd')}
+                          </span>
+                        </div>
+                        <div>
+                        <CardTitle className="text-base flex items-center gap-2">
+                            {getDayLabel(day.date)}
+                            {day.is_day_off && (
+                              <Badge variant="secondary">{t('restDay')}</Badge>
+                            )}
+                            {allComplete && (
+                              <CheckCircle2 className="w-4 h-4 text-green-500" />
+                            )}
+                          </CardTitle>
+                          <p className="text-sm text-muted-foreground">
+                            {format(new Date(day.date), 'd MMMM yyyy', { locale: dateLocale })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className={dir === 'rtl' ? 'text-right' : 'text-left'}>
+                          <div className="flex items-center gap-1 text-sm">
+                            <Clock className="w-4 h-4 text-muted-foreground" />
+                            <span className="font-medium">{day.total_hours} {t('hours')}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {completedCount}/{totalCount} {t('completed')}
+                          </p>
+                        </div>
+                        {isExpanded ? (
+                          <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                </CollapsibleTrigger>
+
+                <CollapsibleContent>
+                  <CardContent className="pt-0 pb-4">
+                    {day.is_day_off ? (
+                      <p className="text-muted-foreground text-center py-4">
+                        {t('enjoyRestDay')}
+                      </p>
+                    ) : day.items.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-4">
+                        {t('noScheduledTopics')}
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {day.items.map(item => (
+                          <div
+                            key={item.id}
+                            className={`
+                              flex items-center gap-3 p-3 rounded-lg border transition-colors
+                              ${item.is_completed 
+                                ? 'bg-muted/50 border-muted' 
+                                : 'bg-background border-border hover:border-primary/30'
+                              }
+                            `}
+                          >
+                            <Checkbox
+                              checked={item.is_completed}
+                              onCheckedChange={(checked) => 
+                                handleToggle(item.id, checked as boolean)
+                              }
+                            />
+                            <div 
+                              className="w-3 h-3 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: item.course?.color || '#6366f1' }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className={`font-medium truncate ${item.is_completed ? 'line-through text-muted-foreground' : ''}`}>
+                                {item.topic?.title || t('generalStudy')}
+                              </p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {item.course?.title}
+                              </p>
+                            </div>
+                            <Badge variant="outline" className="flex-shrink-0">
+                              {item.hours} {t('hours')}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
