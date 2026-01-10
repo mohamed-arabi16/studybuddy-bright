@@ -36,7 +36,7 @@ export default function Layout() {
       try {
         const { data: profileData } = await supabase
           .from("profiles")
-          .select("is_disabled")
+          .select("is_disabled, profile_completed")
           .eq("user_id", userId)
           .maybeSingle();
 
@@ -44,6 +44,12 @@ export default function Layout() {
           await supabase.auth.signOut();
           navigate("/auth");
           setStatus("guest");
+          return;
+        }
+
+        // Redirect to complete profile if not completed
+        if (profileData && profileData.profile_completed === false) {
+          navigate("/complete-profile", { replace: true });
           return;
         }
 

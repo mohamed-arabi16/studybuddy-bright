@@ -24,6 +24,7 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  const [fullName, setFullName] = useState("");
   const [department, setDepartment] = useState("");
   const [university, setUniversity] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -44,11 +45,12 @@ export default function Auth() {
 
     const signUpSchema = z
       .object({
+        fullName: z.string().trim().min(2, t("fullNameRequired")).max(100),
         email: emailSchema,
         password: passwordSchema,
         confirmPassword: z.string().min(6).max(72),
-        department: z.string().trim().min(2).max(120),
-        university: z.string().trim().min(2).max(120),
+        department: z.string().trim().min(2, t("departmentRequired")).max(120),
+        university: z.string().trim().min(2, t("universityRequired")).max(120),
         phoneNumber: z.string().trim().max(30).optional(),
       })
       .refine((v) => v.password === v.confirmPassword, {
@@ -138,6 +140,7 @@ export default function Auth() {
 
   const handleSignUp = async () => {
     const parsed = schemas.signUpSchema.safeParse({
+      fullName,
       email,
       password,
       confirmPassword,
@@ -159,6 +162,8 @@ export default function Auth() {
       options: {
         emailRedirectTo: redirectUrl,
         data: {
+          full_name: parsed.data.fullName,
+          display_name: parsed.data.fullName,
           department: parsed.data.department,
           university: parsed.data.university,
           phone_number: parsed.data.phoneNumber ?? null,
@@ -203,7 +208,8 @@ export default function Auth() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      const redirectUrl = `${window.location.origin}/app/dashboard`;
+      // Redirect to complete-profile so Google users can fill required fields
+      const redirectUrl = `${window.location.origin}/complete-profile`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -300,7 +306,21 @@ export default function Auth() {
           {mode === "signUp" && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="department" className="text-sm">{t("department")}</Label>
+                <Label htmlFor="fullName" className="text-sm">{t("fullName")} <span className="text-destructive">*</span></Label>
+                <Input
+                  id="fullName"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder={t("fullNamePlaceholder")}
+                  className="h-11 bg-secondary/30 border-border/50 focus:border-primary transition-colors"
+                  dir="auto"
+                  autoComplete="name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="department" className="text-sm">{t("department")} <span className="text-destructive">*</span></Label>
                 <Input
                   id="department"
                   required
@@ -314,7 +334,7 @@ export default function Auth() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="university" className="text-sm">{t("university")}</Label>
+                <Label htmlFor="university" className="text-sm">{t("university")} <span className="text-destructive">*</span></Label>
                 <Input
                   id="university"
                   required
