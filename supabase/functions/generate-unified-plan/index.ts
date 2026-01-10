@@ -32,6 +32,31 @@ interface ScheduledItem {
   course_id: string;
   hours: number;
   order_index: number;
+  is_review?: boolean;
+}
+
+// ========================
+// TIMEZONE-STABLE DATE UTILITIES
+// ========================
+
+function getTodayUTC(): Date {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+}
+
+function getDateStr(date: Date): string {
+  return date.toISOString().split('T')[0];
+}
+
+function addDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  result.setUTCDate(result.getUTCDate() + days);
+  return result;
+}
+
+function getDayOfWeek(date: Date): string {
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  return days[date.getUTCDay()];
 }
 
 // Topological sort using Kahn's algorithm with cycle detection
@@ -174,7 +199,14 @@ serve(async (req) => {
       .single();
 
     const dailyStudyHours = profile?.daily_study_hours || 3;
-    const daysOff = profile?.days_off || [];
+    const studyDaysPerWeek = profile?.study_days_per_week || 7;
+    
+    // Derive days off from study_days_per_week if not explicitly set
+    let daysOff: string[] = profile?.days_off || [];
+    if (daysOff.length === 0 && studyDaysPerWeek < 7) {
+      const defaultOff = ['saturday', 'sunday'];
+      daysOff = defaultOff.slice(0, 7 - studyDaysPerWeek);
+    }
 
     // Fetch all active courses with topics
     const { data: courses, error: coursesError } = await supabase
@@ -212,8 +244,9 @@ serve(async (req) => {
       });
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // FIXED: Use timezone-stable date handling
+    const today = getTodayUTC();
+    const todayStr = getDateStr(today);
 
     // Process courses and filter topics
     const processedCourses: Course[] = courses.map(c => ({
@@ -257,19 +290,20 @@ serve(async (req) => {
       calculateCoursePriority(b, today) - calculateCoursePriority(a, today)
     );
 
-    // Calculate plan duration based on earliest exam
-    let planDays = 30;
+    // FIXED: Calculate plan duration based on LATEST exam (not earliest), capped at 90 days
+    let maxExamDays = 30; // Default if no exam dates
     for (const course of sortedCourses) {
       if (course.exam_date) {
         const examDate = new Date(course.exam_date);
         const daysUntil = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        if (daysUntil > 0 && daysUntil < planDays) {
-          planDays = daysUntil;
+        if (daysUntil > 0 && daysUntil > maxExamDays) {
+          maxExamDays = daysUntil;
         }
       }
     }
+    const planDays = Math.min(maxExamDays, 90);
 
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    console.log(`Planning horizon: ${planDays} days (max exam in ${maxExamDays} days)`);
 
     // Track scheduling state
     const scheduledTopicIds = new Set<string>(); // All topics scheduled so far
@@ -288,8 +322,9 @@ serve(async (req) => {
     const totalTopics = sortedCourses.reduce((s, c) => s + c.topics.length, 0);
 
     for (let dayIndex = 0; dayIndex < planDays && scheduledTopicIds.size < totalTopics; dayIndex++) {
-      const dateStr = currentDate.toISOString().split('T')[0];
-      const dayOfWeek = dayNames[currentDate.getDay()];
+      // FIXED: Use timezone-stable date handling
+      const dateStr = getDateStr(currentDate);
+      const dayOfWeek = getDayOfWeek(currentDate);
       const isDayOff = daysOff.includes(dayOfWeek);
 
       if (!isDayOff) {
@@ -301,10 +336,15 @@ serve(async (req) => {
         while (remainingHours > 0.25 && noProgressIterations < maxNoProgressIterations) {
           let madeProgress = false;
           
-          // Get courses with remaining topics
+          // Get courses with remaining topics, filtering by exam date
           const coursesWithTopics = sortedCourses.filter(c => {
             const pointer = coursePointers.get(c.id) || 0;
-            return pointer < c.topics.length;
+            if (pointer >= c.topics.length) return false;
+            
+            // FIXED: Don't schedule topics on or after exam date
+            if (c.exam_date && dateStr >= c.exam_date) return false;
+            
+            return true;
           }).sort((a, b) => {
             if (!a.exam_date && !b.exam_date) return 0;
             if (!a.exam_date) return 1;
@@ -345,6 +385,7 @@ serve(async (req) => {
               course_id: course.id,
               hours: Math.round(hoursToSchedule * 100) / 100,
               order_index: dayItems.length,
+              is_review: false,
             });
 
             remainingHours -= hoursToSchedule;
@@ -377,10 +418,20 @@ serve(async (req) => {
         }
       }
 
-      currentDate.setDate(currentDate.getDate() + 1);
+      currentDate = addDays(currentDate, 1);
     }
 
     console.log(`Generated ${schedule.length} items across ${studyDaysCreated} study days`);
+
+    // Get current max plan version
+    const { data: maxVersionData } = await supabase
+      .from('study_plan_days')
+      .select('plan_version')
+      .eq('user_id', user.id)
+      .order('plan_version', { ascending: false })
+      .limit(1);
+    
+    const newPlanVersion = (maxVersionData?.[0]?.plan_version || 0) + 1;
 
     // Delete existing plan data
     if (mode === "recreate") {
@@ -389,7 +440,7 @@ serve(async (req) => {
         .from("study_plan_days")
         .select("id")
         .eq("user_id", user.id)
-        .gte("date", today.toISOString().split('T')[0]);
+        .gte("date", todayStr);
 
       if (futureDays && futureDays.length > 0) {
         const futureIds = futureDays.map(d => d.id);
@@ -415,12 +466,13 @@ serve(async (req) => {
       date: string;
       total_hours: number;
       is_day_off: boolean;
+      plan_version: number;
     }> = [];
 
     currentDate = new Date(today);
     for (let i = 0; i < planDays; i++) {
-      const dateStr = currentDate.toISOString().split('T')[0];
-      const dayOfWeek = dayNames[currentDate.getDay()];
+      const dateStr = getDateStr(currentDate);
+      const dayOfWeek = getDayOfWeek(currentDate);
       const isDayOff = daysOff.includes(dayOfWeek);
       const dayData = dailySchedule.get(dateStr);
 
@@ -429,9 +481,10 @@ serve(async (req) => {
         date: dateStr,
         total_hours: dayData?.hours || 0,
         is_day_off: isDayOff,
+        plan_version: newPlanVersion,
       });
 
-      currentDate.setDate(currentDate.getDate() + 1);
+      currentDate = addDays(currentDate, 1);
     }
 
     const { data: insertedDays, error: daysInsertError } = await supabase
@@ -457,6 +510,7 @@ serve(async (req) => {
       hours: number;
       order_index: number;
       is_completed: boolean;
+      is_review: boolean;
     }> = [];
 
     for (const item of schedule) {
@@ -471,6 +525,7 @@ serve(async (req) => {
         hours: item.hours,
         order_index: item.order_index,
         is_completed: false,
+        is_review: item.is_review || false,
       });
     }
 
@@ -498,6 +553,7 @@ serve(async (req) => {
       result_json: {
         plan_days: insertedDays?.length || 0,
         plan_items: planItemsCreatedCount,
+        plan_version: newPlanVersion,
         total_hours_scheduled: Array.from(dailySchedule.values()).reduce((s, d) => s + d.hours, 0),
         has_circular_dependencies: hasAnyCycles,
       },
@@ -537,6 +593,7 @@ serve(async (req) => {
         mode,
         plan_days: insertedDays?.length || 0,
         plan_items: planItemsCreatedCount,
+        plan_version: newPlanVersion,
         total_hours: Array.from(dailySchedule.values()).reduce((s, d) => s + d.hours, 0),
         courses_included: coursesIncluded,
         warnings,

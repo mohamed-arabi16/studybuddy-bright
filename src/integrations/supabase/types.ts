@@ -474,6 +474,7 @@ export type Database = {
           hours: number
           id: string
           is_completed: boolean
+          is_review: boolean | null
           order_index: number
           plan_day_id: string
           topic_id: string | null
@@ -486,6 +487,7 @@ export type Database = {
           hours: number
           id?: string
           is_completed?: boolean
+          is_review?: boolean | null
           order_index?: number
           plan_day_id: string
           topic_id?: string | null
@@ -498,6 +500,7 @@ export type Database = {
           hours?: number
           id?: string
           is_completed?: boolean
+          is_review?: boolean | null
           order_index?: number
           plan_day_id?: string
           topic_id?: string | null
