@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import studybudyLogo from "@/assets/studybudy-logo.png";
 
 export const Footer = () => {
   const { t, dir } = useLanguage();
@@ -9,8 +10,8 @@ export const Footer = () => {
       <div className="container px-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           {/* Logo */}
-          <Link to="/" className="text-lg font-semibold">
-            Zen Study
+          <Link to="/" className="flex items-center gap-2">
+            <img src={studybudyLogo} alt="StudyBudy" className="h-8 w-auto" />
           </Link>
 
           {/* Legal Links */}
@@ -25,7 +26,7 @@ export const Footer = () => {
 
           {/* Copyright */}
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Zen Study. {t('allRightsReserved')}
+            © {new Date().getFullYear()} StudyBudy. {t('allRightsReserved')}
           </p>
         </div>
       </div>
