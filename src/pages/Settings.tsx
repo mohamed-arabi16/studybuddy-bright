@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { User, Clock, CreditCard, LogOut, Loader2, ExternalLink, Phone, Building, GraduationCap, Trash2, Download, AlertTriangle, Key, Calendar } from 'lucide-react';
+import { User, Clock, CreditCard, LogOut, Loader2, Phone, Building, GraduationCap, Trash2, Download, AlertTriangle, Key, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,7 +38,6 @@ export default function Settings() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [portalLoading, setPortalLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -48,20 +47,14 @@ export default function Settings() {
   useEffect(() => {
     fetchProfile();
     
-    // Handle checkout result
+    // Handle checkout result (legacy - keep for any old bookmarks)
     const checkoutResult = searchParams.get('checkout');
     if (checkoutResult === 'success') {
       toast({
         title: t('welcomeToPro'),
         description: t('subscriptionActive'),
       });
-      // Refresh subscription status
       setTimeout(() => refreshSubscription(), 2000);
-    } else if (checkoutResult === 'cancelled') {
-      toast({
-        title: t('checkoutCancelled'),
-        description: t('upgradeAnytime'),
-      });
     }
   }, []);
 
@@ -93,27 +86,6 @@ export default function Settings() {
       console.error('Error fetching profile:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const openCustomerPortal = async () => {
-    try {
-      setPortalLoading(true);
-      const { data, error } = await supabase.functions.invoke('customer-portal');
-      
-      if (error) throw error;
-      if (!data?.url) throw new Error('No portal URL returned');
-      
-      window.open(data.url, '_blank');
-    } catch (error) {
-      console.error('Portal error:', error);
-      toast({
-        title: t('error'),
-        description: t('portalError'),
-        variant: 'destructive',
-      });
-    } finally {
-      setPortalLoading(false);
     }
   };
 
@@ -172,7 +144,7 @@ export default function Settings() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `zen-study-data-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `studybudy-data-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -609,18 +581,6 @@ export default function Settings() {
                           )}
                         </CardDescription>
                       </div>
-                      <Button 
-                        variant="outline" 
-                        onClick={openCustomerPortal}
-                        disabled={portalLoading}
-                      >
-                        {portalLoading ? (
-                          <Loader2 className="w-4 h-4 me-2 animate-spin" />
-                        ) : (
-                          <ExternalLink className="w-4 h-4 me-2" />
-                        )}
-                        {t('manageSubscription')}
-                      </Button>
                     </div>
                   </CardHeader>
                 </Card>
@@ -631,8 +591,8 @@ export default function Settings() {
                 currentPlan={currentPlan} 
                 onUpgradeSuccess={() => {
                   toast({
-                    title: t('checkoutStarted'),
-                    description: t('completePayment'),
+                    title: t('contactUs'),
+                    description: t('weWillContactYou'),
                   });
                 }}
               />

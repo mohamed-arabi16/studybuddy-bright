@@ -2,10 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Check, Sparkles, Zap, Phone } from "lucide-react";
-import { STRIPE_PRICES, formatPrice, type BillingCycle } from "@/lib/stripe";
 import { ContactUpgradeDialog } from "./ContactUpgradeDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -15,37 +12,13 @@ interface PricingCardProps {
 }
 
 export function PricingCard({ currentPlan = "free" }: PricingCardProps) {
-  const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
   const [showContactDialog, setShowContactDialog] = useState(false);
   const { t } = useLanguage();
-
-  const monthlyPrice = STRIPE_PRICES.pro.monthly.amount / 100;
-  const annualPrice = STRIPE_PRICES.pro.annual.amount / 100;
-  const annualMonthlyEquivalent = annualPrice / 12;
-  const savings = Math.round((1 - annualMonthlyEquivalent / monthlyPrice) * 100);
 
   const isPro = currentPlan === "pro";
 
   return (
     <div className="space-y-6">
-      {/* Billing toggle */}
-      <div className="flex items-center justify-center gap-4">
-        <Label htmlFor="billing-toggle" className={billingCycle === "monthly" ? "font-semibold" : "text-muted-foreground"}>
-          {t('monthly')}
-        </Label>
-        <Switch
-          id="billing-toggle"
-          checked={billingCycle === "annual"}
-          onCheckedChange={(checked) => setBillingCycle(checked ? "annual" : "monthly")}
-        />
-        <Label htmlFor="billing-toggle" className={billingCycle === "annual" ? "font-semibold" : "text-muted-foreground"}>
-          {t('annual')}
-          <Badge variant="secondary" className="ml-2 text-xs">
-            {t('save')} {savings}%
-          </Badge>
-        </Label>
-      </div>
-
       <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         {/* Free Plan */}
         <Card className={currentPlan === "free" ? "border-primary" : ""}>
@@ -60,7 +33,7 @@ export function PricingCard({ currentPlan = "free" }: PricingCardProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="text-3xl font-bold">
-              {formatPrice(0)}
+              $0
               <span className="text-sm font-normal text-muted-foreground">/{t('month')}</span>
             </div>
             <ul className="space-y-2 text-sm">
@@ -109,14 +82,8 @@ export function PricingCard({ currentPlan = "free" }: PricingCardProps) {
             <CardDescription>{t('proDesc')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="text-3xl font-bold">
-              {formatPrice(billingCycle === "monthly" ? monthlyPrice : annualMonthlyEquivalent)}
-              <span className="text-sm font-normal text-muted-foreground">/{t('month')}</span>
-              {billingCycle === "annual" && (
-                <div className="text-sm font-normal text-muted-foreground">
-                  {t('billedAnnually')} {formatPrice(annualPrice)}
-                </div>
-              )}
+            <div className="text-2xl font-bold text-muted-foreground">
+              {t('contactForPricing')}
             </div>
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2">
@@ -160,7 +127,7 @@ export function PricingCard({ currentPlan = "free" }: PricingCardProps) {
               ) : (
                 <>
                   <Phone className="mr-2 h-4 w-4" />
-                  {t('upgradeToPro')}
+                  {t('contactUs')}
                 </>
               )}
             </Button>
