@@ -134,12 +134,16 @@ export type Database = {
           course_id: string
           created_at: string
           extracted_text: string | null
+          extraction_metadata: Json | null
+          extraction_method: string | null
+          extraction_quality: string | null
           extraction_status: string
           file_name: string
           file_path: string
           file_size: number
           id: string
           mime_type: string
+          pages_processed: number | null
           updated_at: string
           user_id: string
         }
@@ -147,12 +151,16 @@ export type Database = {
           course_id: string
           created_at?: string
           extracted_text?: string | null
+          extraction_metadata?: Json | null
+          extraction_method?: string | null
+          extraction_quality?: string | null
           extraction_status?: string
           file_name: string
           file_path: string
           file_size: number
           id?: string
           mime_type?: string
+          pages_processed?: number | null
           updated_at?: string
           user_id: string
         }
@@ -160,12 +168,16 @@ export type Database = {
           course_id?: string
           created_at?: string
           extracted_text?: string | null
+          extraction_metadata?: Json | null
+          extraction_method?: string | null
+          extraction_quality?: string | null
           extraction_status?: string
           file_name?: string
           file_path?: string
           file_size?: number
           id?: string
           mime_type?: string
+          pages_processed?: number | null
           updated_at?: string
           user_id?: string
         }

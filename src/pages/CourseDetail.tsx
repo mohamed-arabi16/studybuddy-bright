@@ -50,6 +50,8 @@ type CourseFile = {
   file_size: number;
   extraction_status: string;
   extracted_text: string | null;
+  extraction_quality: string | null;
+  extraction_metadata: unknown;
   created_at: string;
 };
 
@@ -79,10 +81,10 @@ export default function CourseDetail() {
       if (error) throw error;
       setCourse(data);
 
-      // Fetch files
+      // Fetch files with metadata
       const { data: filesData } = await supabase
         .from("course_files")
-        .select("*")
+        .select("id, file_name, file_path, file_size, extraction_status, extracted_text, extraction_quality, extraction_metadata, created_at")
         .eq("course_id", id)
         .order("created_at", { ascending: false });
 
@@ -327,6 +329,23 @@ export default function CourseDetail() {
                     const isFailed = file.extraction_status === 'failed';
                     const isPending = file.extraction_status === 'pending';
                     const needsManual = file.extraction_status === 'manual_required';
+                    const isEmpty = file.extraction_status === 'empty';
+                    const isFileTooLarge = file.extraction_status === 'file_too_large';
+                    const canRetry = isFailed || isPending || needsManual || isEmpty;
+                    
+                    // Get status display info
+                    const getStatusInfo = () => {
+                      if (isExtracting) return { label: t('extractingText'), variant: 'outline' as const, icon: <Loader2 className="w-3 h-3 animate-spin" /> };
+                      if (isExtracted) return { label: t('ready'), variant: 'default' as const, icon: <CheckCircle className="w-3 h-3" /> };
+                      if (isFailed) return { label: t('failed'), variant: 'destructive' as const, icon: <AlertCircle className="w-3 h-3" /> };
+                      if (needsManual) return { label: t('manualInputNeeded'), variant: 'outline' as const, icon: <AlertCircle className="w-3 h-3" /> };
+                      if (isEmpty) return { label: 'No text found', variant: 'outline' as const, icon: <AlertCircle className="w-3 h-3" /> };
+                      if (isFileTooLarge) return { label: 'File too large', variant: 'destructive' as const, icon: <AlertCircle className="w-3 h-3" /> };
+                      if (isPending) return { label: t('pending'), variant: 'outline' as const, icon: null };
+                      return { label: file.extraction_status, variant: 'outline' as const, icon: null };
+                    };
+                    
+                    const statusInfo = getStatusInfo();
                     
                     return (
                       <div 
@@ -339,25 +358,21 @@ export default function CourseDetail() {
                             <p className="font-medium">{file.file_name}</p>
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <span>{(file.file_size / 1024 / 1024).toFixed(1)} MB</span>
-                              <Badge 
-                                variant={isExtracted ? "default" : isFailed ? "destructive" : "outline"} 
-                                className="text-xs gap-1"
-                              >
-                                {isExtracting && <Loader2 className="w-3 h-3 animate-spin" />}
-                                {isExtracted && <CheckCircle className="w-3 h-3" />}
-                                {isFailed && <AlertCircle className="w-3 h-3" />}
-                                {isExtracting ? t('extractingText') : 
-                                 isExtracted ? t('ready') : 
-                                 isFailed ? t('failed') :
-                                 needsManual ? t('manualInputNeeded') :
-                                 isPending ? t('pending') : file.extraction_status}
+                              <Badge variant={statusInfo.variant} className="text-xs gap-1">
+                                {statusInfo.icon}
+                                {statusInfo.label}
                               </Badge>
+                              {isExtracted && file.extraction_quality && (
+                                <Badge variant="outline" className="text-xs">
+                                  {file.extraction_quality} quality
+                                </Badge>
+                              )}
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          {/* Retry button for failed/pending/manual_required */}
-                          {(isFailed || isPending || needsManual) && (
+                          {/* Retry button for retryable statuses */}
+                          {canRetry && (
                             <Button
                               size="sm"
                               variant="outline"
