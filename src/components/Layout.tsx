@@ -17,7 +17,6 @@ import { Session } from "@supabase/supabase-js";
 import { UsageIndicator } from "@/components/UsageIndicator";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { useLanguage } from "@/contexts/LanguageContext";
-import studybudyLogo from "@/assets/studybudy-logo.png";
 
 export default function Layout() {
   const navigate = useNavigate();
@@ -121,7 +120,9 @@ export default function Layout() {
       <aside className="hidden md:flex flex-col w-64 bg-card border-r border-border p-6 space-y-6">
         <div className="flex items-center justify-between">
           <Link to="/app/dashboard" className="flex items-center gap-2 px-2">
-            <img src={studybudyLogo} alt="StudyBudy" className="h-10 w-auto" />
+            <span className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              StudyBudy
+            </span>
           </Link>
         </div>
 
@@ -181,7 +182,9 @@ export default function Layout() {
       <div className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden flex items-center justify-between p-4 bg-card border-b border-border">
           <Link to="/app/dashboard" className="flex items-center gap-2">
-            <img src={studybudyLogo} alt="StudyBudy" className="h-8 w-auto" />
+            <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              StudyBudy
+            </span>
           </Link>
           <div className="flex items-center gap-2">
             <button
@@ -200,7 +203,9 @@ export default function Layout() {
               <SheetContent side={language === 'ar' ? 'right' : 'left'} className="w-64 p-6">
                 <div className="flex flex-col h-full space-y-6">
                   <Link to="/app/dashboard" className="px-2">
-                    <img src={studybudyLogo} alt="StudyBudy" className="h-10 w-auto" />
+                    <span className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                      StudyBudy
+                    </span>
                   </Link>
                   <nav className="flex-1 space-y-2">
                     {navItems.map((item) => (
