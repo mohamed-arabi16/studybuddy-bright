@@ -41,6 +41,8 @@ export default function AddTopicDialog({
   const [analyzeWithAI, setAnalyzeWithAI] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  // P2 Fix: Track if already analyzed to prevent duplicate calls
+  const [hasAnalyzed, setHasAnalyzed] = useState(false);
 
   const resetForm = () => {
     setTitle("");
@@ -48,6 +50,7 @@ export default function AddTopicDialog({
     setDifficultyWeight(3);
     setExamImportance(3);
     setAnalyzeWithAI(true);
+    setHasAnalyzed(false);
   };
 
   const handleAnalyze = async () => {
@@ -61,17 +64,31 @@ export default function AddTopicDialog({
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
+      // P1 Fix: Pass courseId for better scoring context
       const response = await supabase.functions.invoke("analyze-topic", {
-        body: { title, notes },
+        body: { title, notes, courseId },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
 
-      if (response.error) throw new Error(response.error.message);
+      if (response.error) {
+        // Handle rate limit error specifically
+        if (response.error.message?.includes("RATE_LIMIT_EXCEEDED") || response.error.status === 429) {
+          toast.error(t('rateLimitExceeded') || "Rate limit exceeded. Please wait a few minutes.");
+          return;
+        }
+        throw new Error(response.error.message);
+      }
 
-      const { difficulty_weight, exam_importance } = response.data;
+      const { difficulty_weight, exam_importance, needs_review } = response.data;
       setDifficultyWeight(difficulty_weight);
       setExamImportance(exam_importance);
-      toast.success(t('topicAnalyzedWithAI'));
+      setHasAnalyzed(true);
+      
+      if (needs_review) {
+        toast.info(t('topicAnalyzedWithDefaults') || "Topic analyzed with estimated values");
+      } else {
+        toast.success(t('topicAnalyzedWithAI'));
+      }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t('unknownError');
       toast.error(t('topicAnalysisFailed') + message);
@@ -92,15 +109,17 @@ export default function AddTopicDialog({
       if (!user) throw new Error("Not authenticated");
 
       // If AI analysis is enabled and not yet analyzed, do it now
+      // P2 Fix: Skip if already analyzed to avoid duplicate calls
       let finalDifficulty = difficultyWeight;
       let finalImportance = examImportance;
 
-      if (analyzeWithAI) {
+      if (analyzeWithAI && !hasAnalyzed) {
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session) {
+            // P1 Fix: Pass courseId for better scoring context
             const response = await supabase.functions.invoke("analyze-topic", {
-              body: { title, notes },
+              body: { title, notes, courseId },
               headers: { Authorization: `Bearer ${session.access_token}` },
             });
 

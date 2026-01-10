@@ -1,10 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// P0 Fix: Complete CORS headers with methods and max-age
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
 };
+
+// Rate limiting constants
+const RATE_LIMIT = 30;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -40,7 +47,7 @@ serve(async (req) => {
       });
     }
 
-    const { title, notes } = await req.json();
+    const { title, notes, courseId } = await req.json();
 
     if (!title || typeof title !== "string") {
       return new Response(JSON.stringify({ error: "Topic title is required" }), {
@@ -49,23 +56,62 @@ serve(async (req) => {
       });
     }
 
-    console.log(`Analyzing topic: "${title}" for user ${user.id}`);
+    // P1 Fix: Rate limiting - check recent analyze-topic calls
+    const tenMinutesAgo = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
+    
+    const { count: recentCalls } = await supabase
+      .from('ai_jobs')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('job_type', 'analyze_topic')
+      .gte('created_at', tenMinutesAgo);
 
+    if ((recentCalls || 0) >= RATE_LIMIT) {
+      return new Response(JSON.stringify({ 
+        error: "Rate limit exceeded. Please wait a few minutes before analyzing more topics.",
+        code: "RATE_LIMIT_EXCEEDED",
+        retry_after_seconds: 600,
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // P1 Fix: Fetch course context for better scoring
+    let courseContext = "";
+    if (courseId) {
+      const { data: course } = await supabase
+        .from('courses')
+        .select('title, description')
+        .eq('id', courseId)
+        .eq('user_id', user.id)
+        .single();
+      
+      if (course) {
+        courseContext = `Course: ${course.title}${course.description ? ` - ${course.description}` : ''}`;
+      }
+    }
+
+    console.log(`Analyzing topic: "${title}" for user ${user.id}${courseContext ? ` (${courseContext})` : ''}`);
+
+    // P1 Fix: Updated system prompt for tool-call consistency
     const systemPrompt = `You are an educational AI assistant that analyzes study topics for exam preparation.
-Given a topic title (and optional notes), estimate:
+Given a topic title, course context, and optional notes, you must call the analyze_topic tool to estimate:
 1. difficulty_weight (1-5): How difficult is this topic? 1=very easy, 5=very hard
 2. exam_importance (1-5): How likely is this topic to appear in exams? 1=rarely, 5=almost always
 
 Consider:
 - Mathematical/technical topics are usually harder
 - Foundational concepts are usually more important for exams
+- Course context helps determine relevance and difficulty level
 - Advanced/specialized topics may be harder but less frequent in exams
 
-Return ONLY a JSON object with these two fields, no explanation.`;
+You MUST call the analyze_topic function. Do not return text responses.`;
 
-    const userPrompt = notes 
-      ? `Topic: ${title}\nNotes: ${notes}`
-      : `Topic: ${title}`;
+    // Build user prompt with course context
+    const userPrompt = courseContext
+      ? `${courseContext}\n\nTopic: ${title}${notes ? `\nNotes: ${notes}` : ''}`
+      : `Topic: ${title}${notes ? `\nNotes: ${notes}` : ''}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -132,22 +178,99 @@ Return ONLY a JSON object with these two fields, no explanation.`;
     }
 
     const aiResponse = await response.json();
-    console.log("AI response:", JSON.stringify(aiResponse));
+    
+    // P0 Fix: Log only metadata, not full response
+    console.log("AI response metadata:", {
+      model: aiResponse.model,
+      hasToolCalls: !!aiResponse.choices?.[0]?.message?.tool_calls?.length,
+      finishReason: aiResponse.choices?.[0]?.finish_reason,
+      usage: aiResponse.usage,
+    });
 
     // Extract tool call result
     const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
+    
+    // P1 Fix: Add content fallback parsing if no tool call
     if (!toolCall?.function?.arguments) {
-      // Fallback to default values
-      console.warn("No tool call in response, using defaults");
+      // Try parsing message content as fallback
+      const content = aiResponse.choices?.[0]?.message?.content;
+      if (content) {
+        try {
+          const contentParsed = JSON.parse(content.replace(/```json|```/g, '').trim());
+          if (contentParsed.difficulty_weight && contentParsed.exam_importance) {
+            const diffWeight = Math.min(5, Math.max(1, contentParsed.difficulty_weight));
+            const examImp = Math.min(5, Math.max(1, contentParsed.exam_importance));
+            
+            // Log the analysis call
+            await supabase.from('ai_jobs').insert({
+              user_id: user.id,
+              course_id: courseId || null,
+              job_type: 'analyze_topic',
+              status: 'completed',
+              input_hash: title.toLowerCase().trim().substring(0, 100),
+              result_json: { difficulty_weight: diffWeight, exam_importance: examImp, fallback: true },
+            });
+            
+            return new Response(JSON.stringify({
+              difficulty_weight: diffWeight,
+              exam_importance: examImp,
+              needs_review: true,
+              fallback_reason: "content_parse",
+            }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+          }
+        } catch {
+          // Fall through to defaults
+        }
+      }
+      
+      console.warn("No tool call or parseable content, using defaults");
+      
+      // Log the analysis call with defaults
+      await supabase.from('ai_jobs').insert({
+        user_id: user.id,
+        course_id: courseId || null,
+        job_type: 'analyze_topic',
+        status: 'completed',
+        input_hash: title.toLowerCase().trim().substring(0, 100),
+        result_json: { difficulty_weight: 3, exam_importance: 3, fallback: true },
+      });
+      
       return new Response(JSON.stringify({
         difficulty_weight: 3,
         exam_importance: 3,
+        needs_review: true,
+        fallback_reason: "no_tool_call",
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const analysis = JSON.parse(toolCall.function.arguments);
+    // P0 Fix: Safe JSON parsing with try-catch
+    let analysis: { difficulty_weight?: number; exam_importance?: number };
+    try {
+      analysis = JSON.parse(toolCall.function.arguments);
+    } catch (parseError) {
+      console.warn("Failed to parse tool arguments:", parseError);
+      
+      // Log the analysis call with defaults
+      await supabase.from('ai_jobs').insert({
+        user_id: user.id,
+        course_id: courseId || null,
+        job_type: 'analyze_topic',
+        status: 'completed',
+        input_hash: title.toLowerCase().trim().substring(0, 100),
+        result_json: { difficulty_weight: 3, exam_importance: 3, parse_error: true },
+      });
+      
+      return new Response(JSON.stringify({
+        difficulty_weight: 3,
+        exam_importance: 3,
+        needs_review: true,
+        fallback_reason: "parse_error",
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     
     // Validate and clamp values
     const difficultyWeight = Math.min(5, Math.max(1, analysis.difficulty_weight || 3));
@@ -155,9 +278,21 @@ Return ONLY a JSON object with these two fields, no explanation.`;
 
     console.log(`Analysis complete: difficulty=${difficultyWeight}, importance=${examImportance}`);
 
+    // Log the successful analysis call
+    await supabase.from('ai_jobs').insert({
+      user_id: user.id,
+      course_id: courseId || null,
+      job_type: 'analyze_topic',
+      status: 'completed',
+      input_hash: title.toLowerCase().trim().substring(0, 100),
+      result_json: { difficulty_weight: difficultyWeight, exam_importance: examImportance },
+    });
+
+    // P1 Fix: Add needs_review flag to distinguish AI vs defaults
     return new Response(JSON.stringify({
       difficulty_weight: difficultyWeight,
       exam_importance: examImportance,
+      needs_review: false,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
