@@ -260,6 +260,9 @@ export type Database = {
           auto_sync: boolean | null
           calendar_id: string | null
           created_at: string
+          encrypted_access_token: string | null
+          encrypted_refresh_token: string | null
+          encryption_version: number | null
           id: string
           is_active: boolean | null
           refresh_token: string
@@ -272,6 +275,9 @@ export type Database = {
           auto_sync?: boolean | null
           calendar_id?: string | null
           created_at?: string
+          encrypted_access_token?: string | null
+          encrypted_refresh_token?: string | null
+          encryption_version?: number | null
           id?: string
           is_active?: boolean | null
           refresh_token: string
@@ -284,6 +290,9 @@ export type Database = {
           auto_sync?: boolean | null
           calendar_id?: string | null
           created_at?: string
+          encrypted_access_token?: string | null
+          encrypted_refresh_token?: string | null
+          encryption_version?: number | null
           id?: string
           is_active?: boolean | null
           refresh_token?: string

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { User, Clock, CreditCard, LogOut, Loader2, ExternalLink, Phone, Building, GraduationCap, Trash2, Download, AlertTriangle, Key } from 'lucide-react';
+import { User, Clock, CreditCard, LogOut, Loader2, ExternalLink, Phone, Building, GraduationCap, Trash2, Download, AlertTriangle, Key, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { PricingCard } from '@/components/PricingCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSubscription } from '@/hooks/useSubscription';
+import { CalendarSyncCard } from '@/components/CalendarSyncCard';
 
 export default function Settings() {
   const { toast } = useToast();
@@ -287,7 +288,7 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="profile" className="gap-2">
             <User className="w-4 h-4" />
             {t('profile')}
@@ -295,6 +296,10 @@ export default function Settings() {
           <TabsTrigger value="study" className="gap-2">
             <Clock className="w-4 h-4" />
             {t('studyPreferences')}
+          </TabsTrigger>
+          <TabsTrigger value="calendar" className="gap-2">
+            <Calendar className="w-4 h-4" />
+            {t('calendarSync')}
           </TabsTrigger>
           <TabsTrigger value="subscription" className="gap-2">
             <CreditCard className="w-4 h-4" />
@@ -574,6 +579,10 @@ export default function Settings() {
               </Button>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="calendar" className="space-y-4">
+          <CalendarSyncCard />
         </TabsContent>
 
         <TabsContent value="subscription" className="space-y-6">

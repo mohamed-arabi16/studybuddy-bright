@@ -1,1 +1,55 @@
 project_id = "aidzcussghcodhwiiakk"
+
+[functions.admin-health-check]
+verify_jwt = false
+
+[functions.admin-stats]
+verify_jwt = false
+
+[functions.analyze-topic]
+verify_jwt = false
+
+[functions.check-quota]
+verify_jwt = false
+
+[functions.check-subscription]
+verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.customer-portal]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false
+
+[functions.export-user-data]
+verify_jwt = false
+
+[functions.extract-topics]
+verify_jwt = false
+
+[functions.generate-smart-plan]
+verify_jwt = false
+
+[functions.generate-study-plan]
+verify_jwt = false
+
+[functions.generate-unified-plan]
+verify_jwt = false
+
+[functions.parse-pdf]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.google-calendar-auth]
+verify_jwt = false
+
+[functions.sync-calendar]
+verify_jwt = false
+
+[functions.disconnect-calendar]
+verify_jwt = false
