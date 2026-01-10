@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { probePdf, extractFullText, renderPagesToImages, type ExtractionMode } from '@/lib/pdfExtractor';
 
 interface FileUploadZoneProps {
   courseId: string;
@@ -16,10 +17,14 @@ interface UploadedFile {
   id: string;
   name: string;
   size: number;
-  status: 'uploading' | 'extracting' | 'completed' | 'failed';
+  status: 'uploading' | 'probing' | 'extracting' | 'ocr' | 'completed' | 'failed';
   path?: string;
   extractionStatus?: string;
+  extractionMode?: ExtractionMode;
+  ocrProgress?: { current: number; total: number };
 }
+
+const OCR_BATCH_SIZE = 3; // Pages per OCR batch
 
 export function FileUploadZone({ courseId, onUploadComplete, maxSizeMB = 20 }: FileUploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
@@ -27,55 +32,199 @@ export function FileUploadZone({ courseId, onUploadComplete, maxSizeMB = 20 }: F
   const { toast } = useToast();
   const { t, dir } = useLanguage();
 
-  const triggerPdfExtraction = async (fileId: string, fileName: string) => {
+  // Update file state helper
+  const updateFile = (id: string, updates: Partial<UploadedFile>) => {
+    setUploadedFiles(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
+  };
+
+  // TEXT mode: Client extracts text and sends to ingest-pdf-text
+  const handleTextModeExtraction = async (
+    fileId: string,
+    file: File,
+    totalPages: number
+  ): Promise<boolean> => {
     try {
+      updateFile(fileId, { status: 'extracting' });
+      
+      const fullText = await extractFullText(file);
+      
+      if (!fullText || fullText.length < 50) {
+        // Not enough text - fallback to OCR
+        return false;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
-      const response = await supabase.functions.invoke('parse-pdf', {
-        body: { fileId },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
+      const response = await supabase.functions.invoke('ingest-pdf-text', {
+        body: { fileId, extractedText: fullText, totalPages },
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
 
       if (response.error) {
-        console.error('Extraction error:', response.error);
-        setUploadedFiles(prev => prev.map(f =>
-          f.id === fileId ? { ...f, status: 'completed', extractionStatus: 'failed' } : f
-        ));
-        toast({
-          title: t('extractionFailed'),
-          description: t('addManually'),
-          variant: 'destructive',
-        });
-        return;
+        console.error('Ingest error:', response.error);
+        return false;
       }
 
-      const result = response.data;
+      return response.data?.success === true;
+    } catch (error) {
+      console.error('Text extraction error:', error);
+      return false;
+    }
+  };
+
+  // OCR mode: Render pages to images and send to ocr-pages in batches
+  const handleOcrModeExtraction = async (
+    fileId: string,
+    file: File,
+    totalPages: number
+  ): Promise<boolean> => {
+    try {
+      updateFile(fileId, { status: 'ocr', ocrProgress: { current: 0, total: totalPages } });
       
-      if (result.success) {
-        setUploadedFiles(prev => prev.map(f =>
-          f.id === fileId ? { ...f, status: 'completed', extractionStatus: 'extracted' } : f
-        ));
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+
+      // Get course ID from the file record
+      const { data: fileRecord } = await supabase
+        .from('course_files')
+        .select('course_id')
+        .eq('id', fileId)
+        .single();
+      
+      const courseIdForOcr = fileRecord?.course_id || courseId;
+
+      let allText = '';
+      let processedPages = 0;
+
+      // Process pages in batches
+      for (let startPage = 1; startPage <= totalPages; startPage += OCR_BATCH_SIZE) {
+        const endPage = Math.min(startPage + OCR_BATCH_SIZE - 1, totalPages);
+        
+        // Render this batch of pages to images
+        const pageImages = await renderPagesToImages(file, startPage, endPage, 1.2, 0.7);
+        
+        // Send to OCR endpoint
+        const response = await supabase.functions.invoke('ocr-pages', {
+          body: {
+            courseId: courseIdForOcr,
+            fileId,
+            pages: pageImages.map(p => ({
+              pageNumber: p.pageNumber,
+              imageBase64: p.imageBase64,
+            })),
+          },
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+
+        if (response.error) {
+          console.error('OCR error:', response.error);
+          // Continue with other pages
+        } else if (response.data?.pages) {
+          for (const page of response.data.pages) {
+            allText += `\n--- Page ${page.pageNumber} ---\n${page.text}\n`;
+          }
+        }
+
+        processedPages = endPage;
+        updateFile(fileId, { ocrProgress: { current: processedPages, total: totalPages } });
+      }
+
+      if (!allText || allText.length < 50) {
+        return false;
+      }
+
+      // Save the OCR'd text via ingest-pdf-text
+      const ingestResponse = await supabase.functions.invoke('ingest-pdf-text', {
+        body: { fileId, extractedText: allText, totalPages },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      // Update the extraction method to ocr_vision
+      await supabase
+        .from('course_files')
+        .update({ extraction_method: 'ocr_vision' })
+        .eq('id', fileId);
+
+      return ingestResponse.data?.success === true;
+    } catch (error) {
+      console.error('OCR extraction error:', error);
+      return false;
+    }
+  };
+
+  // Main PDF extraction orchestration
+  const triggerPdfExtraction = async (fileId: string, file: File, fileName: string) => {
+    try {
+      updateFile(fileId, { status: 'probing' });
+      
+      // Step 1: Probe PDF to determine extraction mode
+      const probeResult = await probePdf(file);
+      
+      updateFile(fileId, { extractionMode: probeResult.mode });
+
+      let success = false;
+
+      // Step 2: Execute appropriate extraction mode
+      if (probeResult.mode === 'text') {
+        // TEXT mode: fast client-side extraction
+        toast({
+          title: t('extractingText'),
+          description: `${fileName} - Text mode (fast)`,
+        });
+        
+        success = await handleTextModeExtraction(fileId, file, probeResult.totalPages);
+        
+        // If text mode fails (not enough text), fallback to OCR
+        if (!success && probeResult.charCount > 200) {
+          // Had some text but failed - mark as extracted with what we got
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            await supabase.functions.invoke('ingest-pdf-text', {
+              body: { fileId, extractedText: probeResult.probeText, totalPages: probeResult.totalPages },
+              headers: { Authorization: `Bearer ${session.access_token}` },
+            });
+            success = true;
+          }
+        } else if (!success) {
+          // Fallback to OCR
+          toast({
+            title: t('extractingText'),
+            description: `${fileName} - Switching to OCR mode...`,
+          });
+          success = await handleOcrModeExtraction(fileId, file, probeResult.totalPages);
+        }
+      } else {
+        // OCR mode: render pages and use AI vision
+        toast({
+          title: t('extractingText'),
+          description: `${fileName} - OCR mode (${probeResult.totalPages} pages)`,
+        });
+        
+        success = await handleOcrModeExtraction(fileId, file, probeResult.totalPages);
+      }
+
+      if (success) {
+        updateFile(fileId, { status: 'completed', extractionStatus: 'extracted' });
         toast({
           title: t('textExtracted'),
           description: `${t('readyToExtract')} ${fileName}`,
         });
       } else {
-        setUploadedFiles(prev => prev.map(f =>
-          f.id === fileId ? { ...f, status: 'completed', extractionStatus: result.status || 'manual_required' } : f
-        ));
+        updateFile(fileId, { status: 'completed', extractionStatus: 'manual_required' });
         toast({
           title: t('extractionNotice'),
-          description: result.message || t('addManually'),
+          description: t('addManually'),
         });
       }
     } catch (error) {
       console.error('Extraction error:', error);
-      setUploadedFiles(prev => prev.map(f =>
-        f.id === fileId ? { ...f, status: 'completed', extractionStatus: 'failed' } : f
-      ));
+      updateFile(fileId, { status: 'completed', extractionStatus: 'failed' });
+      toast({
+        title: t('extractionFailed'),
+        description: t('addManually'),
+        variant: 'destructive',
+      });
     }
   };
 
@@ -154,10 +303,10 @@ export function FileUploadZone({ courseId, onUploadComplete, maxSizeMB = 20 }: F
 
       if (dbError) throw dbError;
 
-      // Update status to extracting
+      // Update with real ID
       setUploadedFiles(prev => prev.map(f => 
         f.id === tempId 
-          ? { ...f, id: fileRecord.id, status: 'extracting', path: filePath }
+          ? { ...f, id: fileRecord.id, path: filePath }
           : f
       ));
 
@@ -166,8 +315,8 @@ export function FileUploadZone({ courseId, onUploadComplete, maxSizeMB = 20 }: F
         description: `${t('extractingText')} ${file.name}...`,
       });
 
-      // Trigger PDF text extraction
-      await triggerPdfExtraction(fileRecord.id, file.name);
+      // Trigger client-side PDF extraction (tiered approach)
+      await triggerPdfExtraction(fileRecord.id, file, file.name);
 
       onUploadComplete?.(fileRecord.id, filePath);
 
@@ -215,6 +364,27 @@ export function FileUploadZone({ courseId, onUploadComplete, maxSizeMB = 20 }: F
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  const getStatusDisplay = (file: UploadedFile) => {
+    switch (file.status) {
+      case 'uploading':
+        return { icon: <Loader2 className="w-4 h-4 animate-spin text-primary" />, text: t('uploading') };
+      case 'probing':
+        return { icon: <FileSearch className="w-4 h-4 animate-pulse text-primary" />, text: 'Analyzing PDF...' };
+      case 'extracting':
+        return { icon: <FileSearch className="w-4 h-4 animate-pulse text-primary" />, text: 'Extracting text...' };
+      case 'ocr':
+        const progress = file.ocrProgress;
+        const progressText = progress ? `OCR: ${progress.current}/${progress.total} pages` : 'Running OCR...';
+        return { icon: <Loader2 className="w-4 h-4 animate-spin text-primary" />, text: progressText };
+      case 'completed':
+        return { icon: <CheckCircle className="w-4 h-4 text-green-500" />, text: null };
+      case 'failed':
+        return { icon: <AlertCircle className="w-4 h-4 text-destructive" />, text: null };
+      default:
+        return { icon: null, text: null };
+    }
+  };
+
   return (
     <div className="space-y-4" dir={dir}>
       <div
@@ -247,47 +417,42 @@ export function FileUploadZone({ courseId, onUploadComplete, maxSizeMB = 20 }: F
 
       {uploadedFiles.length > 0 && (
         <div className="space-y-2">
-          {uploadedFiles.map(file => (
-            <Card key={file.id} className="overflow-hidden">
-              <CardContent className="p-3 flex items-center gap-3">
-                <File className="w-5 h-5 text-primary flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{file.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatFileSize(file.size)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {file.status === 'uploading' && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                      <span>{t('uploading')}</span>
+          {uploadedFiles.map(file => {
+            const statusDisplay = getStatusDisplay(file);
+            
+            return (
+              <Card key={file.id} className="overflow-hidden">
+                <CardContent className="p-3 flex items-center gap-3">
+                  <File className="w-5 h-5 text-primary flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{file.name}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>{formatFileSize(file.size)}</span>
+                      {file.extractionMode && (
+                        <span className="text-primary">
+                          {file.extractionMode === 'text' ? 'Text mode' : 'OCR mode'}
+                        </span>
+                      )}
                     </div>
-                  )}
-                  {file.status === 'extracting' && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <FileSearch className="w-4 h-4 animate-pulse text-primary" />
-                      <span>{t('extractingText')}</span>
-                    </div>
-                  )}
-                  {file.status === 'completed' && (
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                  )}
-                  {file.status === 'failed' && (
-                    <AlertCircle className="w-4 h-4 text-destructive" />
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => removeFile(file.id, file.path)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {statusDisplay.icon}
+                    {statusDisplay.text && (
+                      <span className="text-xs text-muted-foreground">{statusDisplay.text}</span>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => removeFile(file.id, file.path)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
