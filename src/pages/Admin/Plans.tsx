@@ -52,15 +52,26 @@ export default function AdminPlans() {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else if (data) {
-      setPlans(data.map(p => ({
-        id: p.id,
-        name: p.name,
-        price_monthly: p.price_monthly ?? 0,
-        price_yearly: p.price_yearly ?? 0,
-        limits: (p.limits as any) || { courses: 0, topics_per_course: 0, ai_extractions: 0 },
-        features: (p.features as string[]) || [],
-        is_active: p.is_active ?? true,
-      })));
+      setPlans(data.map(p => {
+        // Ensure features is always an array
+        let features: string[] = [];
+        if (Array.isArray(p.features)) {
+          features = p.features as string[];
+        } else if (p.features && typeof p.features === 'object') {
+          // If it's an object, try to extract values
+          features = Object.values(p.features as object).filter((v): v is string => typeof v === 'string');
+        }
+        
+        return {
+          id: p.id,
+          name: p.name,
+          price_monthly: p.price_monthly ?? 0,
+          price_yearly: p.price_yearly ?? 0,
+          limits: (p.limits as any) || { courses: 0, topics_per_course: 0, ai_extractions: 0 },
+          features,
+          is_active: p.is_active ?? true,
+        };
+      }));
     }
     setLoading(false);
   }
