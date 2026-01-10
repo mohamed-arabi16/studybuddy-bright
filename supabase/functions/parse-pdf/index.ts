@@ -115,8 +115,8 @@ Deno.serve(async (req) => {
     // Generate new extraction run ID
     const extractionRunId = crypto.randomUUID();
 
-    // Atomic update: only proceed if status is still valid (prevents race condition)
-    const { data: updated, error: lockError } = await supabase
+    // P0 FIX: Atomic update with .select() and array length check (not .single() which throws on 0 rows)
+    const { data: updatedRecords, error: lockError } = await supabase
       .from("course_files")
       .update({ 
         extraction_status: "extracting",
@@ -125,11 +125,11 @@ Deno.serve(async (req) => {
       .eq("id", fileId)
       .eq("user_id", user.id)
       .in("extraction_status", allowedStatuses)
-      .select()
-      .single();
+      .select();
 
-    if (lockError || !updated) {
-      log("Failed to acquire lock", { lockError });
+    // Check if any rows were updated (atomic check)
+    if (lockError || !updatedRecords || updatedRecords.length === 0) {
+      log("Failed to acquire lock - status may have changed", { lockError });
       return new Response(
         JSON.stringify({ 
           message: "Could not start extraction - file may already be processing",
@@ -138,6 +138,8 @@ Deno.serve(async (req) => {
         { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const updated = updatedRecords[0];
 
     log("Lock acquired", { extractionRunId });
 
@@ -224,7 +226,64 @@ Deno.serve(async (req) => {
     // Determine media type
     const mediaType = fileRecord.mime_type || "application/pdf";
 
-    log("Calling AI Vision", { mediaType, base64Length: base64Data.length });
+    // ============= P0 FIX: STOP USING image_url FOR PDFs =============
+    // PDFs are not reliably handled by vision APIs as images
+    // Mark for manual input until we add proper PDF text extraction
+    const isPDF = mediaType === "application/pdf";
+    
+    if (isPDF) {
+      log("PDF detected - marking for manual input", { fileId, mediaType });
+      
+      await supabase
+        .from("course_files")
+        .update({ 
+          extraction_status: "manual_required",
+          extraction_metadata: {
+            reason: "PDF files require manual text input for reliable extraction",
+            file_type: mediaType,
+            extraction_run_id: extractionRunId,
+          }
+        })
+        .eq("id", fileId);
+
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          status: "manual_required",
+          message: "PDF files currently require manual text input. Please paste your syllabus content in the text field.",
+          extraction_run_id: extractionRunId,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Only process images with vision API
+    const supportedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!supportedImageTypes.includes(mediaType)) {
+      log("Unsupported file format", { fileId, mediaType });
+      
+      await supabase
+        .from("course_files")
+        .update({ 
+          extraction_status: "unsupported_format",
+          extraction_metadata: { 
+            unsupported_type: mediaType,
+            extraction_run_id: extractionRunId,
+          }
+        })
+        .eq("id", fileId);
+
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          status: "unsupported_format",
+          message: `Unsupported file type: ${mediaType}. Please upload an image or paste text manually.`,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    log("Calling AI Vision for image", { mediaType, base64Length: base64Data.length });
 
     // ============= P1: UPDATED PROMPT FOR STRUCTURE/TOPICS =============
     const systemPrompt = `You are a document analyzer for academic course materials.
@@ -244,7 +303,7 @@ RULES:
 Do not summarize or paraphrase topic names - extract them exactly.
 If text is partially visible or unclear, include it with [unclear] marker.`;
 
-    // Use Gemini's document understanding capability via Lovable AI Gateway
+    // Use Gemini's document understanding capability via Lovable AI Gateway (images only)
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -263,7 +322,7 @@ If text is partially visible or unclear, include it with [unclear] marker.`;
             content: [
               {
                 type: "text",
-                text: `Extract the course structure and topics from this document: ${fileRecord.file_name}`
+                text: `Extract the course structure and topics from this document image: ${fileRecord.file_name}`
               },
               {
                 type: "image_url",

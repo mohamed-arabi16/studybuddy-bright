@@ -458,6 +458,7 @@ export type Database = {
           id: string
           is_day_off: boolean
           plan_version: number
+          topics_snapshot_id: string | null
           total_hours: number
           user_id: string
         }
@@ -467,6 +468,7 @@ export type Database = {
           id?: string
           is_day_off?: boolean
           plan_version?: number
+          topics_snapshot_id?: string | null
           total_hours?: number
           user_id: string
         }
@@ -476,6 +478,7 @@ export type Database = {
           id?: string
           is_day_off?: boolean
           plan_version?: number
+          topics_snapshot_id?: string | null
           total_hours?: number
           user_id?: string
         }

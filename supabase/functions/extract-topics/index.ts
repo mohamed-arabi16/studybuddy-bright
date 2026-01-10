@@ -518,11 +518,21 @@ Extract at most ${maxTopicsToExtract} distinct study topics. Merge duplicates.`;
       );
     }
 
-    // ============= P0: CYCLE DETECTION =============
+    // ============= P0 FIX: CYCLE DETECTION WITH needs_review AND WARNING =============
     const cycleCheck = detectCycles(topicsToExtract);
+    let needsReview = parsed.needs_review || false;
+    let questionsForStudent = parsed.questions_for_student || [];
+    
     if (cycleCheck.hasCycles) {
       log('Prerequisite cycles detected and broken', { cycles: cycleCheck.cycleInfo });
       topicsToExtract = cycleCheck.cleanedTopics;
+      
+      // P1: Mark for review and add warning question
+      needsReview = true;
+      questionsForStudent = [
+        ...questionsForStudent,
+        "Some prerequisite relationships formed circular dependencies and were automatically adjusted. Please review the topic order to ensure it makes sense for your learning."
+      ];
     }
 
     // ============= P0: STABLE CLIENT_KEY MAPPING WITH PROVENANCE =============
@@ -614,26 +624,27 @@ Extract at most ${maxTopicsToExtract} distinct study topics. Merge duplicates.`;
       await Promise.all(updatePromises.slice(i, i + BATCH_SIZE));
     }
 
-    // ============= P1: STORE ACCURATE RESULT_JSON =============
-    const jobStatus = parsed.needs_review ? 'needs_review' : 'completed';
+    // ============= P1: STORE ACCURATE RESULT_JSON (with corrected needs_review) =============
+    const jobStatus = needsReview ? 'needs_review' : 'completed';
     const truncatedDueToQuota = !isPro && topicsToExtract.length < (parsed.extracted_topics?.length || 0);
     
     await supabase.from('ai_jobs').update({ 
       status: jobStatus,
       result_json: {
         course_title: parsed.course_title,
-        needs_review: parsed.needs_review,
+        needs_review: needsReview, // Use the corrected value (includes cycle detection)
         extracted_topics: topicsToExtract,
-        questions_for_student: parsed.questions_for_student,
+        questions_for_student: questionsForStudent, // Use the enhanced list
         original_topic_count: parsed.extracted_topics?.length || 0,
         inserted_topic_count: insertedTopics.length,
         truncated_due_to_quota: truncatedDueToQuota,
         extraction_mode: mode,
         extraction_run_id: extractionRunId,
         cycles_detected: cycleCheck.hasCycles,
+        cycles_broken: cycleCheck.cycleInfo,
         validation_errors: validation.errors.length > 0 ? validation.errors : undefined,
       },
-      questions_for_student: parsed.questions_for_student || null,
+      questions_for_student: questionsForStudent.length > 0 ? questionsForStudent : null,
     }).eq('id', jobId);
 
     // Update file extraction status if fileId provided
@@ -657,8 +668,8 @@ Extract at most ${maxTopicsToExtract} distinct study topics. Merge duplicates.`;
         success: true,
         job_id: jobId,
         topics_count: insertedTopics.length,
-        needs_review: parsed.needs_review,
-        questions: parsed.questions_for_student,
+        needs_review: needsReview, // Use the corrected value
+        questions: questionsForStudent, // Use the enhanced list
         course_title: parsed.course_title,
         mode,
         extraction_run_id: extractionRunId,

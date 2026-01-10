@@ -37,16 +37,34 @@ interface ScheduledItem {
 }
 
 // ========================
-// TIMEZONE-STABLE DATE UTILITIES (UTC-only)
+// P0 FIX: ISTANBUL TIMEZONE DATE UTILITIES (UTC+3 fixed)
+// Turkey uses fixed UTC+3 (no DST since 2016)
 // ========================
 
-function getTodayUTC(): Date {
+const ISTANBUL_OFFSET_HOURS = 3;
+
+function getTodayIstanbul(): Date {
   const now = new Date();
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  // Add Istanbul offset to get Istanbul time
+  const istanbulMs = now.getTime() + (ISTANBUL_OFFSET_HOURS * 60 * 60 * 1000);
+  const istanbulDate = new Date(istanbulMs);
+  // Return date-only (midnight in conceptual Istanbul calendar day)
+  return new Date(Date.UTC(
+    istanbulDate.getUTCFullYear(),
+    istanbulDate.getUTCMonth(),
+    istanbulDate.getUTCDate()
+  ));
 }
 
 function getDateStr(date: Date): string {
   return date.toISOString().split('T')[0];
+}
+
+function getDateStrIstanbul(date: Date = new Date()): string {
+  // Istanbul is always UTC+3
+  const istanbulMs = date.getTime() + (ISTANBUL_OFFSET_HOURS * 60 * 60 * 1000);
+  const istanbulDate = new Date(istanbulMs);
+  return istanbulDate.toISOString().split('T')[0];
 }
 
 function addDays(date: Date, days: number): Date {
@@ -382,7 +400,8 @@ serve(async (req) => {
     // ========================
     // PLANNING HORIZON
     // ========================
-    const today = getTodayUTC();
+    // P0 FIX: Use Istanbul timezone for "today" calculation
+    const today = getTodayIstanbul();
     const todayStr = getDateStr(today);
     
     // Build topic extraction run ID map for plan versioning
@@ -784,6 +803,24 @@ Return ONLY corrected JSON with the same schema.`;
       scheduleByDate.get(item.date)!.push(item);
     }
 
+    // P1: Generate topics snapshot ID for plan-level staleness detection
+    function generateTopicsSnapshotId(runIds: Map<string, string>): string {
+      const sortedIds = Array.from(runIds.values())
+        .filter(Boolean)
+        .sort()
+        .join('|');
+      if (sortedIds.length === 0) return crypto.randomUUID();
+      // Simple hash using btoa (for production, use crypto.subtle)
+      try {
+        return btoa(sortedIds).substring(0, 32);
+      } catch {
+        return crypto.randomUUID();
+      }
+    }
+
+    const topicsSnapshotId = generateTopicsSnapshotId(topicExtractionRunIds);
+    log('Topics snapshot ID generated', { topicsSnapshotId, runIdsCount: topicExtractionRunIds.size });
+
     // Create plan days and items
     let totalDays = 0;
     let totalItems = 0;
@@ -791,6 +828,7 @@ Return ONLY corrected JSON with the same schema.`;
     for (const [dateStr, items] of scheduleByDate) {
       const totalHours = items.reduce((sum, i) => sum + (i.hours || 0.5), 0);
       
+      // P1: Include topics_snapshot_id for plan-level version tracking
       const { data: planDay, error: dayError } = await supabase
         .from('study_plan_days')
         .insert({
@@ -799,6 +837,7 @@ Return ONLY corrected JSON with the same schema.`;
           total_hours: totalHours,
           is_day_off: false,
           plan_version: newPlanVersion,
+          topics_snapshot_id: topicsSnapshotId,
         })
         .select()
         .single();

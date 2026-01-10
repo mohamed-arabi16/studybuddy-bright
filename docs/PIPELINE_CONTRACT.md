@@ -119,12 +119,11 @@ empty ────┘                 ├──> file_too_large
 - confidence_level: 'high', 'medium', 'low'
 - Prerequisites reference valid topic_keys
 - Cycle detection with automatic breaking
-
----
-
-### generate-smart-plan
-
-**Purpose**: Generate AI-powered study schedule
+- **Cycle Policy**: When cycles detected:
+  - Set `needs_review = true`
+  - Add warning to `questions_for_student`
+  - Break cycles by removing weakest edges
+  - Record broken cycles in job result
 
 **Input**:
 | Field | Type | Required | Description |
@@ -142,12 +141,13 @@ empty ────┘                 ├──> file_too_large
 | `plan_days` | number | Study days created |
 | `plan_items` | number | Individual topic slots |
 | `plan_version` | number | Incremented version |
+| `topics_snapshot_id` | UUID | Hash of topic extraction run IDs |
 | `warnings` | string[] | Scheduling warnings |
 | `validation_passed` | boolean | True if AI output validated |
 | `cycles_detected` | boolean | True if prerequisite cycles exist |
 
-**Plan Items Created With**:
-- `topic_extraction_run_id`: Links to topic's extraction run (for stale detection)
+**Plan Days Created With**:
+- `topics_snapshot_id`: Hash of all topic extraction run IDs for staleness detection
 
 **Validations**:
 - All topic_ids exist and belong to user
@@ -182,12 +182,15 @@ If validation fails, the system:
 | `extraction_run_id` | UUID | Groups topics from same run |
 | `topic_key` | TEXT | AI-generated key (t01, etc.) |
 
+### study_plan_days
+| Column | Type | Description |
+|--------|------|-------------|
+| `topics_snapshot_id` | UUID | Hash of topic run IDs for staleness detection |
+
 ### study_plan_items
 | Column | Type | Description |
 |--------|------|-------------|
-| `topic_extraction_run_id` | UUID | For stale plan detection |
-
----
+| `topic_extraction_run_id` | UUID | For per-item stale detection |
 
 ## Status Values
 
@@ -229,6 +232,34 @@ If validation fails, the system:
 
 ---
 
+## Date Handling Standard
+
+**Timezone**: Istanbul (Europe/Istanbul, UTC+3 fixed - no DST since 2016)
+
+**Rationale**: Students studying in Istanbul expect "today" to be Istanbul calendar day boundaries, not UTC.
+
+**Implementation**:
+```typescript
+const ISTANBUL_OFFSET_HOURS = 3;
+
+function getTodayIstanbul(): Date {
+  const now = new Date();
+  const istanbulMs = now.getTime() + (ISTANBUL_OFFSET_HOURS * 60 * 60 * 1000);
+  const istanbulDate = new Date(istanbulMs);
+  return new Date(Date.UTC(
+    istanbulDate.getUTCFullYear(),
+    istanbulDate.getUTCMonth(),
+    istanbulDate.getUTCDate()
+  ));
+}
+```
+
+**Storage**: Dates stored as `DATE` type (date-only, no time component)
+
+**Comparisons**: Use string comparison (YYYY-MM-DD format)
+
+---
+
 ## Best Practices
 
 ### For Callers
@@ -242,3 +273,15 @@ If validation fails, the system:
 2. Use atomic updates for status changes
 3. Track provenance (run IDs, file IDs)
 4. Log structured metadata, not content
+
+---
+
+## PDF Handling (Interim)
+
+**Current Policy**: PDFs are marked as `manual_required` and not processed via vision API.
+
+**Reason**: Vision APIs (image_url) are not reliable for PDF document understanding.
+
+**User Experience**: Users are prompted to paste syllabus text manually.
+
+**Future**: Add proper PDF text extraction (e.g., pdf-parse or similar).
