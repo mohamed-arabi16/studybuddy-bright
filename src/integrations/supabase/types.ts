@@ -137,6 +137,7 @@ export type Database = {
           extraction_metadata: Json | null
           extraction_method: string | null
           extraction_quality: string | null
+          extraction_run_id: string | null
           extraction_status: string
           file_name: string
           file_path: string
@@ -154,6 +155,7 @@ export type Database = {
           extraction_metadata?: Json | null
           extraction_method?: string | null
           extraction_quality?: string | null
+          extraction_run_id?: string | null
           extraction_status?: string
           file_name: string
           file_path: string
@@ -171,6 +173,7 @@ export type Database = {
           extraction_metadata?: Json | null
           extraction_method?: string | null
           extraction_quality?: string | null
+          extraction_run_id?: string | null
           extraction_status?: string
           file_name?: string
           file_path?: string
@@ -489,6 +492,7 @@ export type Database = {
           is_review: boolean | null
           order_index: number
           plan_day_id: string
+          topic_extraction_run_id: string | null
           topic_id: string | null
           user_id: string
         }
@@ -502,6 +506,7 @@ export type Database = {
           is_review?: boolean | null
           order_index?: number
           plan_day_id: string
+          topic_extraction_run_id?: string | null
           topic_id?: string | null
           user_id: string
         }
@@ -515,6 +520,7 @@ export type Database = {
           is_review?: boolean | null
           order_index?: number
           plan_day_id?: string
+          topic_extraction_run_id?: string | null
           topic_id?: string | null
           user_id?: string
         }
@@ -639,15 +645,18 @@ export type Database = {
           difficulty_weight: number | null
           estimated_hours: number | null
           exam_importance: number | null
+          extraction_run_id: string | null
           id: string
           is_completed: boolean | null
           notes: string | null
           order_index: number | null
           prerequisite_ids: string[] | null
           source_context: string | null
+          source_file_id: string | null
           source_page: number | null
           status: string
           title: string
+          topic_key: string | null
           updated_at: string
           user_id: string
         }
@@ -661,15 +670,18 @@ export type Database = {
           difficulty_weight?: number | null
           estimated_hours?: number | null
           exam_importance?: number | null
+          extraction_run_id?: string | null
           id?: string
           is_completed?: boolean | null
           notes?: string | null
           order_index?: number | null
           prerequisite_ids?: string[] | null
           source_context?: string | null
+          source_file_id?: string | null
           source_page?: number | null
           status?: string
           title: string
+          topic_key?: string | null
           updated_at?: string
           user_id: string
         }
@@ -683,15 +695,18 @@ export type Database = {
           difficulty_weight?: number | null
           estimated_hours?: number | null
           exam_importance?: number | null
+          extraction_run_id?: string | null
           id?: string
           is_completed?: boolean | null
           notes?: string | null
           order_index?: number | null
           prerequisite_ids?: string[] | null
           source_context?: string | null
+          source_file_id?: string | null
           source_page?: number | null
           status?: string
           title?: string
+          topic_key?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -701,6 +716,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topics_source_file_id_fkey"
+            columns: ["source_file_id"]
+            isOneToOne: false
+            referencedRelation: "course_files"
             referencedColumns: ["id"]
           },
         ]
