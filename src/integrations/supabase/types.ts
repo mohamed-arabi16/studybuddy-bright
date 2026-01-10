@@ -618,6 +618,7 @@ export type Database = {
       }
       topics: {
         Row: {
+          client_key: string | null
           completed_at: string | null
           confidence_level: string | null
           course_id: string
@@ -639,6 +640,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          client_key?: string | null
           completed_at?: string | null
           confidence_level?: string | null
           course_id: string
@@ -660,6 +662,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          client_key?: string | null
           completed_at?: string | null
           confidence_level?: string | null
           course_id?: string
