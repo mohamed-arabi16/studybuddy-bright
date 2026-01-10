@@ -17,6 +17,7 @@ import { Session } from "@supabase/supabase-js";
 import { UsageIndicator } from "@/components/UsageIndicator";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { useLanguage } from "@/contexts/LanguageContext";
+import studybudyLogo from "@/assets/studybudy-logo.png";
 
 export default function Layout() {
   const navigate = useNavigate();
@@ -113,12 +114,9 @@ export default function Layout() {
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-64 bg-card border-r border-border p-6 space-y-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2 px-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold">
-              Z
-            </div>
-            <span className="text-xl font-bold text-foreground">Zen Study</span>
-          </div>
+          <Link to="/app/dashboard" className="flex items-center gap-2 px-2">
+            <img src={studybudyLogo} alt="StudyBudy" className="h-10 w-auto" />
+          </Link>
         </div>
 
         {/* Language Toggle */}
@@ -176,12 +174,9 @@ export default function Layout() {
       {/* Mobile Header */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden flex items-center justify-between p-4 bg-card border-b border-border">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold">
-              Z
-            </div>
-            <span className="font-bold text-foreground">Zen Study</span>
-          </div>
+          <Link to="/app/dashboard" className="flex items-center gap-2">
+            <img src={studybudyLogo} alt="StudyBudy" className="h-8 w-auto" />
+          </Link>
           <div className="flex items-center gap-2">
             <button
               onClick={toggleLanguage}
@@ -198,7 +193,9 @@ export default function Layout() {
               </SheetTrigger>
               <SheetContent side={language === 'ar' ? 'right' : 'left'} className="w-64 p-6">
                 <div className="flex flex-col h-full space-y-6">
-                  <span className="text-xl font-bold text-foreground px-2">Zen Study</span>
+                  <Link to="/app/dashboard" className="px-2">
+                    <img src={studybudyLogo} alt="StudyBudy" className="h-10 w-auto" />
+                  </Link>
                   <nav className="flex-1 space-y-2">
                     {navItems.map((item) => (
                       <Link

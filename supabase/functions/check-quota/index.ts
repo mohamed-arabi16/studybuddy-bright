@@ -8,13 +8,13 @@ const corsHeaders = {
 
 interface PlanLimits {
   courses: number;
-  topics_per_course: number;
+  topics_total: number;
   ai_extractions: number;
 }
 
 const DEFAULT_LIMITS: PlanLimits = {
-  courses: 1,
-  topics_per_course: 10,
+  courses: 3,
+  topics_total: 50,
   ai_extractions: 3,
 };
 
@@ -129,25 +129,18 @@ serve(async (req) => {
       }
 
       case 'add_topic': {
-        if (!courseId) {
-          return new Response(
-            JSON.stringify({ error: 'courseId required for add_topic action' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        
+        // Check total topics across all courses for the user
         const { count } = await supabase
           .from('topics')
           .select('*', { count: 'exact', head: true })
-          .eq('course_id', courseId)
           .eq('user_id', user.id);
         
         currentUsage = count || 0;
-        limit = limits.topics_per_course;
-        allowed = currentUsage < limit;
+        limit = limits.topics_total;
+        allowed = limit === -1 || currentUsage < limit;
         message = allowed 
-          ? `You can add ${limit - currentUsage} more topic(s) to this course` 
-          : `Topic limit reached (${limit} per course). Upgrade for more topics.`;
+          ? `You can add ${limit === -1 ? 'unlimited' : limit - currentUsage} more topic(s)` 
+          : `Topic limit reached (${limit} total). Upgrade for more topics.`;
         break;
       }
 

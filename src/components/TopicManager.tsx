@@ -33,7 +33,7 @@ export default function TopicManager({ courseId }: { courseId: string }) {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const { checkLimit } = useSubscription();
+  const { checkLimit, usage } = useSubscription();
   const { t, dir } = useLanguage();
 
   // Editing state
@@ -61,7 +61,7 @@ export default function TopicManager({ courseId }: { courseId: string }) {
     fetchTopics();
   }, [courseId]);
 
-  const canAddTopic = checkLimit('topics_per_course', topics.length);
+  const canAddTopic = checkLimit('topics_total', usage.topics);
 
   const handleExtract = async () => {
     if (!inputText.trim()) {

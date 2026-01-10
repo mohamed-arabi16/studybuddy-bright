@@ -317,7 +317,7 @@ const translations: Record<Language, Record<string, string>> = {
     'hours': 'س',
     
     // Dashboard - Welcome (New Users)
-    'welcomeTitle': 'مرحباً بك في Zen Study',
+    'welcomeTitle': 'مرحباً بك في StudyBudy',
     'welcomeSubtitle': 'ابدأ رحلتك الدراسية بإضافة مادتك الأولى. سنساعدك في تنظيم وقتك وتحقيق أهدافك.',
     'howToStart': 'كيف تبدأ؟',
     'addFirstCourseStep': 'أضف مادتك الأولى',
@@ -866,7 +866,7 @@ const translations: Record<Language, Record<string, string>> = {
     'hours': 'h',
     
     // Dashboard - Welcome (New Users)
-    'welcomeTitle': 'Welcome to Zen Study',
+    'welcomeTitle': 'Welcome to StudyBudy',
     'welcomeSubtitle': 'Start your study journey by adding your first course. We\'ll help you organize your time and achieve your goals.',
     'howToStart': 'How to start?',
     'addFirstCourseStep': 'Add your first course',

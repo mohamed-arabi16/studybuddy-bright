@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export type PlanLimits = {
   courses: number;
-  topics_per_course: number;
+  topics_total: number;  // Changed from topics_per_course to total topics
   ai_extractions: number;
 };
 
@@ -13,6 +13,8 @@ export type SubscriptionStatus = {
   limits: PlanLimits;
   usage: {
     courses: number;
+    topics: number;       // Added total topics usage
+    ai_extractions: number; // Added AI extractions usage
   };
   isLoading: boolean;
   isTrial: boolean;
@@ -21,16 +23,17 @@ export type SubscriptionStatus = {
   billingCycle: string | null;
 };
 
+// Updated limits as per requirements: Free: 50 topics, 3 AI | Pro: unlimited, 50 AI
 const FREE_LIMITS: PlanLimits = {
-  courses: 2,
-  topics_per_course: 10,
-  ai_extractions: 3
+  courses: 3,
+  topics_total: 50,     // 50 total topics across all courses
+  ai_extractions: 3     // 3 AI extractions per month
 };
 
 const PRO_LIMITS: PlanLimits = {
-  courses: -1, // unlimited
-  topics_per_course: -1, // unlimited
-  ai_extractions: 50
+  courses: -1,           // unlimited
+  topics_total: -1,      // unlimited
+  ai_extractions: 50     // 50 AI extractions per month
 };
 
 export function useSubscription() {
@@ -38,7 +41,7 @@ export function useSubscription() {
     planName: 'Free',
     status: 'trialing',
     limits: FREE_LIMITS,
-    usage: { courses: 0 },
+    usage: { courses: 0, topics: 0, ai_extractions: 0 },
     isLoading: true,
     isTrial: true,
     isPro: false,
@@ -54,12 +57,32 @@ export function useSubscription() {
         return;
       }
 
-      // Get course count for usage
-      const { count: courseCount } = await supabase
-        .from('courses')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .neq('status', 'archived');
+      // Get usage counts in parallel
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const [coursesResult, topicsResult, aiJobsResult] = await Promise.all([
+        supabase
+          .from('courses')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .neq('status', 'archived'),
+        supabase
+          .from('topics')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id),
+        supabase
+          .from('ai_jobs')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('job_type', 'extract_topics')
+          .gte('created_at', startOfMonth.toISOString())
+      ]);
+
+      const courseCount = coursesResult.count || 0;
+      const topicCount = topicsResult.count || 0;
+      const aiExtractionCount = aiJobsResult.count || 0;
 
       // ALWAYS check admin_overrides first - this takes priority
       const { data: overrideData } = await supabase
@@ -79,7 +102,7 @@ export function useSubscription() {
             planName: 'Pro',
             status: 'active',
             limits: { ...PRO_LIMITS, ...quotaOverrides },
-            usage: { courses: courseCount || 0 },
+            usage: { courses: courseCount, topics: topicCount, ai_extractions: aiExtractionCount },
             isLoading: false,
             isTrial: false,
             isPro: true,
@@ -95,7 +118,7 @@ export function useSubscription() {
           planName: 'Free+',
           status: 'active',
           limits: mergedLimits,
-          usage: { courses: courseCount || 0 },
+          usage: { courses: courseCount, topics: topicCount, ai_extractions: aiExtractionCount },
           isLoading: false,
           isTrial: false,
           isPro: false,
@@ -125,7 +148,7 @@ export function useSubscription() {
           planName: 'Pro',
           status: 'trialing',
           limits: PRO_LIMITS,
-          usage: { courses: courseCount || 0 },
+          usage: { courses: courseCount, topics: topicCount, ai_extractions: aiExtractionCount },
           isLoading: false,
           isTrial: true,
           isPro: true,
@@ -141,7 +164,7 @@ export function useSubscription() {
       if (stripeError) {
         console.error('Error checking Stripe subscription:', stripeError);
         // Fall back to database check
-        await checkDatabaseSubscription(user.id, courseCount || 0);
+        await checkDatabaseSubscription(user.id, courseCount, topicCount, aiExtractionCount);
         return;
       }
 
@@ -152,7 +175,9 @@ export function useSubscription() {
         status: isPro ? 'active' : 'trialing',
         limits: isPro ? PRO_LIMITS : FREE_LIMITS,
         usage: {
-          courses: courseCount || 0,
+          courses: courseCount,
+          topics: topicCount,
+          ai_extractions: aiExtractionCount,
         },
         isLoading: false,
         isTrial: !isPro,
@@ -167,7 +192,7 @@ export function useSubscription() {
     }
   }, []);
 
-  const checkDatabaseSubscription = async (userId: string, courseCount: number) => {
+  const checkDatabaseSubscription = async (userId: string, courseCount: number, topicCount: number, aiExtractionCount: number) => {
     try {
       // Fallback: check database subscription
       const { data: subData } = await supabase
@@ -199,6 +224,8 @@ export function useSubscription() {
         limits,
         usage: {
           courses: courseCount,
+          topics: topicCount,
+          ai_extractions: aiExtractionCount,
         },
         isLoading: false,
         isTrial: subStatus === 'trialing',

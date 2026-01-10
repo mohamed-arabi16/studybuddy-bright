@@ -9,6 +9,7 @@ import { useLanguage, LanguageToggle } from "@/contexts/LanguageContext";
 import { Eye, EyeOff, ArrowLeft, ArrowRight } from "lucide-react";
 import { LiquidGlassCard } from "@/components/ui/LiquidGlassCard";
 import { z } from "zod";
+import studybudyLogo from "@/assets/studybudy-logo.png";
 
 type AuthMode = "signIn" | "signUp" | "reset" | "updatePassword";
 
@@ -251,8 +252,8 @@ export default function Auth() {
 
       <LiquidGlassCard variant="elevated" className="w-full max-w-md p-8 animate-fade-in">
         <div className="text-center mb-8">
-          <Link to="/" className="text-2xl font-semibold inline-block mb-6">
-            Zen Study
+          <Link to="/" className="inline-block mb-6">
+            <img src={studybudyLogo} alt="StudyBudy" className="h-14 mx-auto" />
           </Link>
           <h1 className="text-xl font-medium mb-2">{title}</h1>
           {subtitle ? <p className="text-sm text-muted-foreground">{subtitle}</p> : null}

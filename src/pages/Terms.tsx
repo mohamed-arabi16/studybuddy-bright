@@ -27,8 +27,8 @@ export default function Terms() {
             <h2 className="text-xl font-semibold">{t('termsAcceptance')}</h2>
             <p>
               {language === 'ar' 
-                ? 'باستخدامك لمنصة Zen Study، فإنك توافق على الالتزام بهذه الشروط والأحكام. إذا كنت لا توافق على أي جزء من هذه الشروط، يرجى عدم استخدام المنصة.'
-                : 'By using Zen Study, you agree to be bound by these terms and conditions. If you do not agree to any part of these terms, please do not use the platform.'}
+                ? 'باستخدامك لمنصة StudyBudy، فإنك توافق على الالتزام بهذه الشروط والأحكام. إذا كنت لا توافق على أي جزء من هذه الشروط، يرجى عدم استخدام المنصة.'
+                : 'By using StudyBudy, you agree to be bound by these terms and conditions. If you do not agree to any part of these terms, please do not use the platform.'}
             </p>
           </section>
 
@@ -62,8 +62,8 @@ export default function Terms() {
             <h2 className="text-xl font-semibold">{t('termsIntellectualProperty')}</h2>
             <p>
               {language === 'ar'
-                ? 'جميع المحتويات والعلامات التجارية والملكية الفكرية على المنصة مملوكة لـ Zen Study أو مرخصيها. لا يجوز نسخ أو تعديل أو توزيع أي محتوى دون إذن كتابي مسبق.'
-                : 'All content, trademarks, and intellectual property on the platform are owned by Zen Study or its licensors. No content may be copied, modified, or distributed without prior written permission.'}
+                ? 'جميع المحتويات والعلامات التجارية والملكية الفكرية على المنصة مملوكة لـ StudyBudy أو مرخصيها. لا يجوز نسخ أو تعديل أو توزيع أي محتوى دون إذن كتابي مسبق.'
+                : 'All content, trademarks, and intellectual property on the platform are owned by StudyBudy or its licensors. No content may be copied, modified, or distributed without prior written permission.'}
             </p>
           </section>
 
@@ -107,8 +107,8 @@ export default function Terms() {
             <h2 className="text-xl font-semibold">{t('termsContact')}</h2>
             <p>
               {language === 'ar'
-                ? 'إذا كان لديك أي أسئلة حول هذه الشروط، يرجى التواصل معنا عبر البريد الإلكتروني: support@zenstudy.app'
-                : 'If you have any questions about these terms, please contact us at: support@zenstudy.app'}
+                ? 'إذا كان لديك أي أسئلة حول هذه الشروط، يرجى التواصل معنا عبر البريد الإلكتروني: support@studybudy.app'
+                : 'If you have any questions about these terms, please contact us at: support@studybudy.app'}
             </p>
           </section>
         </div>
