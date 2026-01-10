@@ -8,6 +8,7 @@ import Landing from "./pages/Landing";
 import Schedule from "./pages/Schedule";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import CompleteProfile from "./pages/CompleteProfile";
 import Layout from "./components/Layout";
 import Courses from "./pages/Courses";
 import CourseDetail from "./pages/CourseDetail";
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/" element={<Landing />} />
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/complete-profile" element={<CompleteProfile />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
 

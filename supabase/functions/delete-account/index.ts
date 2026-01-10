@@ -11,6 +11,17 @@ const logStep = (step: string, details?: unknown) => {
   console.log(`[DELETE-ACCOUNT] ${step}${detailsStr}`);
 };
 
+// Simple hash function for user_id anonymization
+const hashUserId = (userId: string): string => {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    const char = userId.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return `anon_${Math.abs(hash).toString(36)}`;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -39,6 +50,91 @@ serve(async (req) => {
 
     const userId = userData.user.id;
     logStep("User authenticated", { userId });
+
+    // ==========================================
+    // STEP 1: Capture usage analytics BEFORE deletion
+    // ==========================================
+    logStep("Capturing usage analytics before deletion");
+
+    // Count courses
+    const { count: coursesCount } = await supabaseAdmin
+      .from('courses')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    // Count topics
+    const { count: topicsCount } = await supabaseAdmin
+      .from('topics')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    // Count AI jobs (extractions)
+    const { count: aiJobsCount } = await supabaseAdmin
+      .from('ai_jobs')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    // Count pomodoro sessions
+    const { count: pomodoroCount } = await supabaseAdmin
+      .from('pomodoro_sessions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    // Get total study minutes from pomodoro sessions
+    const { data: pomodoroData } = await supabaseAdmin
+      .from('pomodoro_sessions')
+      .select('duration_minutes')
+      .eq('user_id', userId);
+    
+    const totalStudyMinutes = pomodoroData?.reduce((acc, p) => acc + (p.duration_minutes || 0), 0) || 0;
+
+    // Get profile info for demographics
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('university, department, created_at')
+      .eq('user_id', userId)
+      .single();
+
+    // Check if user is pro
+    const { data: subscription } = await supabaseAdmin
+      .from('subscriptions')
+      .select('status, plan_id')
+      .eq('user_id', userId)
+      .single();
+
+    const isPro = subscription?.status === 'active' || subscription?.status === 'trialing';
+
+    // Insert analytics record
+    const { error: analyticsError } = await supabaseAdmin.from('usage_analytics').insert({
+      user_hash: hashUserId(userId),
+      total_courses: coursesCount || 0,
+      total_topics: topicsCount || 0,
+      total_ai_extractions: aiJobsCount || 0,
+      total_pomodoro_sessions: pomodoroCount || 0,
+      total_study_minutes: totalStudyMinutes,
+      university: profile?.university || null,
+      department: profile?.department || null,
+      plan_at_deletion: isPro ? 'pro' : 'free',
+      account_created_at: profile?.created_at || null,
+    });
+
+    if (analyticsError) {
+      logStep("Warning: Failed to save usage analytics", { error: analyticsError });
+      // Continue with deletion even if analytics fails
+    } else {
+      logStep("Usage analytics saved", {
+        courses: coursesCount,
+        topics: topicsCount,
+        aiJobs: aiJobsCount,
+        pomodoros: pomodoroCount,
+        studyMinutes: totalStudyMinutes,
+      });
+    }
+
+    // ==========================================
+    // STEP 2: Delete user data in correct order
+    // ==========================================
+    logStep("Deleting user data");
 
     // Delete in correct order to respect foreign key constraints
     

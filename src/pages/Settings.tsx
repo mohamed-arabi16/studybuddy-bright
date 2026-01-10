@@ -25,6 +25,7 @@ export default function Settings() {
   const { planName, isPro, isLoading: subLoading, billingCycle, subscriptionEnd, refresh: refreshSubscription } = useSubscription();
   
   const [profile, setProfile] = useState({
+    full_name: '',
     display_name: '',
     email: '',
     daily_study_hours: 3,
@@ -76,6 +77,7 @@ export default function Settings() {
 
       if (data) {
         setProfile({
+          full_name: data.full_name || '',
           display_name: data.display_name || '',
           email: data.email || user.email || '',
           daily_study_hours: data.daily_study_hours || 3,
@@ -123,7 +125,8 @@ export default function Settings() {
       const { error } = await supabase
         .from('profiles')
         .update({
-          display_name: profile.display_name,
+          full_name: profile.full_name,
+          display_name: profile.display_name || profile.full_name,
           daily_study_hours: profile.daily_study_hours,
           study_days_per_week: profile.study_days_per_week,
           language: profile.language,
@@ -308,6 +311,16 @@ export default function Settings() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="full_name">{t('fullName')}</Label>
+                <Input
+                  id="full_name"
+                  value={profile.full_name}
+                  onChange={(e) => setProfile(p => ({ ...p, full_name: e.target.value }))}
+                  placeholder={t('fullNamePlaceholder')}
+                  dir="auto"
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="display_name">{t('displayName')}</Label>
                 <Input

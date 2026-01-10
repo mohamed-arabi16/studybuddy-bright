@@ -376,10 +376,12 @@ export type Database = {
           department: string | null
           display_name: string | null
           email: string | null
+          full_name: string | null
           id: string
           is_disabled: boolean | null
           language: string | null
           phone_number: string | null
+          profile_completed: boolean | null
           study_days_per_week: number | null
           university: string | null
           updated_at: string
@@ -393,10 +395,12 @@ export type Database = {
           department?: string | null
           display_name?: string | null
           email?: string | null
+          full_name?: string | null
           id?: string
           is_disabled?: boolean | null
           language?: string | null
           phone_number?: string | null
+          profile_completed?: boolean | null
           study_days_per_week?: number | null
           university?: string | null
           updated_at?: string
@@ -410,10 +414,12 @@ export type Database = {
           department?: string | null
           display_name?: string | null
           email?: string | null
+          full_name?: string | null
           id?: string
           is_disabled?: boolean | null
           language?: string | null
           phone_number?: string | null
+          profile_completed?: boolean | null
           study_days_per_week?: number | null
           university?: string | null
           updated_at?: string
@@ -671,6 +677,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      usage_analytics: {
+        Row: {
+          account_created_at: string | null
+          account_deleted_at: string | null
+          created_at: string | null
+          department: string | null
+          id: string
+          plan_at_deletion: string | null
+          total_ai_extractions: number | null
+          total_courses: number | null
+          total_pomodoro_sessions: number | null
+          total_study_minutes: number | null
+          total_topics: number | null
+          university: string | null
+          user_hash: string
+        }
+        Insert: {
+          account_created_at?: string | null
+          account_deleted_at?: string | null
+          created_at?: string | null
+          department?: string | null
+          id?: string
+          plan_at_deletion?: string | null
+          total_ai_extractions?: number | null
+          total_courses?: number | null
+          total_pomodoro_sessions?: number | null
+          total_study_minutes?: number | null
+          total_topics?: number | null
+          university?: string | null
+          user_hash: string
+        }
+        Update: {
+          account_created_at?: string | null
+          account_deleted_at?: string | null
+          created_at?: string | null
+          department?: string | null
+          id?: string
+          plan_at_deletion?: string | null
+          total_ai_extractions?: number | null
+          total_courses?: number | null
+          total_pomodoro_sessions?: number | null
+          total_study_minutes?: number | null
+          total_topics?: number | null
+          university?: string | null
+          user_hash?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

@@ -57,6 +57,16 @@ const translations: Record<Language, Record<string, string>> = {
     'authTagline': 'خطط ذكية مدعومة بالذكاء الاصطناعي لنجاحك الأكاديمي',
     'orContinueWith': 'أو تابع بواسطة',
     'continueWithGoogle': 'المتابعة مع Google',
+    'fullName': 'الاسم الكامل',
+    'fullNameRequired': 'الاسم الكامل مطلوب',
+    'fullNamePlaceholder': 'أدخل اسمك الكامل',
+    'completeYourProfile': 'أكمل ملفك الشخصي',
+    'profileRequiredInfo': 'هذه المعلومات مطلوبة للمتابعة',
+    'saveAndContinue': 'حفظ والمتابعة',
+    'saving': 'جاري الحفظ...',
+    'profileUpdated': 'تم تحديث الملف الشخصي',
+    'verifyEmailFirst': 'يرجى التحقق من بريدك الإلكتروني أولاً',
+    'checkEmailForVerification': 'تحقق من بريدك الإلكتروني وانقر على رابط التحقق للمتابعة',
     
     // Profile Fields
     'phoneNumber': 'رقم الهاتف',
@@ -608,6 +618,16 @@ const translations: Record<Language, Record<string, string>> = {
     'authTagline': 'AI-powered smart study plans for your academic success',
     'orContinueWith': 'or continue with',
     'continueWithGoogle': 'Continue with Google',
+    'fullName': 'Full Name',
+    'fullNameRequired': 'Full name is required',
+    'fullNamePlaceholder': 'Enter your full name',
+    'completeYourProfile': 'Complete Your Profile',
+    'profileRequiredInfo': 'This information is required to continue',
+    'saveAndContinue': 'Save & Continue',
+    'saving': 'Saving...',
+    'profileUpdated': 'Profile updated',
+    'verifyEmailFirst': 'Please verify your email first',
+    'checkEmailForVerification': 'Check your email and click the verification link to continue',
     
     // Profile Fields
     'phoneNumber': 'Phone Number',
