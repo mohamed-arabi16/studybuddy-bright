@@ -55,6 +55,8 @@ const translations: Record<Language, Record<string, string>> = {
     'studySmarter': 'ادرس بذكاء',
     'notHarder': 'وليس بجهد أكبر',
     'authTagline': 'خطط ذكية مدعومة بالذكاء الاصطناعي لنجاحك الأكاديمي',
+    'orContinueWith': 'أو تابع بواسطة',
+    'continueWithGoogle': 'المتابعة مع Google',
     
     // Profile Fields
     'phoneNumber': 'رقم الهاتف',
@@ -604,6 +606,8 @@ const translations: Record<Language, Record<string, string>> = {
     'studySmarter': 'Study Smarter',
     'notHarder': 'Not Harder',
     'authTagline': 'AI-powered smart study plans for your academic success',
+    'orContinueWith': 'or continue with',
+    'continueWithGoogle': 'Continue with Google',
     
     // Profile Fields
     'phoneNumber': 'Phone Number',
