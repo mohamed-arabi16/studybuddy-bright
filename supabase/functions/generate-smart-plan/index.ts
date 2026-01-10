@@ -4,6 +4,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 };
 
 interface Topic {
@@ -15,6 +17,7 @@ interface Topic {
   prerequisite_ids: string[];
   estimated_hours: number;
   description?: string;
+  extraction_run_id?: string;
 }
 
 interface Course {
@@ -34,7 +37,7 @@ interface ScheduledItem {
 }
 
 // ========================
-// TIMEZONE-STABLE DATE UTILITIES
+// TIMEZONE-STABLE DATE UTILITIES (UTC-only)
 // ========================
 
 function getTodayUTC(): Date {
@@ -43,7 +46,6 @@ function getTodayUTC(): Date {
 }
 
 function getDateStr(date: Date): string {
-  // Always use UTC to avoid timezone drift
   return date.toISOString().split('T')[0];
 }
 
@@ -67,7 +69,7 @@ function sanitizeForPrompt(text: string, maxLen = 200): string {
   return text
     .slice(0, maxLen)
     .replace(/[\n\r\t]/g, ' ')
-    .replace(/[<>{}[\]`]/g, '') // Remove potential injection chars
+    .replace(/[<>{}[\]`]/g, '')
     .replace(/ignore\s+previous\s+instructions?/gi, '')
     .replace(/system\s*:/gi, '')
     .trim();
@@ -77,10 +79,63 @@ function sanitizeForPrompt(text: string, maxLen = 200): string {
 // LOGGING
 // ========================
 
-const logStep = (step: string, details?: unknown) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[SMART-PLAN] ${step}${detailsStr}`);
+const log = (step: string, details?: unknown) => {
+  console.log(`[smart-plan] ${step}`, details ? JSON.stringify(details) : '');
 };
+
+// ========================
+// P0: TOPOLOGICAL SORT FOR DAG VALIDATION
+// ========================
+
+interface TopologicalResult {
+  sorted: string[];
+  hasCycles: boolean;
+  cycleTopics: string[];
+}
+
+function topologicalSort(topicIds: string[], prereqMap: Map<string, string[]>): TopologicalResult {
+  const inDegree = new Map<string, number>();
+  const adjacency = new Map<string, string[]>();
+  const topicSet = new Set(topicIds);
+  
+  // Initialize
+  topicIds.forEach(id => {
+    inDegree.set(id, 0);
+    adjacency.set(id, []);
+  });
+  
+  // Build graph
+  topicIds.forEach(id => {
+    const prereqs = prereqMap.get(id) || [];
+    prereqs.filter(p => topicSet.has(p)).forEach(prereq => {
+      adjacency.get(prereq)!.push(id);
+      inDegree.set(id, (inDegree.get(id) || 0) + 1);
+    });
+  });
+  
+  // Kahn's algorithm
+  const queue = topicIds.filter(id => inDegree.get(id) === 0);
+  const sorted: string[] = [];
+  
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    sorted.push(current);
+    
+    for (const neighbor of adjacency.get(current) || []) {
+      inDegree.set(neighbor, inDegree.get(neighbor)! - 1);
+      if (inDegree.get(neighbor) === 0) {
+        queue.push(neighbor);
+      }
+    }
+  }
+  
+  const hasCycles = sorted.length !== topicIds.length;
+  const cycleTopics = hasCycles 
+    ? topicIds.filter(id => !sorted.includes(id))
+    : [];
+  
+  return { sorted, hasCycles, cycleTopics };
+}
 
 // ========================
 // VALIDATION
@@ -94,11 +149,11 @@ interface ValidationResult {
 
 interface ValidationContext {
   availableDates: Set<string>;
-  courseExamDates: Map<string, string>; // courseId -> examDate
+  courseExamDates: Map<string, string>;
   validTopicIds: Set<string>;
   validCourseIds: Set<string>;
-  topicToCourse: Map<string, string>; // topicId -> courseId
-  topicPrerequisites: Map<string, string[]>; // topicId -> prerequisite ids
+  topicToCourse: Map<string, string>;
+  topicPrerequisites: Map<string, string[]>;
   dailyCapacity: number;
 }
 
@@ -113,7 +168,6 @@ function validateSchedule(
   const dailyHours = new Map<string, number>();
   
   for (const item of schedule) {
-    // Skip review items for main validation
     if (item.is_review) continue;
     
     // 1. Validate date is in available dates
@@ -160,7 +214,6 @@ function validateSchedule(
     const itemSchedule = scheduledTopics.get(item.topic_id);
     
     for (const prereqId of prereqs) {
-      // Skip if prereq is not in our topic set (might be already done)
       if (!context.validTopicIds.has(prereqId)) continue;
       
       const prereqSchedule = scheduledTopics.get(prereqId);
@@ -179,18 +232,14 @@ function validateSchedule(
     }
   }
   
-  // Check daily capacity (warnings only, not errors)
+  // Check daily capacity (warnings only)
   for (const [date, hours] of dailyHours) {
     if (hours > context.dailyCapacity * 1.5) {
       warnings.push(`Overloaded day ${date}: ${hours.toFixed(1)} hours (capacity: ${context.dailyCapacity})`);
     }
   }
   
-  return {
-    valid: errors.length === 0,
-    errors,
-    warnings,
-  };
+  return { valid: errors.length === 0, errors, warnings };
 }
 
 // ========================
@@ -272,7 +321,7 @@ serve(async (req) => {
       );
     }
 
-    logStep('User authenticated', { userId: user.id });
+    log('User authenticated', { userId: user.id });
 
     // Get user preferences
     const { data: profile } = await supabase
@@ -284,16 +333,15 @@ serve(async (req) => {
     const dailyStudyHours = profile?.daily_study_hours || 3;
     const studyDaysPerWeek = profile?.study_days_per_week || 7;
     
-    // Derive days off from study_days_per_week if not explicitly set
     let daysOff: string[] = profile?.days_off || [];
     if (daysOff.length === 0 && studyDaysPerWeek < 7) {
       const defaultOff = ['saturday', 'sunday'];
       daysOff = defaultOff.slice(0, 7 - studyDaysPerWeek);
     }
 
-    logStep('User preferences', { dailyStudyHours, studyDaysPerWeek, daysOff });
+    log('User preferences', { dailyStudyHours, studyDaysPerWeek, daysOff });
 
-    // Get all active courses with topics
+    // Get all active courses with topics (including extraction_run_id)
     const { data: courses, error: coursesError } = await supabase
       .from('courses')
       .select(`
@@ -308,7 +356,8 @@ serve(async (req) => {
           status,
           prerequisite_ids,
           estimated_hours,
-          description
+          description,
+          extraction_run_id
         )
       `)
       .eq('user_id', user.id)
@@ -317,7 +366,7 @@ serve(async (req) => {
       .order('exam_date', { ascending: true });
 
     if (coursesError) {
-      logStep('Error fetching courses', { error: coursesError });
+      log('Error fetching courses', { error: coursesError });
       throw new Error('Failed to fetch courses');
     }
 
@@ -328,41 +377,50 @@ serve(async (req) => {
       );
     }
 
-    logStep('Courses fetched', { count: courses.length });
+    log('Courses fetched', { count: courses.length });
 
     // ========================
-    // FIXED: Planning horizon uses LATEST exam (up to 90 days)
+    // PLANNING HORIZON
     // ========================
     const today = getTodayUTC();
     const todayStr = getDateStr(today);
     
-    // Calculate days until each exam
+    // Build topic extraction run ID map for plan versioning
+    const topicExtractionRunIds = new Map<string, string>();
+    
     const courseData = courses.map((course: Course) => {
       const examDate = new Date(course.exam_date);
       const daysUntilExam = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       
-      const allTopics = (course.topics || []).map((t: Topic) => ({
-        id: t.id,
-        title: sanitizeForPrompt(t.title, 100), // Sanitize for prompt
-        difficulty: t.difficulty_weight || 3,
-        importance: t.exam_importance || 3,
-        estimated_hours: t.estimated_hours || 1,
-        prerequisites: t.prerequisite_ids || [],
-        status: t.status,
-      }));
+      const allTopics = (course.topics || []).map((t: Topic) => {
+        // Track extraction run IDs for plan versioning
+        if (t.extraction_run_id) {
+          topicExtractionRunIds.set(t.id, t.extraction_run_id);
+        }
+        
+        return {
+          id: t.id,
+          title: sanitizeForPrompt(t.title, 100),
+          difficulty: t.difficulty_weight || 3,
+          importance: t.exam_importance || 3,
+          estimated_hours: t.estimated_hours || 1,
+          prerequisites: t.prerequisite_ids || [],
+          status: t.status,
+        };
+      });
 
       const pendingTopics = allTopics.filter((t) => t.status !== 'done');
 
       return {
         id: course.id,
-        title: sanitizeForPrompt(course.title, 100), // Sanitize for prompt
+        title: sanitizeForPrompt(course.title, 100),
         exam_date: course.exam_date,
         days_until_exam: daysUntilExam,
         topics: pendingTopics,
         total_topics: allTopics.length,
         completed_topics: allTopics.length - pendingTopics.length,
       };
-    }).filter(c => c.days_until_exam > 0); // Filter out past exams
+    }).filter(c => c.days_until_exam > 0);
 
     if (courseData.length === 0) {
       return new Response(
@@ -371,17 +429,13 @@ serve(async (req) => {
       );
     }
 
-    // FIXED: Use LATEST exam date (capped at 90 days) instead of earliest
+    // Use LATEST exam date (capped at 90 days)
     const latestExamDays = Math.max(...courseData.map(c => c.days_until_exam));
     const planDays = Math.min(latestExamDays, 90);
 
-    logStep('Planning horizon', { 
-      latestExamDays, 
-      planDays,
-      courses: courseData.map(c => ({ title: c.title, daysUntilExam: c.days_until_exam }))
-    });
+    log('Planning horizon', { latestExamDays, planDays });
 
-    // Generate available dates (excluding days off) - up to planDays
+    // Generate available dates (excluding days off)
     const availableDates: string[] = [];
     for (let i = 0; i < planDays; i++) {
       const date = addDays(today, i);
@@ -393,7 +447,6 @@ serve(async (req) => {
       }
     }
 
-    // Create a map of course -> available dates (only dates before that course's exam)
     const courseDateConstraints = courseData.map(c => ({
       courseId: c.id,
       courseTitle: c.title,
@@ -401,18 +454,57 @@ serve(async (req) => {
       availableDates: availableDates.filter(d => d < c.exam_date),
     }));
 
-    logStep('Available dates calculated', { count: availableDates.length });
+    log('Available dates calculated', { count: availableDates.length });
+
+    // ========================
+    // P0: PRE-PLAN DUPLICATE DETECTION
+    // ========================
+    const allPendingTopics = courseData.flatMap(c => c.topics);
+    const topicsByNormalizedTitle = new Map<string, string[]>();
+    
+    for (const topic of allPendingTopics) {
+      const key = `${courseData.find(c => c.topics.includes(topic))?.id}:${topic.title.toLowerCase().trim()}`;
+      if (!topicsByNormalizedTitle.has(key)) {
+        topicsByNormalizedTitle.set(key, []);
+      }
+      topicsByNormalizedTitle.get(key)!.push(topic.id);
+    }
+    
+    const duplicateGroups = Array.from(topicsByNormalizedTitle.entries())
+      .filter(([_, ids]) => ids.length > 1);
+    
+    const duplicateWarnings: string[] = [];
+    if (duplicateGroups.length > 0) {
+      duplicateWarnings.push(`Found ${duplicateGroups.length} duplicate topic groups - using first of each`);
+      log('Duplicate topics detected', { count: duplicateGroups.length });
+    }
+
+    // ========================
+    // P0: DAG VALIDATION WITH TOPOLOGICAL SORT
+    // ========================
+    const prereqMap = new Map<string, string[]>();
+    allPendingTopics.forEach(t => {
+      prereqMap.set(t.id, t.prerequisites);
+    });
+    
+    const topologyResult = topologicalSort(
+      allPendingTopics.map(t => t.id),
+      prereqMap
+    );
+    
+    if (topologyResult.hasCycles) {
+      duplicateWarnings.push(`Prerequisite cycles detected in ${topologyResult.cycleTopics.length} topics - may affect scheduling`);
+      log('Prerequisite cycles detected', { cycleTopics: topologyResult.cycleTopics });
+    }
 
     // ========================
     // FEASIBILITY PRE-CHECK
     // ========================
-    const allPendingTopics = courseData.flatMap(c => c.topics);
     const feasibility = checkFeasibility(allPendingTopics, availableDates.length, dailyStudyHours);
     
-    logStep('Feasibility check', feasibility);
+    log('Feasibility check', feasibility);
     
     if (!feasibility.feasible) {
-      // Return structured error instead of failing silently
       return new Response(
         JSON.stringify({
           error: 'insufficient_time',
@@ -442,12 +534,12 @@ serve(async (req) => {
       validTopicIds: new Set(allPendingTopics.map(t => t.id)),
       validCourseIds: new Set(courseData.map(c => c.id)),
       topicToCourse: new Map(courseData.flatMap(c => c.topics.map(t => [t.id, c.id]))),
-      topicPrerequisites: new Map(allPendingTopics.map(t => [t.id, t.prerequisites])),
+      topicPrerequisites: prereqMap,
       dailyCapacity: dailyStudyHours,
     };
 
     // ========================
-    // BUILD AI PROMPT (Sanitized)
+    // BUILD AI PROMPT
     // ========================
     const systemPrompt = `You are an expert study planner AI. Create an optimal study schedule.
 
@@ -477,7 +569,6 @@ OUTPUT SCHEMA:
   "total_topics_scheduled": number
 }`;
 
-    // Use delimiters and explicit data labeling for prompt injection protection
     const userPrompt = `Create a study schedule with these constraints:
 
 <SCHEDULE_DATA>
@@ -505,7 +596,7 @@ REQUIREMENTS:
 3. ${isOverloaded ? 'Compress study hours to fit time constraint.' : 'Use full estimated hours.'}
 4. Add warnings for overloaded days (>${dailyStudyHours * 1.5} hours)`;
 
-    logStep('Calling AI for scheduling');
+    log('Calling AI for scheduling');
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -524,7 +615,7 @@ REQUIREMENTS:
 
     if (!response.ok) {
       const errorText = await response.text();
-      logStep('AI API error', { status: response.status, error: errorText });
+      log('AI API error', { status: response.status, error: errorText });
       
       if (response.status === 429) {
         return new Response(
@@ -549,7 +640,7 @@ REQUIREMENTS:
       throw new Error('Empty response from AI');
     }
 
-    logStep('AI response received', { length: content.length });
+    log('AI response received', { length: content.length });
 
     // Parse AI response
     let parsed: { 
@@ -565,7 +656,7 @@ REQUIREMENTS:
       
       parsed = JSON.parse(cleanContent.trim());
     } catch (parseError) {
-      logStep('Failed to parse AI response', { error: parseError });
+      log('Failed to parse AI response', { error: parseError });
       throw new Error('AI returned invalid format');
     }
 
@@ -578,17 +669,17 @@ REQUIREMENTS:
     // ========================
     const validation = validateSchedule(parsed.schedule, validationContext);
     
-    logStep('Validation result', { 
+    log('Validation result', { 
       valid: validation.valid, 
       errorCount: validation.errors.length,
       warningCount: validation.warnings.length 
     });
 
     if (!validation.valid) {
-      logStep('Validation errors', validation.errors);
+      log('Validation errors (first 10)', validation.errors.slice(0, 10));
       
-      // Try repair loop: send errors back to AI for correction
-      logStep('Attempting repair loop');
+      // Try repair loop
+      log('Attempting repair loop');
       
       const repairPrompt = `Your previous schedule had validation errors. Please correct and return a valid schedule.
 
@@ -634,24 +725,21 @@ Return ONLY corrected JSON with the same schema.`;
               const repairValidation = validateSchedule(repairedParsed.schedule, validationContext);
               
               if (repairValidation.valid) {
-                logStep('Repair successful');
+                log('Repair successful');
                 parsed = repairedParsed;
               } else {
-                logStep('Repair still has errors, falling back to deterministic');
+                log('Repair still has errors, proceeding with original');
               }
             }
           } catch {
-            logStep('Repair parse failed');
+            log('Repair parse failed');
           }
         }
       }
-      
-      // If still invalid after repair, we'll proceed with what we have
-      // and let the warnings inform the user
     }
 
-    // Add validation warnings to output
-    const allWarnings = [...(parsed.warnings || []), ...validation.warnings];
+    // Combine all warnings
+    const allWarnings = [...duplicateWarnings, ...(parsed.warnings || []), ...validation.warnings];
     if (!validation.valid) {
       allWarnings.push('Schedule may have some issues - please review carefully');
     }
@@ -660,17 +748,14 @@ Return ONLY corrected JSON with the same schema.`;
     const uniqueTopicsScheduled = new Set(parsed.schedule.filter(s => !s.is_review).map(s => s.topic_id)).size;
     const totalTopicsProvided = allPendingTopics.length;
     
-    logStep('Schedule coverage', { 
-      scheduled: uniqueTopicsScheduled, 
-      total: totalTopicsProvided 
-    });
+    log('Schedule coverage', { scheduled: uniqueTopicsScheduled, total: totalTopicsProvided });
 
     if (uniqueTopicsScheduled < totalTopicsProvided) {
       allWarnings.push(`Only ${uniqueTopicsScheduled}/${totalTopicsProvided} topics scheduled`);
     }
 
     // ========================
-    // DATABASE OPERATIONS (with plan versioning)
+    // DATABASE OPERATIONS (with plan versioning and topic extraction tracking)
     // ========================
     
     // Get current max plan version
@@ -719,7 +804,7 @@ Return ONLY corrected JSON with the same schema.`;
         .single();
 
       if (dayError) {
-        logStep('Failed to create plan day', { error: dayError });
+        log('Failed to create plan day', { error: dayError });
         continue;
       }
 
@@ -731,6 +816,7 @@ Return ONLY corrected JSON with the same schema.`;
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         
+        // P0: Track topic extraction version for plan invalidation
         const { error: itemError } = await supabase
           .from('study_plan_items')
           .insert({
@@ -741,7 +827,8 @@ Return ONLY corrected JSON with the same schema.`;
             hours: item.hours || 0.5,
             order_index: i,
             is_completed: false,
-            is_review: item.is_review || false, // Store is_review
+            is_review: item.is_review || false,
+            topic_extraction_run_id: topicExtractionRunIds.get(item.topic_id) || null,
           });
 
         if (!itemError) {
@@ -750,7 +837,7 @@ Return ONLY corrected JSON with the same schema.`;
       }
     }
 
-    logStep('Plan created', { days: totalDays, items: totalItems, version: newPlanVersion });
+    log('Plan created', { days: totalDays, items: totalItems, version: newPlanVersion });
 
     // Create AI job record
     await supabase.from('ai_jobs').insert({
@@ -768,6 +855,8 @@ Return ONLY corrected JSON with the same schema.`;
         topics_scheduled: uniqueTopicsScheduled,
         topics_provided: totalTopicsProvided,
         validation_passed: validation.valid,
+        duplicate_topics_found: duplicateGroups.length,
+        cycles_detected: topologyResult.hasCycles,
       },
     });
 
@@ -786,12 +875,13 @@ Return ONLY corrected JSON with the same schema.`;
         topics_scheduled: uniqueTopicsScheduled,
         topics_provided: totalTopicsProvided,
         validation_passed: validation.valid,
+        cycles_detected: topologyResult.hasCycles,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    logStep('Error', { message: error instanceof Error ? error.message : 'Unknown error' });
+    log('Error', { message: error instanceof Error ? error.message : 'Unknown error' });
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

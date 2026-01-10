@@ -4,6 +4,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 };
 
 interface ExtractedTopic {
@@ -16,7 +18,7 @@ interface ExtractedTopic {
   source_page?: number;
   source_context?: string;
   estimated_hours?: number;
-  prerequisites?: string[]; // Now array of topic_keys instead of titles
+  prerequisites?: string[]; // Array of topic_keys
 }
 
 interface AIResponse {
@@ -29,19 +31,91 @@ interface AIResponse {
 // Free plan topic limit
 const FREE_TOPIC_LIMIT = 50;
 
+// Logging helper
+const log = (step: string, details?: unknown) => {
+  console.log(`[extract-topics] ${step}`, details ? JSON.stringify(details) : '');
+};
+
 // ============= Utility Functions =============
 
 // Head + tail truncation to avoid biasing toward beginning
 function truncateText(text: string, maxLength: number = 30000): string {
   if (text.length <= maxLength) return text;
   
-  const headLength = Math.floor(maxLength * 0.6); // 60% from start
-  const tailLength = maxLength - headLength - 100; // 40% from end, minus separator
+  const headLength = Math.floor(maxLength * 0.6);
+  const tailLength = maxLength - headLength - 100;
   
   const head = text.substring(0, headLength);
   const tail = text.substring(text.length - tailLength);
   
   return `${head}\n\n[... content truncated for brevity ...]\n\n${tail}`;
+}
+
+// ============= P0: CYCLE DETECTION FOR PREREQUISITES =============
+function detectCycles(topics: ExtractedTopic[]): { hasCycles: boolean; cycleInfo?: string[]; cleanedTopics: ExtractedTopic[] } {
+  const keyToIndex = new Map(topics.map((t, i) => [t.topic_key, i]));
+  const visited = new Set<string>();
+  const recursionStack = new Set<string>();
+  const cycles: string[] = [];
+  
+  function dfs(key: string, path: string[]): boolean {
+    if (recursionStack.has(key)) {
+      cycles.push(`Cycle: ${[...path, key].join(' → ')}`);
+      return true;
+    }
+    if (visited.has(key)) return false;
+    
+    visited.add(key);
+    recursionStack.add(key);
+    
+    const idx = keyToIndex.get(key);
+    if (idx !== undefined) {
+      const topic = topics[idx];
+      if (topic.prerequisites) {
+        for (const prereqKey of topic.prerequisites) {
+          if (keyToIndex.has(prereqKey)) {
+            dfs(prereqKey, [...path, key]);
+          }
+        }
+      }
+    }
+    
+    recursionStack.delete(key);
+    return false;
+  }
+  
+  topics.forEach(t => {
+    if (!visited.has(t.topic_key)) {
+      dfs(t.topic_key, []);
+    }
+  });
+
+  // If cycles detected, break them by removing the last edge
+  const cleanedTopics = topics.map(t => {
+    if (!t.prerequisites || t.prerequisites.length === 0) return t;
+    
+    // Remove any prerequisite that would create a cycle
+    const cleanedPrereqs = t.prerequisites.filter(prereqKey => {
+      // Check if prereqKey eventually leads back to t.topic_key
+      const prereqIdx = keyToIndex.get(prereqKey);
+      if (prereqIdx === undefined) return true; // Keep unknown prereqs
+      
+      // Simple check: if prereq has t.topic_key as a prerequisite, remove it
+      const prereqTopic = topics[prereqIdx];
+      if (prereqTopic.prerequisites?.includes(t.topic_key)) {
+        return false; // Remove this edge to break cycle
+      }
+      return true;
+    });
+    
+    return { ...t, prerequisites: cleanedPrereqs };
+  });
+  
+  return { 
+    hasCycles: cycles.length > 0, 
+    cycleInfo: cycles.length > 0 ? cycles : undefined,
+    cleanedTopics 
+  };
 }
 
 // Validate AI response structure and sanitize data
@@ -61,7 +135,7 @@ function validateAIResponse(parsed: any): { valid: boolean; errors: string[]; sa
     // Required fields
     if (!topic.title || typeof topic.title !== 'string' || topic.title.trim() === '') {
       errors.push(`Topic ${index}: missing or empty title`);
-      return; // Skip this topic
+      return;
     }
     
     // Duplicate title detection
@@ -127,7 +201,7 @@ serve(async (req) => {
   let supabase: any = null;
 
   try {
-    const { courseId, text, fileId: inputFileId, mode = 'replace' } = await req.json();
+    const { courseId, text, fileId: inputFileId, mode = 'replace', extractionRunId: inputRunId } = await req.json();
     fileId = inputFileId;
     
     if (!courseId || !text) {
@@ -166,7 +240,6 @@ serve(async (req) => {
     }
 
     // ============= P0: OWNERSHIP VERIFICATION =============
-    // Verify course belongs to the authenticated user
     const { data: course, error: courseErr } = await supabase
       .from('courses')
       .select('id, user_id')
@@ -174,29 +247,44 @@ serve(async (req) => {
       .single();
 
     if (courseErr || !course || course.user_id !== user.id) {
-      console.error('Course ownership check failed:', { courseId, userId: user.id, courseErr });
+      log('Course ownership check failed', { courseId, userId: user.id, courseErr });
       return new Response(
         JSON.stringify({ error: 'Course not found or access denied' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // ============= P0: GET EXTRACTION RUN ID =============
+    let extractionRunId = inputRunId;
+    
     // Verify file belongs to user and course (if fileId provided)
     if (fileId) {
       const { data: file, error: fileErr } = await supabase
         .from('course_files')
-        .select('id, user_id, course_id')
+        .select('id, user_id, course_id, extraction_run_id')
         .eq('id', fileId)
         .single();
 
       if (fileErr || !file || file.user_id !== user.id || file.course_id !== courseId) {
-        console.error('File ownership check failed:', { fileId, userId: user.id, fileErr });
+        log('File ownership check failed', { fileId, userId: user.id, fileErr });
         return new Response(
           JSON.stringify({ error: 'File not found or access denied' }),
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+      
+      // Use file's extraction_run_id if not provided
+      if (!extractionRunId) {
+        extractionRunId = file.extraction_run_id;
+      }
     }
+
+    // Generate new run ID if manual text input (no file)
+    if (!extractionRunId) {
+      extractionRunId = crypto.randomUUID();
+    }
+
+    log('Starting extraction', { courseId, fileId, extractionRunId, mode });
 
     // Check if user has admin override (Pro override)
     const { data: override } = await supabase
@@ -222,7 +310,7 @@ serve(async (req) => {
     }
 
     // ============= P1: PRE-COMPUTE QUOTA =============
-    let maxTopicsToExtract = 30; // Default for Pro
+    let maxTopicsToExtract = 30;
     let currentTopicCount = 0;
 
     if (!isPro) {
@@ -258,13 +346,13 @@ serve(async (req) => {
         .eq('user_id', user.id);
       
       if (deleteError) {
-        console.error('Failed to delete existing topics:', deleteError);
+        log('Failed to delete existing topics', { deleteError });
         throw new Error('Failed to clear existing topics');
       }
-      console.log('Cleared existing topics for course in replace mode');
+      log('Cleared existing topics for course in replace mode');
     }
 
-    // Create AI job record with Unicode-safe hash
+    // Create AI job record
     async function hashText(text: string): Promise<string> {
       const encoder = new TextEncoder();
       const data = encoder.encode(text.substring(0, 500));
@@ -287,12 +375,12 @@ serve(async (req) => {
       .single();
 
     if (jobError) {
-      console.error('Failed to create job:', jobError);
+      log('Failed to create job', { jobError });
       throw new Error('Failed to create AI job');
     }
 
     jobId = job.id;
-    console.log('Created AI job:', jobId);
+    log('Created AI job', { jobId });
 
     // ============= P2: HEAD + TAIL TRUNCATION =============
     const truncatedText = truncateText(text, 30000);
@@ -356,7 +444,7 @@ Extract at most ${maxTopicsToExtract} distinct study topics. Merge duplicates.`;
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI API error:', response.status, errorText);
+      log('AI API error', { status: response.status, error: errorText });
       
       if (response.status === 429) {
         await supabase.from('ai_jobs').update({ 
@@ -380,13 +468,11 @@ Extract at most ${maxTopicsToExtract} distinct study topics. Merge duplicates.`;
       throw new Error('Empty response from AI');
     }
 
-    // ============= P2: REDUCED LOGGING =============
-    console.log('AI response received, parsing...');
+    log('AI response received, parsing...');
 
     // Parse and validate JSON response
     let parsed: AIResponse;
     try {
-      // Remove any markdown code blocks if present
       let cleanContent = content.trim();
       if (cleanContent.startsWith('```json')) {
         cleanContent = cleanContent.slice(7);
@@ -400,7 +486,7 @@ Extract at most ${maxTopicsToExtract} distinct study topics. Merge duplicates.`;
       
       parsed = JSON.parse(cleanContent.trim());
     } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError);
+      log('Failed to parse AI response', { parseError });
       await supabase.from('ai_jobs').update({ 
         status: 'failed', 
         error_message: 'AI returned invalid JSON format' 
@@ -415,10 +501,10 @@ Extract at most ${maxTopicsToExtract} distinct study topics. Merge duplicates.`;
     // ============= P1: COMPREHENSIVE VALIDATION =============
     const validation = validateAIResponse(parsed);
     if (validation.errors.length > 0) {
-      console.warn('AI output validation issues:', validation.errors);
+      log('AI output validation issues', { errors: validation.errors });
     }
 
-    const topicsToExtract = validation.sanitized;
+    let topicsToExtract = validation.sanitized;
 
     if (topicsToExtract.length === 0) {
       await supabase.from('ai_jobs').update({ 
@@ -432,12 +518,21 @@ Extract at most ${maxTopicsToExtract} distinct study topics. Merge duplicates.`;
       );
     }
 
-    // ============= P0: STABLE CLIENT_KEY MAPPING =============
-    // Generate client_keys for stable insertion mapping
+    // ============= P0: CYCLE DETECTION =============
+    const cycleCheck = detectCycles(topicsToExtract);
+    if (cycleCheck.hasCycles) {
+      log('Prerequisite cycles detected and broken', { cycles: cycleCheck.cycleInfo });
+      topicsToExtract = cycleCheck.cleanedTopics;
+    }
+
+    // ============= P0: STABLE CLIENT_KEY MAPPING WITH PROVENANCE =============
     const topicsToInsert = topicsToExtract.map((topic, index) => ({
       client_key: crypto.randomUUID(),
+      topic_key: topic.topic_key, // Store the AI-generated key
       course_id: courseId,
       user_id: user.id,
+      source_file_id: fileId || null, // P0: Track source file
+      extraction_run_id: extractionRunId, // P0: Track extraction run
       title: topic.title,
       difficulty_weight: topic.difficulty_weight,
       exam_importance: topic.exam_importance,
@@ -463,20 +558,18 @@ Extract at most ${maxTopicsToExtract} distinct study topics. Merge duplicates.`;
       .select('id, client_key, title');
 
     if (insertError) {
-      console.error('Failed to insert topics:', insertError);
+      log('Failed to insert topics', { insertError });
       throw new Error('Failed to save extracted topics');
     }
 
-    console.log('Inserted', insertedTopics.length, 'topics');
+    log('Inserted topics', { count: insertedTopics.length });
 
     // ============= P0: STABLE PREREQUISITE MAPPING BY CLIENT_KEY =============
-    // Build map: client_key -> database id
     const clientKeyToDbId = new Map<string, string>();
     insertedTopics.forEach((t: any) => {
       clientKeyToDbId.set(t.client_key, t.id);
     });
 
-    // Also build topic_key -> db id for prerequisite resolution
     const topicKeyToDbId = new Map<string, string>();
     topicsToExtract.forEach((topic, index) => {
       const clientKey = topicsToInsert[index].client_key;
@@ -530,13 +623,14 @@ Extract at most ${maxTopicsToExtract} distinct study topics. Merge duplicates.`;
       result_json: {
         course_title: parsed.course_title,
         needs_review: parsed.needs_review,
-        extracted_topics: topicsToExtract, // What was actually inserted
+        extracted_topics: topicsToExtract,
         questions_for_student: parsed.questions_for_student,
-        // Metadata
         original_topic_count: parsed.extracted_topics?.length || 0,
         inserted_topic_count: insertedTopics.length,
         truncated_due_to_quota: truncatedDueToQuota,
         extraction_mode: mode,
+        extraction_run_id: extractionRunId,
+        cycles_detected: cycleCheck.hasCycles,
         validation_errors: validation.errors.length > 0 ? validation.errors : undefined,
       },
       questions_for_student: parsed.questions_for_student || null,
@@ -549,12 +643,13 @@ Extract at most ${maxTopicsToExtract} distinct study topics. Merge duplicates.`;
       }).eq('id', fileId);
     }
 
-    // ============= P2: REDUCED LOGGING =============
-    console.log('Extraction complete:', {
+    log('Extraction complete', {
       jobId,
       topicsInserted: insertedTopics.length,
       needsReview: parsed.needs_review,
       mode,
+      extractionRunId,
+      cyclesDetected: cycleCheck.hasCycles,
     });
 
     return new Response(
@@ -566,13 +661,15 @@ Extract at most ${maxTopicsToExtract} distinct study topics. Merge duplicates.`;
         questions: parsed.questions_for_student,
         course_title: parsed.course_title,
         mode,
+        extraction_run_id: extractionRunId,
         truncated_due_to_quota: truncatedDueToQuota,
+        cycles_detected: cycleCheck.hasCycles,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('extract-topics error:', error);
+    log('Error', { message: error instanceof Error ? error.message : 'Unknown error' });
     
     // ============= P0: FINALIZE JOB STATUS IN CATCH =============
     if (jobId && supabase) {
@@ -582,7 +679,7 @@ Extract at most ${maxTopicsToExtract} distinct study topics. Merge duplicates.`;
           error_message: error instanceof Error ? error.message : 'Unknown error' 
         }).eq('id', jobId);
       } catch (updateErr) {
-        console.error('Failed to update job status:', updateErr);
+        log('Failed to update job status', { updateErr });
       }
     }
     
@@ -593,7 +690,7 @@ Extract at most ${maxTopicsToExtract} distinct study topics. Merge duplicates.`;
           extraction_status: 'failed'
         }).eq('id', fileId);
       } catch (updateErr) {
-        console.error('Failed to update file status:', updateErr);
+        log('Failed to update file status', { updateErr });
       }
     }
     
