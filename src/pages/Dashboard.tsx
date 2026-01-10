@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Calendar, Sparkles, ArrowRight, ArrowLeft, Plus, GraduationCap, Target, Sun, Moon, Sunset,
-  Lightbulb, ListTodo, TrendingUp
+  Lightbulb, ListTodo, TrendingUp, RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +18,7 @@ import { StudyTipsSection } from '@/components/StudyTipsSection';
 import { supabase } from '@/integrations/supabase/client';
 import { usePlanGeneration } from '@/hooks/usePlanGeneration';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface Course {
   id: string;
@@ -31,7 +32,10 @@ export default function Dashboard() {
   const [firstName, setFirstName] = useState("");
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [calendarConnected, setCalendarConnected] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const { t, dir, language } = useLanguage();
+  const { toast } = useToast();
   
   const { 
     planDays, 
@@ -80,6 +84,14 @@ export default function Dashboard() {
           .order('exam_date', { ascending: true });
 
         setCourses(coursesData || []);
+
+        // Check calendar connection status
+        try {
+          const { data: calendarStatus } = await supabase.functions.invoke('google-calendar-auth/status');
+          setCalendarConnected(calendarStatus?.connected || false);
+        } catch {
+          // Silently fail - calendar not connected
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -98,6 +110,29 @@ export default function Dashboard() {
 
   const greeting = getGreeting();
   const GreetingIcon = greeting.icon;
+
+  const handleQuickSync = async () => {
+    try {
+      setSyncing(true);
+      const { data, error } = await supabase.functions.invoke('sync-calendar');
+      
+      if (error) throw error;
+      
+      toast({
+        title: t('syncSuccess'),
+        description: t('eventsCreated').replace('{count}', String(data.eventsCreated)),
+      });
+    } catch (error) {
+      console.error('Quick sync error:', error);
+      toast({
+        title: t('error'),
+        description: 'Failed to sync calendar',
+        variant: 'destructive',
+      });
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   // Courses with upcoming exams (sorted by date)
   const upcomingExams = courses
@@ -186,12 +221,26 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground">{t('letsStudy')}</p>
           </div>
         </div>
-        <Button asChild className="h-9">
-          <Link to="/app/courses">
-            <Plus className="w-4 h-4 me-2" />
-            {t('newCourse')}
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          {calendarConnected && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-9 gap-2"
+              onClick={handleQuickSync}
+              disabled={syncing}
+            >
+              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+              {t('syncToCalendar')}
+            </Button>
+          )}
+          <Button asChild className="h-9">
+            <Link to="/app/courses">
+              <Plus className="w-4 h-4 me-2" />
+              {t('newCourse')}
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Exam Countdown Cards - Top Priority Section */}
