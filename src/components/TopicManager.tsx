@@ -6,13 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Wand2, Plus, Save, Trash2, CheckCircle, Circle, Clock, FileText, AlertCircle, CheckCircle2, HelpCircle } from "lucide-react";
+import { Loader2, Wand2, Plus, Save, Trash2, CheckCircle, Circle, Clock, FileText, AlertCircle, CheckCircle2, HelpCircle, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLanguage } from "@/contexts/LanguageContext";
 import AddTopicDialog from "./AddTopicDialog";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface Topic {
   id: string;
@@ -33,6 +35,7 @@ export default function TopicManager({ courseId }: { courseId: string }) {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [extractionMode, setExtractionMode] = useState<'replace' | 'append'>('replace');
   const { checkLimit, usage } = useSubscription();
   const { t, dir } = useLanguage();
 
@@ -69,6 +72,14 @@ export default function TopicManager({ courseId }: { courseId: string }) {
       return;
     }
 
+    // Confirm replace mode if topics exist
+    if (extractionMode === 'replace' && topics.length > 0) {
+      const confirmed = window.confirm(
+        `This will replace ${topics.length} existing topic(s). Continue?`
+      );
+      if (!confirmed) return;
+    }
+
     setIsExtracting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -81,6 +92,7 @@ export default function TopicManager({ courseId }: { courseId: string }) {
         body: { 
           courseId,
           text: inputText,
+          mode: extractionMode,
         },
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -89,10 +101,15 @@ export default function TopicManager({ courseId }: { courseId: string }) {
 
       if (response.error) throw new Error(response.error.message);
 
-      toast.success(`${t('topicsExtracted')} (${response.data.topics_count})`);
+      const modeLabel = extractionMode === 'replace' ? 'replaced' : 'added';
+      toast.success(`${response.data.topics_count} topics ${modeLabel}`);
       
       if (response.data.needs_review) {
         toast.info(t('someNeedReview'));
+      }
+
+      if (response.data.truncated_due_to_quota) {
+        toast.warning('Some topics were skipped due to free plan limits');
       }
 
       setInputText("");
@@ -210,6 +227,32 @@ export default function TopicManager({ courseId }: { courseId: string }) {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
             />
+            
+            {/* Extraction Mode Toggle */}
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+              <div className="flex items-center gap-2">
+                <RefreshCw className="w-4 h-4 text-muted-foreground" />
+                <Label htmlFor="extraction-mode" className="text-sm font-medium">
+                  {extractionMode === 'replace' ? 'Replace existing topics' : 'Append to existing topics'}
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Append</span>
+                <Switch
+                  id="extraction-mode"
+                  checked={extractionMode === 'replace'}
+                  onCheckedChange={(checked) => setExtractionMode(checked ? 'replace' : 'append')}
+                />
+                <span className="text-xs text-muted-foreground">Replace</span>
+              </div>
+            </div>
+            
+            {topics.length > 0 && extractionMode === 'replace' && (
+              <p className="text-xs text-amber-600">
+                ⚠️ Replace mode will delete {topics.length} existing topic(s) before extraction
+              </p>
+            )}
+            
             <Button onClick={handleExtract} disabled={isExtracting} className="w-full">
               {isExtracting ? (
                 <>
