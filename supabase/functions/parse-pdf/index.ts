@@ -16,7 +16,7 @@ const log = (step: string, details?: unknown) => {
   console.log(`[parse-pdf] ${step}`, details ? JSON.stringify(details) : '');
 };
 
-Deno.serve(async (req) => {
+serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -69,8 +69,7 @@ Deno.serve(async (req) => {
 
     log("Processing file", { fileId, userId: user.id });
 
-    // ============= P0: ATOMIC LOCKING =============
-    // Get file record and atomically lock it
+    // ============= GET FILE RECORD =============
     const { data: fileRecord, error: fileError } = await supabase
       .from("course_files")
       .select("*")
@@ -89,7 +88,6 @@ Deno.serve(async (req) => {
     // Check current status - only proceed if status allows
     const allowedStatuses = ['pending', 'failed', 'manual_required', 'empty'];
     if (!allowedStatuses.includes(fileRecord.extraction_status)) {
-      // Already processing or completed
       if (fileRecord.extraction_status === 'extracting') {
         return new Response(
           JSON.stringify({ 
@@ -115,7 +113,7 @@ Deno.serve(async (req) => {
     // Generate new extraction run ID
     const extractionRunId = crypto.randomUUID();
 
-    // P0 FIX: Atomic update with .select() and array length check (not .single() which throws on 0 rows)
+    // Atomic update with lock
     const { data: updatedRecords, error: lockError } = await supabase
       .from("course_files")
       .update({ 
@@ -127,9 +125,8 @@ Deno.serve(async (req) => {
       .in("extraction_status", allowedStatuses)
       .select();
 
-    // Check if any rows were updated (atomic check)
     if (lockError || !updatedRecords || updatedRecords.length === 0) {
-      log("Failed to acquire lock - status may have changed", { lockError });
+      log("Failed to acquire lock", { lockError });
       return new Response(
         JSON.stringify({ 
           message: "Could not start extraction - file may already be processing",
@@ -139,11 +136,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    const updated = updatedRecords[0];
-
     log("Lock acquired", { extractionRunId });
 
-    // ============= P0: FILE SIZE VALIDATION =============
+    // ============= FILE SIZE VALIDATION =============
     const fileSizeBytes = fileRecord.file_size || 0;
     const fileSizeMB = fileSizeBytes / (1024 * 1024);
 
@@ -163,16 +158,16 @@ Deno.serve(async (req) => {
         JSON.stringify({ 
           success: false,
           status: "file_too_large",
-          message: `File too large (${fileSizeMB.toFixed(1)}MB). Maximum: ${MAX_FILE_SIZE_MB}MB. Please paste text manually.`
+          message: `File too large (${fileSizeMB.toFixed(1)}MB). Maximum: ${MAX_FILE_SIZE_MB}MB.`
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // ============= P0: PATH VALIDATION FOR STORAGE =============
+    // ============= PATH VALIDATION =============
     const expectedPathPrefix = `${user.id}/`;
     if (!fileRecord.file_path.startsWith(expectedPathPrefix)) {
-      log("Invalid file path", { filePath: fileRecord.file_path, expectedPrefix: expectedPathPrefix });
+      log("Invalid file path", { filePath: fileRecord.file_path });
       await supabase
         .from("course_files")
         .update({ extraction_status: "failed" })
@@ -181,6 +176,61 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Access denied - invalid file path" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ============= CHECK FILE TYPE =============
+    const mediaType = fileRecord.mime_type || "application/pdf";
+    const isPDF = mediaType === "application/pdf";
+
+    // For PDFs: Client should handle extraction (this is a fallback)
+    // Mark as pending for client-side extraction
+    if (isPDF) {
+      log("PDF detected - expecting client-side extraction", { fileId, mediaType });
+      
+      // Reset to pending for client to handle
+      await supabase
+        .from("course_files")
+        .update({ 
+          extraction_status: "pending",
+          extraction_metadata: {
+            note: "PDF files are extracted client-side using pdf.js",
+            extraction_run_id: extractionRunId,
+          }
+        })
+        .eq("id", fileId);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          status: "pending",
+          message: "PDF ready for client-side extraction",
+          extraction_run_id: extractionRunId,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ============= IMAGE EXTRACTION VIA AI VISION =============
+    const supportedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!supportedImageTypes.includes(mediaType)) {
+      log("Unsupported file format", { fileId, mediaType });
+      
+      await supabase
+        .from("course_files")
+        .update({ 
+          extraction_status: "unsupported_format",
+          extraction_metadata: { unsupported_type: mediaType }
+        })
+        .eq("id", fileId);
+
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          status: "unsupported_format",
+          message: `Unsupported file type: ${mediaType}. Please upload a PDF or image.`,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -195,7 +245,7 @@ Deno.serve(async (req) => {
         .from("course_files")
         .update({ 
           extraction_status: "failed",
-          extraction_metadata: { error: "Failed to download file from storage" }
+          extraction_metadata: { error: "Failed to download file" }
         })
         .eq("id", fileId);
       return new Response(
@@ -204,88 +254,24 @@ Deno.serve(async (req) => {
       );
     }
 
-    log("Downloaded file", { size: fileData.size, type: fileRecord.mime_type });
+    log("Downloaded file", { size: fileData.size, type: mediaType });
 
-    // Convert file to base64 for AI Vision using chunked approach for large files
+    // Convert to base64
     const arrayBuffer = await fileData.arrayBuffer();
-    
-    // Chunked base64 encoding to avoid stack overflow for large files
     function arrayBufferToBase64(buffer: ArrayBuffer): string {
       const bytes = new Uint8Array(buffer);
       let binary = '';
-      const chunkSize = 8192; // Process in 8KB chunks
+      const chunkSize = 8192;
       for (let i = 0; i < bytes.length; i += chunkSize) {
         const chunk = bytes.slice(i, i + chunkSize);
         binary += String.fromCharCode(...chunk);
       }
       return btoa(binary);
     }
-    
     const base64Data = arrayBufferToBase64(arrayBuffer);
-    
-    // Determine media type
-    const mediaType = fileRecord.mime_type || "application/pdf";
-
-    // ============= P0 FIX: STOP USING image_url FOR PDFs =============
-    // PDFs are not reliably handled by vision APIs as images
-    // Mark for manual input until we add proper PDF text extraction
-    const isPDF = mediaType === "application/pdf";
-    
-    if (isPDF) {
-      log("PDF detected - marking for manual input", { fileId, mediaType });
-      
-      await supabase
-        .from("course_files")
-        .update({ 
-          extraction_status: "manual_required",
-          extraction_metadata: {
-            reason: "PDF files require manual text input for reliable extraction",
-            file_type: mediaType,
-            extraction_run_id: extractionRunId,
-          }
-        })
-        .eq("id", fileId);
-
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          status: "manual_required",
-          message: "PDF files currently require manual text input. Please paste your syllabus content in the text field.",
-          extraction_run_id: extractionRunId,
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Only process images with vision API
-    const supportedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!supportedImageTypes.includes(mediaType)) {
-      log("Unsupported file format", { fileId, mediaType });
-      
-      await supabase
-        .from("course_files")
-        .update({ 
-          extraction_status: "unsupported_format",
-          extraction_metadata: { 
-            unsupported_type: mediaType,
-            extraction_run_id: extractionRunId,
-          }
-        })
-        .eq("id", fileId);
-
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          status: "unsupported_format",
-          message: `Unsupported file type: ${mediaType}. Please upload an image or paste text manually.`,
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
 
     log("Calling AI Vision for image", { mediaType, base64Length: base64Data.length });
 
-    // ============= P1: UPDATED PROMPT FOR STRUCTURE/TOPICS =============
     const systemPrompt = `You are a document analyzer for academic course materials.
 Extract the course structure, including:
 1. Course title and description
@@ -300,10 +286,8 @@ RULES:
 - If this appears to be a table of contents, extract all entries
 - Output in a structured format with clear headings
 
-Do not summarize or paraphrase topic names - extract them exactly.
-If text is partially visible or unclear, include it with [unclear] marker.`;
+Do not summarize or paraphrase topic names - extract them exactly.`;
 
-    // Use Gemini's document understanding capability via Lovable AI Gateway (images only)
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -313,10 +297,7 @@ If text is partially visible or unclear, include it with [unclear] marker.`;
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          {
-            role: "system",
-            content: systemPrompt
-          },
+          { role: "system", content: systemPrompt },
           {
             role: "user",
             content: [
@@ -326,9 +307,7 @@ If text is partially visible or unclear, include it with [unclear] marker.`;
               },
               {
                 type: "image_url",
-                image_url: {
-                  url: `data:${mediaType};base64,${base64Data}`
-                }
+                image_url: { url: `data:${mediaType};base64,${base64Data}` }
               }
             ]
           }
@@ -340,45 +319,29 @@ If text is partially visible or unclear, include it with [unclear] marker.`;
       const errorText = await aiResponse.text();
       log("AI Vision error", { status: aiResponse.status, error: errorText });
       
-      // Categorize error
-      let extractionStatus = "failed";
-      let errorMessage = "AI extraction failed";
-      
-      if (aiResponse.status === 429) {
-        extractionStatus = "rate_limited";
-        errorMessage = "Rate limit exceeded. Please try again later.";
-      } else if (aiResponse.status === 402) {
-        extractionStatus = "failed";
-        errorMessage = "AI credits exhausted.";
-      }
-      
-      await supabase
-        .from("course_files")
-        .update({ 
-          extraction_status: extractionStatus === "rate_limited" ? "failed" : "manual_required",
-          extraction_metadata: { error: errorMessage, ai_status: aiResponse.status }
-        })
-        .eq("id", fileId);
-
       if (aiResponse.status === 429) {
         return new Response(
-          JSON.stringify({ error: errorMessage }),
+          JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       
       if (aiResponse.status === 402) {
         return new Response(
-          JSON.stringify({ error: errorMessage }),
+          JSON.stringify({ error: "AI credits exhausted." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Fallback: Mark for manual input
+      await supabase
+        .from("course_files")
+        .update({ extraction_status: "manual_required" })
+        .eq("id", fileId);
+
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: "AI extraction failed. Please paste syllabus text manually.",
+          message: "AI extraction failed. Please paste text manually.",
           status: "manual_required"
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -391,17 +354,12 @@ If text is partially visible or unclear, include it with [unclear] marker.`;
 
     log("AI extraction complete", { characters: extractedText.length, processingTimeMs });
 
-    // ============= P1: DETERMINE EXTRACTION QUALITY =============
+    // Determine quality
     let extractionQuality: 'high' | 'medium' | 'low' | 'failed' = 'medium';
-    if (extractedText.length > 2000) {
-      extractionQuality = 'high';
-    } else if (extractedText.length > 500) {
-      extractionQuality = 'medium';
-    } else if (extractedText.length > 50) {
-      extractionQuality = 'low';
-    } else {
-      extractionQuality = 'failed';
-    }
+    if (extractedText.length > 2000) extractionQuality = 'high';
+    else if (extractedText.length > 500) extractionQuality = 'medium';
+    else if (extractedText.length > 50) extractionQuality = 'low';
+    else extractionQuality = 'failed';
 
     if (!extractedText || extractedText.length < 10) {
       await supabase
@@ -411,55 +369,42 @@ If text is partially visible or unclear, include it with [unclear] marker.`;
           extracted_text: null,
           extraction_quality: 'failed',
           extraction_method: 'ai_vision',
-          extraction_metadata: {
-            model: 'google/gemini-2.5-flash',
-            processing_time_ms: processingTimeMs,
-            characters_extracted: 0,
-          }
         })
         .eq("id", fileId);
 
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: "Could not extract text from document. The file may be image-based or empty.",
+          message: "Could not extract text from document.",
           status: "empty"
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // ============= SAVE EXTRACTED TEXT WITH METADATA =============
+    // Save extracted text
     await supabase
       .from("course_files")
       .update({ 
         extraction_status: "extracted",
-        extracted_text: extractedText.substring(0, 100000), // Limit to 100k chars
+        extracted_text: extractedText.substring(0, 100000),
         extraction_method: 'ai_vision',
         extraction_quality: extractionQuality,
         extraction_metadata: {
           model: 'google/gemini-2.5-flash',
           characters_extracted: extractedText.length,
           processing_time_ms: processingTimeMs,
-          file_size_bytes: fileSizeBytes,
         }
       })
       .eq("id", fileId);
 
-    log("Saved extracted text", { 
-      fileId, 
-      characters: extractedText.length, 
-      quality: extractionQuality,
-      extractionRunId 
-    });
+    log("Saved extracted text", { fileId, characters: extractedText.length, quality: extractionQuality });
 
-    // ============= P1: DECOUPLED FROM extract-topics =============
-    // Return immediately - client will trigger topic extraction separately
     return new Response(
       JSON.stringify({ 
         success: true, 
         status: "extracted",
-        message: "Text extracted successfully. Click 'Extract Topics' to create topics from this content.",
+        message: "Text extracted successfully.",
         characters: extractedText.length,
         extraction_quality: extractionQuality,
         extraction_run_id: extractionRunId,
@@ -469,9 +414,8 @@ If text is partially visible or unclear, include it with [unclear] marker.`;
 
   } catch (error: unknown) {
     log("Error", { message: error instanceof Error ? error.message : "Unknown error" });
-    const message = error instanceof Error ? error.message : "Internal server error";
     return new Response(
-      JSON.stringify({ error: message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
