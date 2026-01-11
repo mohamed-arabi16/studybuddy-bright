@@ -236,6 +236,10 @@ const translations: Record<Language, Record<string, string>> = {
     'planNotCreated': 'لم يتم إنشاء الخطة لأنه لم يتم إنشاء جدول صالح.',
     'extractionInProgress': 'استخراج المواضيع قيد التنفيذ بالفعل',
     'coursesExcluded': 'تم استبعاد بعض المواد - لا توجد أيام متاحة قبل الامتحان',
+    'confirmDeletePlan': 'هل أنت متأكد من حذف خطة الدراسة؟ لا يمكن التراجع عن هذا.',
+    'planDeleted': 'تم حذف خطة الدراسة بنجاح',
+    'deletePlan': 'حذف الخطة',
+    'deletePlanFailed': 'فشل في حذف الخطة',
     
     // Tips
     'filesTip': 'ارفع ملفات المنهج (PDF) لاستخراج المواضيع تلقائياً',
@@ -819,6 +823,10 @@ const translations: Record<Language, Record<string, string>> = {
     'planNotCreated': 'Plan was not created because no valid schedule could be generated.',
     'extractionInProgress': 'Topic extraction is already in progress',
     'coursesExcluded': 'Some courses were excluded - no available days before exam',
+    'confirmDeletePlan': 'Are you sure you want to delete this study plan? This cannot be undone.',
+    'planDeleted': 'Study plan deleted successfully',
+    'deletePlan': 'Delete Plan',
+    'deletePlanFailed': 'Failed to delete plan',
     
     // Tips
     'filesTip': 'Upload syllabus files (PDF) to extract topics automatically',

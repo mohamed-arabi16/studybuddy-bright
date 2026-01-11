@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { PlanWarningBanner } from "@/components/PlanWarningBanner";
 import { generateAllocation } from "@/lib/allocationEngine";
 import { toast } from "sonner";
-import { Calendar, RefreshCw, Sparkles, Brain } from "lucide-react";
+import { Calendar, RefreshCw, Sparkles, Brain, Trash2, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -28,6 +28,7 @@ export default function AllocationView({ course }: { course: any }) {
   const [allocations, setAllocations] = useState<any[]>([]); // eslint-disable-line @typescript-eslint/no-explicit-any
   const [loading, setLoading] = useState(false);
   const [smartLoading, setSmartLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [hasTopics, setHasTopics] = useState(false);
   const [lastPlanResult, setLastPlanResult] = useState<PlanResult | null>(null);
   const { t, dir } = useLanguage();
@@ -140,8 +141,19 @@ export default function AllocationView({ course }: { course: any }) {
       const data = response.data as PlanResult;
       setLastPlanResult(data);
       
+      // Improved feedback based on actual plan creation
       if (data.warnings && data.warnings.length > 0) {
-        toast.warning(`${t('scheduleWarnings')} (${data.warnings.length})`);
+        // Check if plan was actually created
+        if (data.plan_items > 0) {
+          toast.warning(`${t('scheduleWarnings')} (${data.warnings.length})`, {
+            description: `${t('smartPlanCreated')}: ${data.plan_items} ${t('topicsScheduled')}`,
+            duration: 6000,
+          });
+        } else {
+          toast.error(t('planNotCreated'), {
+            description: data.warnings[0] || t('smartPlanFailed'),
+          });
+        }
       } else {
         toast.success(`${t('smartPlanCreated')}: ${data.plan_days} ${t('daysStudySessions')}`);
       }
@@ -160,6 +172,28 @@ export default function AllocationView({ course }: { course: any }) {
       toast.error(error.message || t('smartPlanFailed'));
     } finally {
       setSmartLoading(false);
+    }
+  };
+
+  const handleDeletePlan = async () => {
+    if (!window.confirm(t('confirmDeletePlan'))) return;
+    
+    setDeleteLoading(true);
+    try {
+      const { error } = await supabase
+        .from("allocations")
+        .delete()
+        .eq("course_id", course.id);
+      
+      if (error) throw error;
+      
+      toast.success(t('planDeleted'));
+      setAllocations([]);
+      setLastPlanResult(null);
+    } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+      toast.error(`${t('deletePlanFailed')}: ${error.message}`);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -221,7 +255,23 @@ export default function AllocationView({ course }: { course: any }) {
 
       {allocations.length > 0 && (
         <div className="space-y-4">
-          <h3 className="font-semibold text-lg">{t('yourPlan')}</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-lg">{t('yourPlan')}</h3>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDeletePlan}
+              disabled={deleteLoading}
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              {deleteLoading ? (
+                <Loader2 className="me-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="me-2 h-4 w-4" />
+              )}
+              {t('deletePlan')}
+            </Button>
+          </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {allocations.map((day) => (
               <Card key={day.id}>
