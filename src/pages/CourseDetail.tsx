@@ -62,7 +62,7 @@ export default function CourseDetail() {
   const [course, setCourse] = useState<Course | null>(null);
   const [files, setFiles] = useState<CourseFile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [extracting, setExtracting] = useState(false);
+  const [extractingFileId, setExtractingFileId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [topicCount, setTopicCount] = useState(0);
@@ -150,8 +150,14 @@ export default function CourseDetail() {
       return;
     }
 
+    // Prevent double-clicks or clicking another file while extracting
+    if (extractingFileId) {
+      toast.warning('Please wait for current extraction to complete');
+      return;
+    }
+
     try {
-      setExtracting(true);
+      setExtractingFileId(file.id);  // Track WHICH file is extracting
       
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
@@ -161,6 +167,7 @@ export default function CourseDetail() {
           courseId: course?.id,
           text: file.extracted_text,
           fileId: file.id,
+          mode: 'append',  // Add to existing topics instead of replacing
         },
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -179,7 +186,7 @@ export default function CourseDetail() {
       console.error("Extract error:", error);
       toast.error(error instanceof Error ? error.message : t('extractFailed'));
     } finally {
-      setExtracting(false);
+      setExtractingFileId(null);
     }
   };
 
@@ -399,10 +406,13 @@ export default function CourseDetail() {
                             <Button
                               size="sm"
                               onClick={() => extractTopicsFromFile(file)}
-                              disabled={extracting || files.some(f => ['pending', 'extracting', 'probing', 'ocr_in_progress'].includes(f.extraction_status))}
+                              disabled={
+                                extractingFileId !== null ||  // Any file is extracting
+                                files.some(f => ['pending', 'extracting', 'probing', 'ocr_in_progress'].includes(f.extraction_status))
+                              }
                               className="gap-2"
                             >
-                              {extracting ? (
+                              {extractingFileId === file.id ? (  // Only show spinner on THIS file
                                 <Loader2 className="w-4 h-4 animate-spin" />
                               ) : (
                                 <Sparkles className="w-4 h-4" />

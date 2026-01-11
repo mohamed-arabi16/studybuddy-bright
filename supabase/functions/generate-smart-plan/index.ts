@@ -960,7 +960,24 @@ Return ONLY corrected JSON with the same schema.`;
                 log('Repair successful');
                 parsed = repairedParsed;
               } else {
-                log('Repair still has errors, proceeding with original');
+                log('Repair still has errors - using fallback scheduler');
+                
+                // Use deterministic fallback that respects exam dates
+                const fallbackSchedule = createFallbackSchedule({
+                  topics: triageTopics,  // triageTopics already has the correct shape
+                  availableDates,
+                  courseExamDates: validationContext.courseExamDates,
+                  topicToCourse: validationContext.topicToCourse,
+                  dailyCapacity: dailyStudyHours,
+                  coverageRatio: Math.max(0.25, feasibility.coverageRatio),
+                });
+                
+                if (fallbackSchedule.length > 0) {
+                  parsed.schedule = fallbackSchedule;
+                  log('Fallback scheduler used after failed repair', { items: fallbackSchedule.length });
+                } else {
+                  log('Fallback also empty, proceeding with original (will be filtered)');
+                }
               }
             }
           } catch {
@@ -1036,6 +1053,39 @@ Return ONLY corrected JSON with the same schema.`;
       );
     }
 
+    // ========================
+    // FINAL VALIDATION GATE - Remove any items scheduled on/after exam date
+    // ========================
+    const preFilterCount = parsed.schedule.length;
+    parsed.schedule = parsed.schedule.filter(item => {
+      const courseId = item.course_id;
+      const examDate = validationContext.courseExamDates.get(courseId);
+      if (!examDate) return true; // No exam date = keep
+      // Item date must be BEFORE exam date (not on or after)
+      return item.date < examDate;
+    });
+    
+    const removedCount = preFilterCount - parsed.schedule.length;
+    if (removedCount > 0) {
+      log('Removed items scheduled on/after exam date', { removed: removedCount, remaining: parsed.schedule.length });
+      allWarnings.push(`Removed ${removedCount} items that would have been scheduled on or after exam dates.`);
+    }
+    
+    // Check if we still have valid items after filtering
+    if (parsed.schedule.length === 0) {
+      log('No valid schedule items remain after exam date filtering');
+      return new Response(
+        JSON.stringify({
+          error: 'plan_not_created',
+          message: 'Could not create a valid schedule - all items would be scheduled on or after exam dates.',
+          warnings: allWarnings,
+          unschedulable_courses: unschedulableCourses,
+          suggestion: 'Check exam dates and available study days. You may need more time before exams.',
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     // ========================
     // DATABASE OPERATIONS (with plan versioning and topic extraction tracking)
     // ========================
