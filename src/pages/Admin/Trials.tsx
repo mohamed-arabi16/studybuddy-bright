@@ -223,14 +223,14 @@ export default function AdminTrials() {
       </div>
 
       <div className="border rounded-lg overflow-x-auto">
-        <Table className="min-w-[750px]">
+        <Table className="min-w-[850px]">
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-56">User</TableHead>
-              <TableHead className="w-36">Original End Date</TableHead>
-              <TableHead className="w-32">Extensions</TableHead>
-              <TableHead className="w-32">Days Remaining</TableHead>
-              <TableHead className="w-56 text-right">Actions</TableHead>
+            <TableRow className="bg-muted/50">
+              <TableHead className="w-60 px-4 py-3">User</TableHead>
+              <TableHead className="w-36 px-4 py-3">Original End Date</TableHead>
+              <TableHead className="w-32 px-4 py-3">Extensions</TableHead>
+              <TableHead className="w-32 px-4 py-3">Days Remaining</TableHead>
+              <TableHead className="w-60 px-4 py-3 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -253,41 +253,47 @@ export default function AdminTrials() {
               </TableRow>
             ) : (
               filteredUsers.map((user) => (
-                <TableRow key={user.user_id}>
-                  <TableCell className="font-medium">{user.email}</TableCell>
-                  <TableCell className="text-muted-foreground">
+                <TableRow key={user.user_id} className="hover:bg-muted/30">
+                  <TableCell className="px-4 py-3">
+                    <span className="font-medium truncate block max-w-[230px]" dir="auto" title={user.email}>
+                      {user.email}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground px-4 py-3 whitespace-nowrap">
                     {new Date(user.trial_end).toLocaleDateString()}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-4 py-3">
                     {user.trial_extension_days > 0 ? (
-                      <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                      <Badge variant="secondary" className="flex items-center gap-1 w-fit whitespace-nowrap">
                         <Plus className="h-3 w-3" />
                         {user.trial_extension_days} days
                       </Badge>
                     ) : (
-                      <span className="text-muted-foreground">-</span>
+                      <span className="text-muted-foreground">—</span>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-4 py-3">
                     <Badge 
                       variant={user.days_remaining <= 3 ? 'destructive' : user.days_remaining <= 7 ? 'secondary' : 'outline'}
-                      className="flex items-center gap-1 w-fit"
+                      className="flex items-center gap-1 w-fit whitespace-nowrap"
                     >
                       <Clock className="h-3 w-3" />
                       {user.days_remaining} days
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button size="sm" variant="outline" onClick={() => extendTrial(user.user_id, 7)}>
-                      +7 Days
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => extendTrial(user.user_id, 30)}>
-                      +30 Days
-                    </Button>
-                    <Button size="sm" variant="destructive" onClick={() => endTrialNow(user.user_id)}>
-                      <XCircle className="h-4 w-4 mr-1" />
-                      End Now
-                    </Button>
+                  <TableCell className="text-right px-4 py-3">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button size="sm" variant="outline" onClick={() => extendTrial(user.user_id, 7)}>
+                        +7 Days
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => extendTrial(user.user_id, 30)}>
+                        +30 Days
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => endTrialNow(user.user_id)}>
+                        <XCircle className="h-4 w-4 mr-1" />
+                        End
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
