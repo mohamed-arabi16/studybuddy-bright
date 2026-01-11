@@ -240,6 +240,12 @@ const translations: Record<Language, Record<string, string>> = {
     'planDeleted': 'تم حذف خطة الدراسة بنجاح',
     'deletePlan': 'حذف الخطة',
     'deletePlanFailed': 'فشل في حذف الخطة',
+    'priorityPlanCreated': 'تم إنشاء خطة الأولويات',
+    'priorityTopicsScheduled': 'مواضيع ذات أولوية عالية مجدولة',
+    'priorityModeActive': 'وضع الأولويات نشط',
+    'priorityModeDesc': 'الوقت غير كافٍ لجميع المواضيع. تم جدولة المواضيع ذات الأولوية العالية. راجع علامة المواضيع للمواضيع المتبقية.',
+    'viewRemainingTopics': 'عرض المواضيع المتبقية في علامة المواضيع',
+    'fallbackSchedulerUsed': 'تم استخدام جدولة احتياطية',
     
     // Tips
     'filesTip': 'ارفع ملفات المنهج (PDF) لاستخراج المواضيع تلقائياً',
@@ -827,6 +833,12 @@ const translations: Record<Language, Record<string, string>> = {
     'planDeleted': 'Study plan deleted successfully',
     'deletePlan': 'Delete Plan',
     'deletePlanFailed': 'Failed to delete plan',
+    'priorityPlanCreated': 'Priority Plan Created',
+    'priorityTopicsScheduled': 'highest-priority topics scheduled',
+    'priorityModeActive': 'Priority Mode Active',
+    'priorityModeDesc': 'Not enough time for all topics. Highest priority topics have been scheduled. Check the Topics tab for remaining topics.',
+    'viewRemainingTopics': 'View remaining topics in Topics tab',
+    'fallbackSchedulerUsed': 'Fallback scheduler was used',
     
     // Tips
     'filesTip': 'Upload syllabus files (PDF) to extract topics automatically',
