@@ -570,6 +570,25 @@ const translations: Record<Language, Record<string, string>> = {
     'deleteFileFailed': 'فشل في حذف الملف',
     'topicQuotaReached': 'تم الوصول إلى حد الموضوعات',
     'upgradeForMoreTopics': 'قم بالترقية إلى Pro للحصول على موضوعات غير محدودة',
+    
+    // Upload race condition
+    'waitForUploadsToFinish': 'يرجى الانتظار حتى انتهاء رفع جميع الملفات قبل استخراج المواضيع',
+    
+    // Triage mode warnings
+    'triageModeActive': 'وضع الطوارئ نشط',
+    'triageModeDesc': 'الوقت غير كافٍ لجميع المواضيع. تم جدولة المواضيع ذات الأولوية العالية فقط.',
+    'viewAllTopics': 'عرض جميع المواضيع',
+    'topicsNotScheduled': 'موضوع لم يتم جدولته',
+    
+    // Schedule errors
+    'examDateConflict': 'تعارض تاريخ الامتحان',
+    'noAvailableDays': 'لا توجد أيام متاحة قبل الامتحان',
+    'checkExamDate': 'تحقق من تاريخ الامتحان وإعدادات أيام العطلة',
+    
+    // Admin
+    'proOverride': 'Pro (تجاوز)',
+    'trialActive': 'تجربة نشطة',
+    'trialDaysLeft': 'يوم متبقي',
   },
   en: {
     // Layout
@@ -1131,6 +1150,25 @@ const translations: Record<Language, Record<string, string>> = {
     'deleteFileFailed': 'Failed to delete file',
     'topicQuotaReached': 'Topic limit reached',
     'upgradeForMoreTopics': 'Upgrade to Pro for unlimited topics',
+    
+    // Upload race condition
+    'waitForUploadsToFinish': 'Please wait for all files to finish uploading before extracting topics',
+    
+    // Triage mode warnings
+    'triageModeActive': 'Triage Mode Active',
+    'triageModeDesc': 'Not enough time for all topics. Only highest-priority topics were scheduled.',
+    'viewAllTopics': 'View All Topics',
+    'topicsNotScheduled': 'topics could not be scheduled',
+    
+    // Schedule errors
+    'examDateConflict': 'Exam Date Conflict',
+    'noAvailableDays': 'No available days before exam',
+    'checkExamDate': 'Check exam dates and days off settings',
+    
+    // Admin
+    'proOverride': 'Pro (Override)',
+    'trialActive': 'Trial Active',
+    'trialDaysLeft': 'days left',
   }
 };
 

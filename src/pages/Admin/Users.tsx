@@ -279,18 +279,18 @@ export default function AdminUsers() {
         </div>
       </div>
 
-      <div className="border rounded-lg">
-        <Table>
+      <div className="border rounded-lg overflow-x-auto">
+        <Table className="min-w-[900px]">
           <TableHeader>
             <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>University / Dept</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Plan</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Joined</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="w-48">User</TableHead>
+              <TableHead className="w-32">Contact</TableHead>
+              <TableHead className="w-40">University / Dept</TableHead>
+              <TableHead className="w-20">Role</TableHead>
+              <TableHead className="w-28">Plan</TableHead>
+              <TableHead className="w-20">Status</TableHead>
+              <TableHead className="w-28">Joined</TableHead>
+              <TableHead className="w-32 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
