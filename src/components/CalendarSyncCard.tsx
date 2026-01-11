@@ -41,7 +41,9 @@ export function CalendarSyncCard() {
 
   const fetchConnectionStatus = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('google-calendar-auth/status');
+      const { data, error } = await supabase.functions.invoke('google-calendar-auth', {
+        body: { action: 'status' },
+      });
       
       if (error) throw error;
       
@@ -60,8 +62,8 @@ export function CalendarSyncCard() {
       
       const redirectUri = `${window.location.origin}/settings?calendar_callback=true`;
       
-      const { data, error } = await supabase.functions.invoke('google-calendar-auth/auth-url', {
-        body: { redirectUri },
+      const { data, error } = await supabase.functions.invoke('google-calendar-auth', {
+        body: { action: 'auth-url', redirectUri },
       });
       
       if (error) throw error;
@@ -85,8 +87,8 @@ export function CalendarSyncCard() {
       
       const redirectUri = `${window.location.origin}/settings?calendar_callback=true`;
       
-      const { error } = await supabase.functions.invoke('google-calendar-auth/exchange', {
-        body: { code, redirectUri },
+      const { error } = await supabase.functions.invoke('google-calendar-auth', {
+        body: { action: 'exchange', code, redirectUri },
       });
       
       if (error) throw error;
