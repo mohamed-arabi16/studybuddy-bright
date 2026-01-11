@@ -286,6 +286,42 @@ serve(async (req) => {
 
     log('Starting extraction', { courseId, fileId, extractionRunId, mode });
 
+    // ============= P0: IDEMPOTENCY/LOCKING CHECK =============
+    // Check if there's already a running extract_topics job for this course
+    const { data: runningJob } = await supabase
+      .from('ai_jobs')
+      .select('id, status, created_at')
+      .eq('user_id', user.id)
+      .eq('course_id', courseId)
+      .eq('job_type', 'extract_topics')
+      .eq('status', 'running')
+      .maybeSingle();
+    
+    if (runningJob) {
+      // Check if the job is stale (running for more than 5 minutes)
+      const jobAge = Date.now() - new Date(runningJob.created_at).getTime();
+      const STALE_JOB_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+      
+      if (jobAge < STALE_JOB_TIMEOUT_MS) {
+        log('Extraction already in progress', { existingJobId: runningJob.id });
+        return new Response(
+          JSON.stringify({ 
+            status: 'in_progress',
+            message: 'Topic extraction is already in progress for this course',
+            job_id: runningJob.id 
+          }),
+          { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } else {
+        // Mark stale job as failed
+        log('Found stale running job, marking as failed', { staleJobId: runningJob.id });
+        await supabase.from('ai_jobs').update({ 
+          status: 'failed', 
+          error_message: 'Job timed out' 
+        }).eq('id', runningJob.id);
+      }
+    }
+
     // Check if user has admin override (Pro override)
     const { data: override } = await supabase
       .from('admin_overrides')
