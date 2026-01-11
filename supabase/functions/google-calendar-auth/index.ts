@@ -66,12 +66,12 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const url = new URL(req.url);
-  const path = url.pathname.split('/').pop();
-
   try {
+    const body = await req.json().catch(() => ({}));
+    const action = body.action || 'status';
+
     // Generate OAuth URL for the frontend to redirect to
-    if (path === 'auth-url') {
+    if (action === 'auth-url') {
       const authHeader = req.headers.get('Authorization');
       if (!authHeader?.startsWith('Bearer ')) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
@@ -80,7 +80,7 @@ serve(async (req) => {
         });
       }
 
-      const { redirectUri } = await req.json();
+      const { redirectUri } = body;
       
       const params = new URLSearchParams({
         client_id: GOOGLE_CLIENT_ID,
@@ -99,7 +99,7 @@ serve(async (req) => {
     }
 
     // Exchange authorization code for tokens
-    if (path === 'callback' || path === 'exchange') {
+    if (action === 'callback' || action === 'exchange') {
       const authHeader = req.headers.get('Authorization');
       if (!authHeader?.startsWith('Bearer ')) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
@@ -123,7 +123,7 @@ serve(async (req) => {
       }
 
       const userId = user.id;
-      const { code, redirectUri } = await req.json();
+      const { code, redirectUri } = body;
 
       if (!code || !redirectUri) {
         return new Response(JSON.stringify({ error: 'Missing code or redirectUri' }), { 
@@ -198,7 +198,7 @@ serve(async (req) => {
     }
 
     // Get connection status
-    if (path === 'status') {
+    if (action === 'status') {
       const authHeader = req.headers.get('Authorization');
       if (!authHeader?.startsWith('Bearer ')) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
