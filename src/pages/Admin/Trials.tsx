@@ -222,15 +222,15 @@ export default function AdminTrials() {
         />
       </div>
 
-      <div className="border rounded-lg">
-        <Table>
+      <div className="border rounded-lg overflow-x-auto">
+        <Table className="min-w-[750px]">
           <TableHeader>
             <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Original End Date</TableHead>
-              <TableHead>Extensions</TableHead>
-              <TableHead>Days Remaining</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="w-56">User</TableHead>
+              <TableHead className="w-36">Original End Date</TableHead>
+              <TableHead className="w-32">Extensions</TableHead>
+              <TableHead className="w-32">Days Remaining</TableHead>
+              <TableHead className="w-56 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

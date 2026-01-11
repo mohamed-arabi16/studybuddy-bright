@@ -304,6 +304,16 @@ export default function CourseDetail() {
             <AlertDescription>{t('filesTip')}</AlertDescription>
           </Alert>
 
+          {/* Warning when files are still processing */}
+          {files.some(f => ['pending', 'extracting', 'probing', 'ocr_in_progress'].includes(f.extraction_status)) && (
+            <Alert variant="destructive" className="border-amber-500/50 bg-amber-500/10">
+              <AlertCircle className="h-4 w-4 text-amber-500" />
+              <AlertDescription className="text-amber-700 dark:text-amber-400">
+                {t('waitForUploadsToFinish')}
+              </AlertDescription>
+            </Alert>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle>{t('uploadCourseMaterials')}</CardTitle>
@@ -388,7 +398,7 @@ export default function CourseDetail() {
                             <Button
                               size="sm"
                               onClick={() => extractTopicsFromFile(file)}
-                              disabled={extracting}
+                              disabled={extracting || files.some(f => ['pending', 'extracting', 'probing', 'ocr_in_progress'].includes(f.extraction_status))}
                               className="gap-2"
                             >
                               {extracting ? (

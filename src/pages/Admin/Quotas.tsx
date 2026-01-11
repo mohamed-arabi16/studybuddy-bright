@@ -189,14 +189,14 @@ export default function AdminQuotas() {
         />
       </div>
 
-      <div className="border rounded-lg">
-        <Table>
+      <div className="border rounded-lg overflow-x-auto">
+        <Table className="min-w-[700px]">
           <TableHeader>
             <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Plan Limits</TableHead>
-              <TableHead>Active Override</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="w-64">User</TableHead>
+              <TableHead className="w-48">Plan Limits</TableHead>
+              <TableHead className="w-56">Active Override</TableHead>
+              <TableHead className="w-40 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
