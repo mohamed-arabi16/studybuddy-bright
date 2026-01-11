@@ -233,6 +233,9 @@ const translations: Record<Language, Record<string, string>> = {
     'aiCreditsExhausted': 'نفدت رصيد AI. يرجى إضافة المزيد.',
     'rateLimitExceeded': 'تم تجاوز الحد. حاول لاحقاً.',
     'smartPlanFailed': 'فشل في إنشاء الخطة الذكية',
+    'planNotCreated': 'لم يتم إنشاء الخطة لأنه لم يتم إنشاء جدول صالح.',
+    'extractionInProgress': 'استخراج المواضيع قيد التنفيذ بالفعل',
+    'coursesExcluded': 'تم استبعاد بعض المواد - لا توجد أيام متاحة قبل الامتحان',
     
     // Tips
     'filesTip': 'ارفع ملفات المنهج (PDF) لاستخراج المواضيع تلقائياً',
@@ -813,6 +816,9 @@ const translations: Record<Language, Record<string, string>> = {
     'aiCreditsExhausted': 'AI credits exhausted. Please add more credits.',
     'rateLimitExceeded': 'Rate limit exceeded. Please try again later.',
     'smartPlanFailed': 'Failed to generate smart plan',
+    'planNotCreated': 'Plan was not created because no valid schedule could be generated.',
+    'extractionInProgress': 'Topic extraction is already in progress',
+    'coursesExcluded': 'Some courses were excluded - no available days before exam',
     
     // Tips
     'filesTip': 'Upload syllabus files (PDF) to extract topics automatically',

@@ -490,37 +490,51 @@ serve(async (req) => {
     log('Available dates calculated', { count: availableDates.length });
 
     // ========================
-    // P0: PER-COURSE PREFLIGHT VALIDATION
+    // P0: PER-COURSE PREFLIGHT VALIDATION (EXCLUDE UNSCHEDULABLE COURSES)
+    // Instead of hard-failing, exclude unschedulable courses and continue
     // ========================
-    const courseIssues: string[] = [];
-    for (const constraint of courseDateConstraints) {
-      const course = courseData.find(c => c.id === constraint.courseId);
-      if (course && course.topics.length > 0 && constraint.availableDates.length === 0) {
-        courseIssues.push(`No available dates before exam for course "${constraint.courseTitle}" (exam: ${constraint.examDate}). Exam may be today, in the past, or all days are off.`);
+    const unschedulableCourses: { course_id: string; title: string; reason: string }[] = [];
+    const schedulableCourseData: typeof courseData = [];
+    
+    for (const course of courseData) {
+      const constraint = courseDateConstraints.find(c => c.courseId === course.id);
+      if (course.topics.length > 0 && constraint && constraint.availableDates.length === 0) {
+        unschedulableCourses.push({
+          course_id: course.id,
+          title: course.title,
+          reason: `No available dates before exam (exam: ${constraint.examDate}). Exam may be today, in the past, or all days are off.`,
+        });
+        log('Excluding unschedulable course', { courseId: course.id, title: course.title });
+      } else {
+        schedulableCourseData.push(course);
       }
     }
 
-    if (courseIssues.length > 0) {
-      log('Course date conflicts detected', { issues: courseIssues });
+    // If ALL courses are unschedulable, return error
+    if (schedulableCourseData.length === 0 && unschedulableCourses.length > 0) {
+      log('All courses unschedulable', { issues: unschedulableCourses });
       return new Response(
         JSON.stringify({
           error: 'exam_date_conflict',
-          message: 'Some courses have no schedulable days before exam',
-          details: courseIssues,
+          message: 'No courses have schedulable days before their exams',
+          details: unschedulableCourses,
           suggestion: 'Check exam dates and days off settings. Ensure exams are in the future.',
         }),
         { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    // Use schedulableCourseData from here on
+    const effectiveCourseData = schedulableCourseData;
 
     // ========================
     // P0: PRE-PLAN DUPLICATE DETECTION
     // ========================
-    const allPendingTopics = courseData.flatMap(c => c.topics);
+    const allPendingTopics = effectiveCourseData.flatMap(c => c.topics);
     const topicsByNormalizedTitle = new Map<string, string[]>();
     
     for (const topic of allPendingTopics) {
-      const key = `${courseData.find(c => c.topics.includes(topic))?.id}:${topic.title.toLowerCase().trim()}`;
+      const key = `${effectiveCourseData.find(c => c.topics.includes(topic))?.id}:${topic.title.toLowerCase().trim()}`;
       if (!topicsByNormalizedTitle.has(key)) {
         topicsByNormalizedTitle.set(key, []);
       }
@@ -618,13 +632,21 @@ serve(async (req) => {
     // ========================
     const validationContext: ValidationContext = {
       availableDates: new Set(availableDates),
-      courseExamDates: new Map(courseData.map(c => [c.id, c.exam_date])),
+      courseExamDates: new Map(effectiveCourseData.map(c => [c.id, c.exam_date])),
       validTopicIds: new Set(allPendingTopics.map(t => t.id)),
-      validCourseIds: new Set(courseData.map(c => c.id)),
-      topicToCourse: new Map(courseData.flatMap(c => c.topics.map(t => [t.id, c.id]))),
+      validCourseIds: new Set(effectiveCourseData.map(c => c.id)),
+      topicToCourse: new Map(effectiveCourseData.flatMap(c => c.topics.map(t => [t.id, c.id]))),
       topicPrerequisites: prereqMap,
       dailyCapacity: dailyStudyHours,
     };
+    
+    // Add unschedulable courses warning
+    if (unschedulableCourses.length > 0) {
+      triageWarnings.push(`${unschedulableCourses.length} course(s) excluded: no schedulable days before exam.`);
+      unschedulableCourses.forEach(c => {
+        triageWarnings.push(`  - ${c.title}: ${c.reason}`);
+      });
+    }
 
     // ========================
     // BUILD AI PROMPT
@@ -659,7 +681,7 @@ OUTPUT SCHEMA:
 
     // Build filtered course data for AI prompt (only topics to be scheduled)
     const triageTopicIds = new Set(triageTopics.map(t => t.id));
-    const filteredCourseData = courseData.map(c => ({
+    const filteredCourseData = effectiveCourseData.map(c => ({
       ...c,
       topics: c.topics.filter(t => triageTopicIds.has(t.id)),
     })).filter(c => c.topics.length > 0);
@@ -850,6 +872,24 @@ Return ONLY corrected JSON with the same schema.`;
     }
 
     // ========================
+    // P0: EMPTY SCHEDULE GUARD - Don't delete existing plan if new plan is empty
+    // ========================
+    const nonReviewItems = parsed.schedule.filter(s => !s.is_review);
+    if (nonReviewItems.length === 0) {
+      log('Empty schedule - not deleting existing plan');
+      return new Response(
+        JSON.stringify({
+          error: 'plan_not_created',
+          message: 'No valid schedule could be generated. Existing plan preserved.',
+          warnings: allWarnings,
+          unschedulable_courses: unschedulableCourses,
+          suggestion: 'Check topic prerequisites, exam dates, and available study days',
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ========================
     // DATABASE OPERATIONS (with plan versioning and topic extraction tracking)
     // ========================
     
@@ -982,7 +1022,8 @@ Return ONLY corrected JSON with the same schema.`;
         plan_items: totalItems,
         plan_version: newPlanVersion,
         warnings: allWarnings,
-        courses_included: courseData.length,
+        courses_included: effectiveCourseData.length,
+        unschedulable_courses: unschedulableCourses,
         coverage_ratio: feasibility.coverageRatio,
         total_required_hours: feasibility.totalRequiredHours,
         total_available_hours: feasibility.totalAvailableHours,
