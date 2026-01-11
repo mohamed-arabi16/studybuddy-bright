@@ -87,8 +87,13 @@ export default function Dashboard() {
 
         // Check calendar connection status
         try {
-          const { data: calendarStatus } = await supabase.functions.invoke('google-calendar-auth/status');
-          setCalendarConnected(calendarStatus?.connected || false);
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            const { data: calendarStatus } = await supabase.functions.invoke('google-calendar-auth', {
+              body: { action: 'status' }
+            });
+            setCalendarConnected(calendarStatus?.connected || false);
+          }
         } catch {
           // Silently fail - calendar not connected
         }
