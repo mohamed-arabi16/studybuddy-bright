@@ -41,6 +41,15 @@ export function CalendarSyncCard() {
 
   const fetchConnectionStatus = async () => {
     try {
+      // Ensure we have a valid session before calling the edge function
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.log('No session available for calendar status check');
+        setConnection({ connected: false, autoSync: false });
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('google-calendar-auth', {
         body: { action: 'status' },
       });
