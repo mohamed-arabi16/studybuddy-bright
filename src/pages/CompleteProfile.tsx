@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, User, Building2, GraduationCap, Phone } from "lucide-react";
-import studybudyLogo from "@/assets/studybudy-logo.png";
+
 
 const CompleteProfile = () => {
   const { t, dir } = useLanguage();
@@ -126,8 +126,8 @@ const CompleteProfile = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4" dir={dir}>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16">
-            <img src={studybudyLogo} alt="StudyBudy" className="w-full h-full object-contain" />
+          <div className="mx-auto">
+            <span className="text-2xl font-bold text-foreground">StudyBudy</span>
           </div>
           <CardTitle className="text-2xl">{t("completeYourProfile")}</CardTitle>
           <CardDescription>{t("profileRequiredInfo")}</CardDescription>
