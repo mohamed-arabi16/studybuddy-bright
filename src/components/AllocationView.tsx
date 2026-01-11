@@ -19,8 +19,10 @@ interface PlanResult {
   total_required_hours?: number;
   total_available_hours?: number;
   is_overloaded?: boolean;
+  is_triage_mode?: boolean;
   topics_scheduled?: number;
   topics_provided?: number;
+  topics_unscheduled?: number;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -141,28 +143,40 @@ export default function AllocationView({ course }: { course: any }) {
       const data = response.data as PlanResult;
       setLastPlanResult(data);
       
-      // Improved feedback based on actual plan creation
-      if (data.warnings && data.warnings.length > 0) {
-        // Check if plan was actually created
-        if (data.plan_items > 0) {
-          toast.warning(`${t('scheduleWarnings')} (${data.warnings.length})`, {
-            description: `${t('smartPlanCreated')}: ${data.plan_items} ${t('topicsScheduled')}`,
-            duration: 6000,
+      // Check if this is a priority/triage plan
+      const isPriorityPlan = data.is_triage_mode || 
+        (data.topics_scheduled !== undefined && 
+         data.topics_provided !== undefined && 
+         data.topics_scheduled < data.topics_provided);
+
+      // Determine success based on plan_items (actual scheduled items)
+      if (data.plan_items > 0) {
+        // Plan was created successfully
+        if (isPriorityPlan) {
+          // Priority mode - show distinct message
+          toast.warning(t('priorityPlanCreated'), {
+            description: `${data.topics_scheduled}/${data.topics_provided} ${t('priorityTopicsScheduled')}`,
+            duration: 8000,
+          });
+        } else if (data.warnings && data.warnings.length > 0) {
+          // Normal plan with warnings
+          toast.success(t('smartPlanCreated'), {
+            description: `${data.plan_days} ${t('daysStudySessions')} ${data.warnings.length} ${t('scheduleWarnings')}.`,
           });
         } else {
-          toast.error(t('planNotCreated'), {
-            description: data.warnings[0] || t('smartPlanFailed'),
-          });
+          // Clean success
+          toast.success(`${t('smartPlanCreated')}: ${data.plan_days} ${t('daysStudySessions')}`);
+        }
+        
+        // Show additional info for priority mode
+        if (isPriorityPlan && data.topics_unscheduled && data.topics_unscheduled > 0) {
+          toast.info(t('viewRemainingTopics'), { duration: 6000 });
         }
       } else {
-        toast.success(`${t('smartPlanCreated')}: ${data.plan_days} ${t('daysStudySessions')}`);
-      }
-
-      // Show topics coverage info
-      if (data.topics_scheduled !== undefined && data.topics_provided !== undefined) {
-        if (data.topics_scheduled < data.topics_provided) {
-          toast.info(`${t('topicsCoverage')}: ${data.topics_scheduled}/${data.topics_provided}`);
-        }
+        // No plan created
+        toast.error(t('planNotCreated'), {
+          description: data.warnings?.[0] || t('smartPlanFailed'),
+        });
       }
 
       fetchAllocations();
@@ -199,7 +213,7 @@ export default function AllocationView({ course }: { course: any }) {
 
   return (
     <div className="space-y-6" dir={dir}>
-      {/* Warning Banner for Overloaded Plans */}
+      {/* Warning Banner for Overloaded/Priority Plans */}
       {lastPlanResult && (
         <PlanWarningBanner
           warnings={lastPlanResult.warnings || []}
@@ -207,6 +221,9 @@ export default function AllocationView({ course }: { course: any }) {
           totalRequiredHours={lastPlanResult.total_required_hours}
           totalAvailableHours={lastPlanResult.total_available_hours}
           isOverloaded={lastPlanResult.is_overloaded}
+          isPriorityMode={lastPlanResult.is_triage_mode}
+          topicsScheduled={lastPlanResult.topics_scheduled}
+          topicsProvided={lastPlanResult.topics_provided}
         />
       )}
 
