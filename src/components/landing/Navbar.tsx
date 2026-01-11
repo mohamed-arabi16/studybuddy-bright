@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useLanguage, LanguageToggle } from "@/contexts/LanguageContext";
-import studybudyLogo from "@/assets/studybudy-logo.png";
 
 export const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -29,7 +28,7 @@ export const Navbar = () => {
       <div className="container flex h-16 items-center justify-between px-4">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
-          <img src={studybudyLogo} alt="StudyBudy" className="h-10 w-auto" />
+          <span className="text-xl font-bold text-foreground">StudyBudy</span>
         </Link>
 
         {/* Actions - Simplified */}

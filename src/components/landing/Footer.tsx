@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
-import studybudyLogo from "@/assets/studybudy-logo.png";
 
 export const Footer = () => {
   const { t, dir } = useLanguage();
@@ -11,7 +10,7 @@ export const Footer = () => {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <img src={studybudyLogo} alt="StudyBudy" className="h-8 w-auto" />
+            <span className="text-lg font-bold text-foreground">StudyBudy</span>
           </Link>
 
           {/* Legal Links */}
