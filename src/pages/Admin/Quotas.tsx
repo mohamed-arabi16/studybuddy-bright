@@ -190,13 +190,13 @@ export default function AdminQuotas() {
       </div>
 
       <div className="border rounded-lg overflow-x-auto">
-        <Table className="min-w-[700px]">
+        <Table className="min-w-[800px]">
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-64">User</TableHead>
-              <TableHead className="w-48">Plan Limits</TableHead>
-              <TableHead className="w-56">Active Override</TableHead>
-              <TableHead className="w-40 text-right">Actions</TableHead>
+            <TableRow className="bg-muted/50">
+              <TableHead className="w-64 px-4 py-3">User</TableHead>
+              <TableHead className="w-52 px-4 py-3">Plan Limits</TableHead>
+              <TableHead className="w-60 px-4 py-3">Active Override</TableHead>
+              <TableHead className="w-44 px-4 py-3 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -217,43 +217,49 @@ export default function AdminQuotas() {
               </TableRow>
             ) : (
               filteredUsers.map((user) => (
-                <TableRow key={user.user_id}>
-                  <TableCell className="font-medium">{user.email}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                      <span>{formatLimit(user.plan_limits?.courses)} courses</span>
+                <TableRow key={user.user_id} className="hover:bg-muted/30">
+                  <TableCell className="px-4 py-3">
+                    <span className="font-medium truncate block max-w-[240px]" dir="auto" title={user.email}>
+                      {user.email}
+                    </span>
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+                      <span className="whitespace-nowrap">{formatLimit(user.plan_limits?.courses)} courses</span>
                       <span>•</span>
-                      <span>{formatLimit(user.plan_limits?.topics_per_course)} topics</span>
+                      <span className="whitespace-nowrap">{formatLimit(user.plan_limits?.topics_per_course)} topics</span>
                       <span>•</span>
-                      <span>{formatLimit(user.plan_limits?.ai_extractions)} AI</span>
+                      <span className="whitespace-nowrap">{formatLimit(user.plan_limits?.ai_extractions)} AI</span>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-4 py-3">
                     {user.quota_overrides ? (
-                      <div className="flex items-center gap-2">
-                        <Badge variant="default" className="flex items-center gap-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="default" className="flex items-center gap-1 whitespace-nowrap">
                           <Crown className="h-3 w-3" />
                           Override Active
                         </Badge>
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">
                           ({formatLimit(user.quota_overrides.courses)} / {formatLimit(user.quota_overrides.topics_per_course)} / {formatLimit(user.quota_overrides.ai_extractions)})
                         </span>
                       </div>
                     ) : (
-                      <span className="text-muted-foreground">-</span>
+                      <span className="text-muted-foreground">—</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => openEdit(user)}>
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Edit
-                    </Button>
-                    {user.quota_overrides && (
-                      <Button variant="ghost" size="sm" onClick={() => clearOverride(user.user_id)}>
-                        <RotateCcw className="h-4 w-4 mr-2" />
-                        Reset
+                  <TableCell className="text-right px-4 py-3">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => openEdit(user)}>
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit
                       </Button>
-                    )}
+                      {user.quota_overrides && (
+                        <Button variant="ghost" size="sm" onClick={() => clearOverride(user.user_id)}>
+                          <RotateCcw className="h-4 w-4 mr-2" />
+                          Reset
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

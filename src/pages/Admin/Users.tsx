@@ -280,17 +280,17 @@ export default function AdminUsers() {
       </div>
 
       <div className="border rounded-lg overflow-x-auto">
-        <Table className="min-w-[900px]">
+        <Table className="min-w-[1000px]">
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-48">User</TableHead>
-              <TableHead className="w-32">Contact</TableHead>
-              <TableHead className="w-40">University / Dept</TableHead>
-              <TableHead className="w-20">Role</TableHead>
-              <TableHead className="w-28">Plan</TableHead>
-              <TableHead className="w-20">Status</TableHead>
-              <TableHead className="w-28">Joined</TableHead>
-              <TableHead className="w-32 text-right">Actions</TableHead>
+            <TableRow className="bg-muted/50">
+              <TableHead className="w-56 px-4 py-3">User</TableHead>
+              <TableHead className="w-32 px-4 py-3">Contact</TableHead>
+              <TableHead className="w-44 px-4 py-3">University / Dept</TableHead>
+              <TableHead className="w-20 px-4 py-3">Role</TableHead>
+              <TableHead className="w-32 px-4 py-3">Plan</TableHead>
+              <TableHead className="w-24 px-4 py-3">Status</TableHead>
+              <TableHead className="w-28 px-4 py-3">Joined</TableHead>
+              <TableHead className="w-36 px-4 py-3 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -315,30 +315,38 @@ export default function AdminUsers() {
               </TableRow>
             ) : (
               filteredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{user.display_name || 'No Name'}</span>
-                      <span className="text-xs text-muted-foreground">{user.email}</span>
+                <TableRow key={user.id} className="hover:bg-muted/30">
+                  <TableCell className="px-4 py-3">
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-medium truncate max-w-[200px]" title={user.display_name || 'No Name'}>
+                        {user.display_name || 'No Name'}
+                      </span>
+                      <span className="text-xs text-muted-foreground truncate max-w-[200px]" title={user.email}>
+                        {user.email}
+                      </span>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-4 py-3">
                     <div className="flex flex-col text-sm">
                       {user.phone_number ? (
-                        <span>{user.phone_number}</span>
+                        <span dir="ltr" className="truncate max-w-[120px]">{user.phone_number}</span>
                       ) : (
-                        <span className="text-muted-foreground">No phone</span>
+                        <span className="text-muted-foreground">—</span>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col text-sm">
-                      <span className="font-medium">{user.university || '—'}</span>
-                      <span className="text-xs text-muted-foreground">{user.department || '—'}</span>
+                  <TableCell className="px-4 py-3">
+                    <div className="flex flex-col text-sm min-w-0">
+                      <span className="font-medium truncate max-w-[160px]" title={user.university || '—'}>
+                        {user.university || '—'}
+                      </span>
+                      <span className="text-xs text-muted-foreground truncate max-w-[160px]" title={user.department || '—'}>
+                        {user.department || '—'}
+                      </span>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <Badge variant={user.role === 'admin' ? 'default' : 'outline'}>
+                  <TableCell className="px-4 py-3">
+                    <Badge variant={user.role === 'admin' ? 'default' : 'outline'} className="whitespace-nowrap">
                       {user.role === 'admin' ? (
                         <span className="flex items-center gap-1">
                           <Shield className="h-3 w-3" /> Admin
@@ -346,25 +354,26 @@ export default function AdminUsers() {
                       ) : 'User'}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <Badge variant={user.has_override ? 'default' : 'secondary'}>
+                      <Badge variant={user.has_override ? 'default' : 'secondary'} className="whitespace-nowrap">
                         {user.has_override && <Crown className="h-3 w-3 mr-1" />}
                         {user.plan_name}
                       </Badge>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-4 py-3">
                     <Badge 
                       variant={user.is_disabled ? 'destructive' : user.subscription_status === 'active' ? 'default' : 'outline'}
+                      className="whitespace-nowrap"
                     >
                       {user.is_disabled ? 'Disabled' : user.subscription_status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
+                  <TableCell className="text-muted-foreground text-sm px-4 py-3 whitespace-nowrap">
                     {new Date(user.created_at).toLocaleDateString()}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
