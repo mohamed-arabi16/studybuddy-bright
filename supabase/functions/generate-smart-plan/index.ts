@@ -1073,9 +1073,19 @@ Return ONLY corrected JSON with the same schema.`;
         .sort()
         .join('|');
       if (sortedIds.length === 0) return crypto.randomUUID();
-      // Simple hash using btoa (for production, use crypto.subtle)
+      
+      // Generate a deterministic UUID from extraction run IDs
+      // Must return valid UUID format: 8-4-4-4-12 hex characters
       try {
-        return btoa(sortedIds).substring(0, 32);
+        const hash = btoa(sortedIds);
+        // Extract only hex-safe characters (0-9, a-f) and pad to 32
+        const hexChars = hash
+          .toLowerCase()
+          .replace(/[^a-f0-9]/g, '')
+          .padEnd(32, '0')
+          .substring(0, 32);
+        // Format as UUID: 8-4-4-4-12
+        return `${hexChars.substring(0, 8)}-${hexChars.substring(8, 12)}-${hexChars.substring(12, 16)}-${hexChars.substring(16, 20)}-${hexChars.substring(20, 32)}`;
       } catch {
         return crypto.randomUUID();
       }
