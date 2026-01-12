@@ -97,6 +97,36 @@ export type Database = {
           },
         ]
       }
+      ai_response_cache: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          input_hash: string
+          model_name: string
+          response_json: Json
+          tokens_used: number | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          input_hash: string
+          model_name: string
+          response_json: Json
+          tokens_used?: number | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          input_hash?: string
+          model_name?: string
+          response_json?: Json
+          tokens_used?: number | null
+        }
+        Relationships: []
+      }
       allocations: {
         Row: {
           course_id: string
