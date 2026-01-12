@@ -154,7 +154,7 @@ serve(async (req) => {
  * Handle subscription created or updated events
  */
 async function handleSubscriptionUpdate(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   subscription: Stripe.Subscription,
   eventId: string
 ) {
@@ -226,7 +226,7 @@ async function handleSubscriptionUpdate(
  * Handle subscription deleted/canceled events
  */
 async function handleSubscriptionDeleted(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   subscription: Stripe.Subscription,
   eventId: string
 ) {
@@ -263,7 +263,7 @@ async function handleSubscriptionDeleted(
  * Handle successful payment
  */
 async function handlePaymentSucceeded(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   invoice: Stripe.Invoice
 ) {
   const customerId = getCustomerId(invoice.customer);
@@ -287,7 +287,7 @@ async function handlePaymentSucceeded(
  * Handle failed payment
  */
 async function handlePaymentFailed(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   invoice: Stripe.Invoice
 ) {
   const customerId = getCustomerId(invoice.customer);
@@ -311,7 +311,7 @@ async function handlePaymentFailed(
  * Handle checkout session completed (new subscription)
  */
 async function handleCheckoutCompleted(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   session: Stripe.Checkout.Session,
   eventId: string
 ) {
