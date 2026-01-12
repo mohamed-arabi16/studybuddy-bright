@@ -8,6 +8,18 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// Helper to extract customer ID from Stripe objects
+function getCustomerId(customer: string | Stripe.Customer | Stripe.DeletedCustomer | null): string | null {
+  if (!customer) return null;
+  return typeof customer === 'string' ? customer : customer.id;
+}
+
+// Helper to extract subscription ID from Stripe objects
+function getSubscriptionId(subscription: string | Stripe.Subscription | null): string | null {
+  if (!subscription) return null;
+  return typeof subscription === 'string' ? subscription : subscription.id;
+}
+
 // Logging helper for structured logs
 const log = (event: string, data?: Record<string, unknown>) => {
   console.log(JSON.stringify({
@@ -146,9 +158,11 @@ async function handleSubscriptionUpdate(
   subscription: Stripe.Subscription,
   eventId: string
 ) {
-  const customerId = typeof subscription.customer === 'string' 
-    ? subscription.customer 
-    : subscription.customer.id;
+  const customerId = getCustomerId(subscription.customer);
+  if (!customerId) {
+    log("missing_customer_id", { subscription_id: subscription.id });
+    return;
+  }
 
   log("processing_subscription_update", {
     subscription_id: subscription.id,
@@ -216,9 +230,11 @@ async function handleSubscriptionDeleted(
   subscription: Stripe.Subscription,
   eventId: string
 ) {
-  const customerId = typeof subscription.customer === 'string' 
-    ? subscription.customer 
-    : subscription.customer.id;
+  const customerId = getCustomerId(subscription.customer);
+  if (!customerId) {
+    log("missing_customer_id", { subscription_id: subscription.id });
+    return;
+  }
 
   log("processing_subscription_deletion", {
     subscription_id: subscription.id,
@@ -250,10 +266,7 @@ async function handlePaymentSucceeded(
   supabase: ReturnType<typeof createClient>,
   invoice: Stripe.Invoice
 ) {
-  const customerId = typeof invoice.customer === 'string' 
-    ? invoice.customer 
-    : invoice.customer?.id;
-
+  const customerId = getCustomerId(invoice.customer);
   if (!customerId) return;
 
   log("payment_succeeded", {
@@ -277,10 +290,7 @@ async function handlePaymentFailed(
   supabase: ReturnType<typeof createClient>,
   invoice: Stripe.Invoice
 ) {
-  const customerId = typeof invoice.customer === 'string' 
-    ? invoice.customer 
-    : invoice.customer?.id;
-
+  const customerId = getCustomerId(invoice.customer);
   if (!customerId) return;
 
   log("payment_failed", {
@@ -306,12 +316,8 @@ async function handleCheckoutCompleted(
   eventId: string
 ) {
   const userId = session.client_reference_id;
-  const customerId = typeof session.customer === 'string' 
-    ? session.customer 
-    : session.customer?.id;
-  const subscriptionId = typeof session.subscription === 'string'
-    ? session.subscription
-    : session.subscription?.id;
+  const customerId = getCustomerId(session.customer);
+  const subscriptionId = getSubscriptionId(session.subscription);
 
   if (!userId || !customerId) {
     log("checkout_missing_data", {

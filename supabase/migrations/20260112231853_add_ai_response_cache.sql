@@ -36,8 +36,9 @@ ALTER TABLE public.ai_response_cache ENABLE ROW LEVEL SECURITY;
 -- No user-level access needed as cache is shared across users
 CREATE POLICY "Service role can manage cache" 
 ON public.ai_response_cache
-USING (true)
-WITH CHECK (true);
+FOR ALL
+USING (auth.role() = 'service_role')
+WITH CHECK (auth.role() = 'service_role');
 
 -- Add comments
 COMMENT ON TABLE public.ai_response_cache IS 'Caches AI API responses to reduce costs. Entries expire based on cache_type.';
