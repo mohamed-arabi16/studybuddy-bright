@@ -8,6 +8,9 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// PostgreSQL error codes
+const PG_UNIQUE_VIOLATION = "23505";
+
 // Helper to extract customer ID from Stripe objects
 function getCustomerId(customer: string | Stripe.Customer | Stripe.DeletedCustomer | null): string | null {
   if (!customer) return null;
@@ -97,6 +100,44 @@ serve(async (req) => {
     log("webhook_received", { event_type: event.type, event_id: event.id });
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // ============= IDEMPOTENCY CHECK =============
+    // Check if we've already processed this webhook event
+    const { data: existingEvent } = await supabase
+      .from("webhook_events")
+      .select("id")
+      .eq("event_id", event.id)
+      .maybeSingle();
+
+    if (existingEvent) {
+      log("duplicate_webhook_skipped", { event_id: event.id });
+      return new Response(
+        JSON.stringify({ received: true, duplicate: true, event_type: event.type }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Record this event to prevent duplicate processing
+    const { error: insertError } = await supabase
+      .from("webhook_events")
+      .insert({
+        event_id: event.id,
+        event_type: event.type,
+        payload: event.data.object,
+      });
+
+    if (insertError) {
+      // If insert fails due to unique constraint, another instance processed it
+      if (insertError.code === PG_UNIQUE_VIOLATION) {
+        log("concurrent_webhook_skipped", { event_id: event.id });
+        return new Response(
+          JSON.stringify({ received: true, duplicate: true, event_type: event.type }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      // Log other errors but continue processing
+      logError("webhook_event_insert_failed", new Error(insertError.message));
+    }
 
     // Handle specific event types
     switch (event.type) {

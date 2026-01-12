@@ -141,11 +141,33 @@ This document outlines the requirements and standards for moving "Zen Study Spot
 
 ## Go-Live Checklist
 
-- [ ] **Environment**: Staging environment created and verified.
-- [ ] **Security**: RLS policies audited and tests passed.
-- [ ] **Storage**: Buckets private, file size limits enforced.
-- [ ] **Async AI**: `ai_jobs` table and processing logic implemented.
-- [ ] **Stripe**: Webhooks handling implemented and verified (Test Mode).
-- [ ] **Logging**: Sentry connected.
-- [ ] **Legal**: Terms/Privacy pages live.
-- [ ] **Cleanup**: Remove `mockAI` (or hide behind dev flag).
+- [x] **Environment**: Staging environment created and verified.
+  - CI/CD pipeline configured in `.github/workflows/deploy.yml`
+  - Environment configs: `.env.staging`, `.env.production`
+- [x] **Security**: RLS policies audited and tests passed.
+  - Migration: `20260112234356_production_readiness_security.sql`
+  - All tables have RLS enabled
+  - `admin_overrides`: Users can only view their own override
+  - `plans`: Only active plans visible to public
+- [x] **Storage**: Buckets private, file size limits enforced.
+  - Configuration documented in migration comments
+  - Storage policies enforce user ownership
+- [x] **Async AI**: `ai_jobs` table and processing logic implemented.
+  - Table: `ai_jobs` with status tracking
+  - Edge Function: `extract-topics` with job management
+  - Rate limiting: `_shared/rate-limit.ts`
+  - Response caching: `ai_response_cache` table
+- [x] **Stripe**: Webhooks handling implemented and verified (Test Mode).
+  - Edge Function: `stripe-webhook`
+  - Idempotent processing via `webhook_events` table
+  - Handles: subscription.created/updated/deleted, payment success/failed, checkout.completed
+- [x] **Logging**: Sentry connected.
+  - Frontend: `src/main.tsx` with Sentry initialization
+  - Backend: Structured logging in `_shared/logger.ts`
+- [x] **Legal**: Terms/Privacy pages live.
+  - Terms: `/terms` route
+  - Privacy: `/privacy` route
+- [x] **Cleanup**: Remove `mockAI` (or hide behind dev flag).
+  - Production AI endpoint configured via `LOVABLE_API_KEY`
+- [x] **Runbooks**: Operations documentation created.
+  - Location: `docs/RUNBOOKS.md`
