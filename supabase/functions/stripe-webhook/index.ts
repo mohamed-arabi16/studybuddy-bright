@@ -8,6 +8,9 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// PostgreSQL error codes
+const PG_UNIQUE_VIOLATION = "23505";
+
 // Helper to extract customer ID from Stripe objects
 function getCustomerId(customer: string | Stripe.Customer | Stripe.DeletedCustomer | null): string | null {
   if (!customer) return null;
@@ -125,7 +128,7 @@ serve(async (req) => {
 
     if (insertError) {
       // If insert fails due to unique constraint, another instance processed it
-      if (insertError.code === "23505") {
+      if (insertError.code === PG_UNIQUE_VIOLATION) {
         log("concurrent_webhook_skipped", { event_id: event.id });
         return new Response(
           JSON.stringify({ received: true, duplicate: true, event_type: event.type }),

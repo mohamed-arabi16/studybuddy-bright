@@ -98,7 +98,7 @@ CREATE OR REPLACE FUNCTION public.sanitize_text(input_text TEXT)
 RETURNS TEXT
 LANGUAGE plpgsql
 IMMUTABLE
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = 'public'
 AS $$
 BEGIN
@@ -107,18 +107,19 @@ BEGIN
     END IF;
     
     -- Replace potentially dangerous characters
+    -- IMPORTANT: & must be replaced FIRST to avoid double-encoding
     RETURN REPLACE(
         REPLACE(
             REPLACE(
                 REPLACE(
-                    REPLACE(input_text, '<', '&lt;'),
-                    '>', '&gt;'
+                    REPLACE(input_text, '&', '&amp;'),
+                    '<', '&lt;'
                 ),
-                '"', '&quot;'
+                '>', '&gt;'
             ),
-            '''', '&#39;'
+            '"', '&quot;'
         ),
-        '&', '&amp;'
+        '''', '&#39;'
     );
 END;
 $$;
