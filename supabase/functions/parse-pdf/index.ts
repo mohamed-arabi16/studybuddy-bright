@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, createRateLimitResponse } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -56,6 +57,13 @@ serve(async (req) => {
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // ============= P0-2: RATE LIMITING =============
+    const rateLimitResult = await checkRateLimit(supabase, user.id, 'parse-pdf');
+    if (!rateLimitResult.allowed) {
+      log("Rate limit exceeded", { userId: user.id });
+      return createRateLimitResponse(rateLimitResult);
     }
 
     const { fileId } = await req.json();
