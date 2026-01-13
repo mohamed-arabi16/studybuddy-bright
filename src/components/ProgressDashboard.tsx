@@ -1,37 +1,20 @@
 import { TrendingUp, BookOpen, Cpu, Workflow } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { schedule } from '@/data/studySchedule';
+import { 
+  calculateSubjectProgress, 
+  calculateOverallProgress, 
+  calculatePercentage,
+  SubjectProgressMap 
+} from '@/lib/progressUtils';
 
 interface ProgressDashboardProps {
   completedTasks: string[];
 }
 
 export function ProgressDashboard({ completedTasks }: ProgressDashboardProps) {
-  const allTasks = schedule.flatMap(day => [
-    ...day.osTasks,
-    ...day.circuitsTasks,
-    ...day.automataTasks,
-  ]);
-  
-  const subjectProgress = {
-    os: { total: 0, completed: 0 },
-    circuits: { total: 0, completed: 0 },
-    automata: { total: 0, completed: 0 },
-  };
-
-  allTasks.forEach(task => {
-    subjectProgress[task.subject].total++;
-    if (completedTasks.includes(task.id)) {
-      subjectProgress[task.subject].completed++;
-    }
-  });
-
-  const totalTasks = allTasks.length;
-  const totalCompleted = completedTasks.filter(id => 
-    allTasks.some(task => task.id === id)
-  ).length;
-  const overallPercentage = totalTasks > 0 ? Math.round((totalCompleted / totalTasks) * 100) : 0;
+  const subjectProgress = calculateSubjectProgress(completedTasks);
+  const { totalTasks, totalCompleted, overallPercentage } = calculateOverallProgress(completedTasks);
 
   const subjectConfig = {
     os: { 
@@ -104,9 +87,9 @@ export function ProgressDashboard({ completedTasks }: ProgressDashboardProps) {
         </GlassCard>
 
         {/* Subject Progress Cards */}
-        {(Object.keys(subjectProgress) as Array<keyof typeof subjectProgress>).map((subject) => {
-          const { total, completed } = subjectProgress[subject];
-          const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+        {(Object.keys(subjectProgress) as Array<keyof SubjectProgressMap>).map((subject) => {
+          const progress = subjectProgress[subject];
+          const percentage = calculatePercentage(progress);
           const config = subjectConfig[subject];
           const Icon = config.icon;
           
@@ -118,7 +101,7 @@ export function ProgressDashboard({ completedTasks }: ProgressDashboardProps) {
                 </div>
                 <div>
                   <h4 className="font-medium text-foreground">{config.name}</h4>
-                  <p className="text-xs text-muted-foreground">{completed}/{total} مهمة</p>
+                  <p className="text-xs text-muted-foreground">{progress.completed}/{progress.total} مهمة</p>
                 </div>
               </div>
               

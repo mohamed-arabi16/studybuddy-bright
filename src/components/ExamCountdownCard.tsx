@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, AlertTriangle, CheckCircle2, Calendar } from 'lucide-react';
+import { Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { LiquidGlassCard } from '@/components/ui/LiquidGlassCard';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { ar } from "date-fns/locale";
+import { TimeLeft, getTimeLeft } from '@/lib/timeUtils';
 
 interface ExamCountdownCardProps {
   course: {
@@ -18,14 +18,6 @@ interface ExamCountdownCardProps {
   isFirst?: boolean;
 }
 
-interface TimeLeft {
-  days: number;
-  hours: number;
-  minutes: number;
-  seconds: number;
-  total: number;
-}
-
 export function ExamCountdownCard({ course, isFirst = false }: ExamCountdownCardProps) {
   const { t, language } = useLanguage();
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0, total: 0 });
@@ -33,23 +25,7 @@ export function ExamCountdownCard({ course, isFirst = false }: ExamCountdownCard
   useEffect(() => {
     if (!course.exam_date) return;
 
-    const calculateTimeLeft = () => {
-      const examDate = new Date(course.exam_date!);
-      const now = new Date();
-      const diff = examDate.getTime() - now.getTime();
-
-      if (diff <= 0) {
-        return { days: 0, hours: 0, minutes: 0, seconds: 0, total: 0 };
-      }
-
-      return {
-        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-        minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
-        seconds: Math.floor((diff % (1000 * 60)) / 1000),
-        total: diff,
-      };
-    };
+    const calculateTimeLeft = () => getTimeLeft(new Date(course.exam_date!));
 
     setTimeLeft(calculateTimeLeft());
     const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 1000);
