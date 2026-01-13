@@ -2,38 +2,7 @@ import { useState, useEffect } from 'react';
 import { Clock, AlertTriangle } from 'lucide-react';
 import { exams } from '@/data/studySchedule';
 import { GlassCard } from '@/components/ui/GlassCard';
-
-interface TimeLeft {
-  days: number;
-  hours: number;
-  minutes: number;
-  seconds: number;
-  total: number;
-}
-
-function getTimeLeft(targetDate: Date): TimeLeft {
-  const difference = targetDate.getTime() - new Date().getTime();
-  
-  if (difference <= 0) {
-    return { days: 0, hours: 0, minutes: 0, seconds: 0, total: 0 };
-  }
-
-  return {
-    days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-    hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-    minutes: Math.floor((difference / 1000 / 60) % 60),
-    seconds: Math.floor((difference / 1000) % 60),
-    total: difference,
-  };
-}
-
-function getUrgencyLevel(days: number, total: number): 'safe' | 'warning' | 'urgent' | 'critical' | 'past' {
-  if (total <= 0) return 'past';
-  if (days < 1) return 'critical';
-  if (days < 2) return 'urgent';
-  if (days < 4) return 'warning';
-  return 'safe';
-}
+import { TimeLeft, getTimeLeft, getUrgencyLevel } from '@/lib/timeUtils';
 
 const urgencyStyles = {
   safe: {
