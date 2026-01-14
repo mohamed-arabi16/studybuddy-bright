@@ -716,7 +716,7 @@ serve(async (req) => {
         total_hours: Array.from(dailySchedule.values()).reduce((s, d) => s + d.hours, 0),
         courses_included: coursesIncluded,
         warnings,
-        // Add feasibility metrics for debugging
+        // Feasibility metrics returned to client for UI display and monitoring
         is_priority_mode: isPriorityMode,
         coverage_ratio: coverageRatio,
         total_required_hours: totalRequiredHours,
