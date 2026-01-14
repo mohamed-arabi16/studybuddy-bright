@@ -429,7 +429,7 @@ serve(async (req) => {
     // ============= P2: HEAD + TAIL TRUNCATION =============
     const truncatedText = truncateText(text, 30000);
 
-    const systemPrompt = `You are an expert educational content analyzer. Your task is to extract study topics from course material with transparency about your confidence.
+    const systemPrompt = `You are an expert educational content analyzer specializing in academic course materials. Your task is to extract study topics with precise difficulty and importance assessments.
 
 CRITICAL INSTRUCTIONS:
 1. Return ONLY valid JSON - no markdown, no code blocks, no extra text
@@ -446,8 +446,8 @@ OUTPUT SCHEMA (return this exact structure):
     {
       "topic_key": "t01", "t02", etc. - unique key for this topic,
       "title": "string - topic name (max 100 chars)",
-      "difficulty_weight": number 1-5 (1=easy, 5=very hard),
-      "exam_importance": number 1-5 (1=rarely tested, 5=always tested),
+      "difficulty_weight": number 1-5,
+      "exam_importance": number 1-5,
       "confidence_level": "high" | "medium" | "low",
       "source_page": number or null,
       "source_context": "string - brief quote (max 50 chars)",
@@ -459,6 +459,41 @@ OUTPUT SCHEMA (return this exact structure):
   "questions_for_student": ["optional array of clarifying questions if needs_review is true"]
 }
 
+DIFFICULTY WEIGHT ASSESSMENT (1-5):
+Use these heuristics to determine difficulty:
+- 1 (Very Easy): Basic definitions, introductory concepts, review material
+- 2 (Easy): Simple applications, straightforward procedures, single-step processes
+- 3 (Medium): Multi-step problems, moderate abstraction, connecting concepts
+- 4 (Hard): Complex analysis, mathematical proofs, advanced applications, synthesis
+- 5 (Very Hard): Expert-level content, cutting-edge topics, complex derivations
+
+DIFFICULTY INDICATORS:
+- Mathematical formulas/equations: +1-2 difficulty
+- Abstract concepts without concrete examples: +1 difficulty
+- Multiple prerequisite topics required: +1 difficulty
+- Technical terminology density: +1 difficulty
+- Conceptual (memorization only): -1 difficulty
+
+EXAM IMPORTANCE ASSESSMENT (1-5):
+- 1 (Rarely tested): Supplementary material, historical context, "nice to know"
+- 2 (Occasionally tested): Enrichment topics, minor concepts
+- 3 (Moderately tested): Standard curriculum topics, foundational knowledge
+- 4 (Frequently tested): Core concepts, commonly examined material
+- 5 (Always tested): Fundamental principles, exam staples, key learning objectives
+
+EXAM IMPORTANCE INDICATORS:
+- Listed in learning objectives: +2 importance
+- Appears in chapter summary: +1 importance
+- Has practice problems/exercises: +1 importance
+- Mentioned multiple times: +1 importance
+- Marked as "key concept" or similar: +2 importance
+- Introduction/historical only: -1 importance
+
+ESTIMATED HOURS GUIDELINES:
+- Base hours = 0.5 + (difficulty_weight * 0.3) + (importance * 0.2)
+- Add 0.5 hours if has multiple prerequisites
+- Cap between 0.5 and 5 hours
+
 CONFIDENCE GUIDELINES:
 - "high": Topic is explicitly stated as a chapter, section, or clearly defined study unit
 - "medium": Topic is mentioned but requires inference about its importance
@@ -467,6 +502,7 @@ CONFIDENCE GUIDELINES:
 PREREQUISITE GUIDELINES:
 - Use topic_keys (t01, t02, etc.) NOT topic titles for prerequisites
 - Only reference topics that appear earlier in your extracted_topics array
+- Identify logical dependencies: Can't understand B without understanding A
 - Leave empty array [] if topic has no prerequisites
 
 Extract at most ${maxTopicsToExtract} distinct study topics. Merge duplicates.`;

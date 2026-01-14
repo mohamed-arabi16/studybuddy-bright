@@ -94,17 +94,79 @@ serve(async (req) => {
 
     console.log(`Analyzing topic: "${title}" for user ${user.id}${courseContext ? ` (${courseContext})` : ''}`);
 
-    // P1 Fix: Updated system prompt for tool-call consistency
-    const systemPrompt = `You are an educational AI assistant that analyzes study topics for exam preparation.
-Given a topic title, course context, and optional notes, you must call the analyze_topic tool to estimate:
-1. difficulty_weight (1-5): How difficult is this topic? 1=very easy, 5=very hard
-2. exam_importance (1-5): How likely is this topic to appear in exams? 1=rarely, 5=almost always
+    // Enhanced system prompt with domain-specific heuristics
+    const systemPrompt = `You are an expert educational AI assistant specializing in academic content analysis.
+Given a topic title, course context, and optional notes, analyze and call the analyze_topic tool.
 
-Consider:
-- Mathematical/technical topics are usually harder
-- Foundational concepts are usually more important for exams
-- Course context helps determine relevance and difficulty level
-- Advanced/specialized topics may be harder but less frequent in exams
+DIFFICULTY ASSESSMENT FRAMEWORK (1-5):
+Use these domain-specific indicators:
+
+1 (Very Easy):
+- Basic definitions and terminology
+- Introductory/overview concepts
+- Historical context or background
+- Simple memorization tasks
+
+2 (Easy):
+- Single-step procedures
+- Direct applications of formulas
+- Straightforward classifications
+- Basic comparisons
+
+3 (Medium):
+- Multi-step problem solving
+- Moderate mathematical reasoning
+- Connecting two or more concepts
+- Analysis with some abstraction
+
+4 (Hard):
+- Complex analysis requiring synthesis
+- Mathematical proofs or derivations
+- Advanced applications
+- Abstract conceptual reasoning
+
+5 (Very Hard):
+- Expert-level theory
+- Complex mathematical derivations
+- Multi-domain integration
+- Cutting-edge or specialized content
+
+DIFFICULTY MODIFIERS:
++1 if topic contains: formulas, equations, proofs, algorithms
++1 if topic requires: multiple prerequisites, abstract thinking
+-1 if topic is: definition-based, terminology, historical
+
+EXAM IMPORTANCE FRAMEWORK (1-5):
+
+1 (Rarely tested):
+- Supplementary material
+- "Nice to know" information
+- Tangential topics
+
+2 (Occasionally tested):
+- Minor concepts
+- Extension material
+- Less common applications
+
+3 (Moderately tested):
+- Standard curriculum material
+- Supporting concepts
+- Secondary learning objectives
+
+4 (Frequently tested):
+- Core course concepts
+- Primary learning objectives
+- Commonly examined topics
+
+5 (Always tested):
+- Fundamental principles
+- Key theories and models
+- Exam staples in the field
+
+IMPORTANCE MODIFIERS:
++1 if topic is: foundational, prerequisite for others, core concept
++1 if topic appears: in chapter summaries, learning objectives
+-1 if topic is: advanced/specialized, optional reading
 
 You MUST call the analyze_topic function. Do not return text responses.`;
 

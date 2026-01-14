@@ -261,6 +261,89 @@ function validateSchedule(
 }
 
 // ========================
+// ENHANCED PRIORITY SCORING ALGORITHM
+// Uses a weighted formula that considers:
+// 1. Exam proximity (exponential urgency decay)
+// 2. Topic importance (exam relevance)
+// 3. Topic difficulty (harder topics need more time)
+// 4. Prerequisite chain depth (foundational topics first)
+// ========================
+
+interface PriorityScoreContext {
+  topic: {
+    id: string;
+    difficulty: number;
+    importance: number;
+    estimated_hours: number;
+    prerequisites: string[];
+  };
+  daysUntilExam: number;
+  prereqDepth: number; // Depth in prerequisite chain (0 = no prereqs)
+  totalTopicsInCourse: number;
+}
+
+function calculatePriorityScore(ctx: PriorityScoreContext): number {
+  const { topic, daysUntilExam, prereqDepth, totalTopicsInCourse } = ctx;
+  
+  // Weights for different factors (sum to 1.0)
+  const W_URGENCY = 0.35;     // Exam proximity weight
+  const W_IMPORTANCE = 0.30;  // Exam importance weight
+  const W_DIFFICULTY = 0.20;  // Difficulty weight (harder = schedule earlier)
+  const W_PREREQ = 0.15;      // Prerequisite depth weight (foundations first)
+  
+  // 1. Urgency Score: Exponential decay as exam approaches
+  // Score increases dramatically as deadline nears
+  // Formula: 1 / (1 + e^(0.1 * (days - 7))) normalized to [0, 1]
+  const urgencyRaw = 1 / (1 + Math.exp(0.1 * (daysUntilExam - 7)));
+  const urgencyScore = Math.min(1, Math.max(0, urgencyRaw * 1.2)); // Boost urgent items
+  
+  // 2. Importance Score: Normalize 1-5 scale to 0-1
+  const importanceScore = (topic.importance - 1) / 4;
+  
+  // 3. Difficulty Score: Higher difficulty = higher priority (schedule when fresh)
+  // Also accounts for the time investment required
+  const difficultyBase = (topic.difficulty - 1) / 4;
+  const hoursWeight = Math.min(1, topic.estimated_hours / 3); // Cap at 3 hours
+  const difficultyScore = (difficultyBase * 0.7) + (hoursWeight * 0.3);
+  
+  // 4. Prerequisite Depth Score: Lower depth = higher priority (foundations first)
+  // Normalize using estimated max depth of 5
+  const maxPrereqDepth = 5;
+  const prereqScore = 1 - Math.min(prereqDepth, maxPrereqDepth) / maxPrereqDepth;
+  
+  // Combined priority score
+  const priorityScore = 
+    (W_URGENCY * urgencyScore) +
+    (W_IMPORTANCE * importanceScore) +
+    (W_DIFFICULTY * difficultyScore) +
+    (W_PREREQ * prereqScore);
+  
+  // Scale to 0-100 for readability
+  return Math.round(priorityScore * 100);
+}
+
+// Calculate prerequisite chain depth for a topic
+function calculatePrereqDepth(
+  topicId: string, 
+  prereqMap: Map<string, string[]>,
+  visited: Set<string> = new Set()
+): number {
+  if (visited.has(topicId)) return 0; // Prevent cycles
+  visited.add(topicId);
+  
+  const prereqs = prereqMap.get(topicId) || [];
+  if (prereqs.length === 0) return 0;
+  
+  let maxDepth = 0;
+  for (const prereqId of prereqs) {
+    const depth = calculatePrereqDepth(prereqId, prereqMap, new Set(visited));
+    maxDepth = Math.max(maxDepth, depth + 1);
+  }
+  
+  return maxDepth;
+}
+
+// ========================
 // DETERMINISTIC FALLBACK SCHEDULER
 // Used when AI returns empty or invalid schedule
 // ========================
@@ -284,10 +367,51 @@ interface FallbackContext {
 function createFallbackSchedule(ctx: FallbackContext): ScheduledItem[] {
   const schedule: ScheduledItem[] = [];
   
-  // Sort topics by priority (importance * difficulty) descending
-  const sortedTopics = [...ctx.topics].sort((a, b) => 
-    (b.importance * b.difficulty) - (a.importance * a.difficulty)
-  );
+  // Build prerequisite map for depth calculation
+  const prereqMap = new Map<string, string[]>();
+  ctx.topics.forEach(t => prereqMap.set(t.id, t.prerequisites));
+  
+  // Calculate days until exam for each course
+  const today = new Date();
+  const courseDaysUntilExam = new Map<string, number>();
+  for (const [courseId, examDate] of ctx.courseExamDates) {
+    const examDateObj = new Date(examDate);
+    const days = Math.max(1, Math.ceil((examDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+    courseDaysUntilExam.set(courseId, days);
+  }
+  
+  // Count topics per course for context
+  const topicsPerCourse = new Map<string, number>();
+  ctx.topics.forEach(t => {
+    const courseId = ctx.topicToCourse.get(t.id);
+    if (courseId) {
+      topicsPerCourse.set(courseId, (topicsPerCourse.get(courseId) || 0) + 1);
+    }
+  });
+  
+  // Sort topics by enhanced priority score (descending)
+  const topicsWithPriority = ctx.topics.map(topic => {
+    const courseId = ctx.topicToCourse.get(topic.id);
+    const daysUntilExam = courseId ? (courseDaysUntilExam.get(courseId) || 30) : 30;
+    const prereqDepth = calculatePrereqDepth(topic.id, prereqMap);
+    const totalTopicsInCourse = courseId ? (topicsPerCourse.get(courseId) || 1) : 1;
+    
+    const priorityScore = calculatePriorityScore({
+      topic,
+      daysUntilExam,
+      prereqDepth,
+      totalTopicsInCourse,
+    });
+    
+    return { topic, priorityScore, prereqDepth };
+  }).sort((a, b) => {
+    // Primary: prereq depth (foundations first)
+    if (a.prereqDepth !== b.prereqDepth) {
+      return a.prereqDepth - b.prereqDepth;
+    }
+    // Secondary: priority score (higher = earlier)
+    return b.priorityScore - a.priorityScore;
+  });
   
   // Group dates by course based on exam dates
   const courseDateBudgets = new Map<string, string[]>();
@@ -296,22 +420,37 @@ function createFallbackSchedule(ctx: FallbackContext): ScheduledItem[] {
     courseDateBudgets.set(courseId, validDates);
   }
   
-  // Track usage per date
+  // Track usage per date and scheduled prerequisites
   const dateHoursUsed = new Map<string, number>();
   const dateOrderIndex = new Map<string, number>();
+  const scheduledTopics = new Map<string, string>(); // topicId -> scheduled date
   
-  for (const topic of sortedTopics) {
+  for (const { topic } of topicsWithPriority) {
     const courseId = ctx.topicToCourse.get(topic.id);
     if (!courseId) continue;
     
     const validDates = courseDateBudgets.get(courseId) || [];
     if (validDates.length === 0) continue;
     
-    // Calculate compressed hours
+    // Find earliest valid date where all prerequisites are scheduled before
+    let earliestValidIdx = 0;
+    for (const prereqId of topic.prerequisites) {
+      const prereqDate = scheduledTopics.get(prereqId);
+      if (prereqDate) {
+        const prereqIdx = validDates.indexOf(prereqDate);
+        if (prereqIdx >= 0) {
+          // Must be after prereq's date
+          earliestValidIdx = Math.max(earliestValidIdx, prereqIdx + 1);
+        }
+      }
+    }
+    
+    // Calculate compressed hours based on coverage ratio
     const hours = Math.max(0.25, Math.min(1.5, topic.estimated_hours * ctx.coverageRatio));
     
-    // Find first available date with capacity
-    for (const date of validDates) {
+    // Find first available date with capacity, respecting prereq order
+    for (let i = earliestValidIdx; i < validDates.length; i++) {
+      const date = validDates[i];
       const usedHours = dateHoursUsed.get(date) || 0;
       
       if (usedHours + hours <= ctx.dailyCapacity) {
@@ -328,6 +467,7 @@ function createFallbackSchedule(ctx: FallbackContext): ScheduledItem[] {
         
         dateHoursUsed.set(date, usedHours + hours);
         dateOrderIndex.set(date, orderIndex + 1);
+        scheduledTopics.set(topic.id, date);
         break;
       }
     }
@@ -673,10 +813,44 @@ serve(async (req) => {
         totalAvailable: feasibility.totalAvailableHours 
       });
       
-      // Sort by priority score (importance * difficulty) descending
-      const sortedTopics = [...allPendingTopics].sort((a, b) => 
-        (b.importance * b.difficulty) - (a.importance * a.difficulty)
-      );
+      // Build topic-to-course map and course days until exam
+      const topicToCourse = new Map<string, string>();
+      const courseDaysUntilExam = new Map<string, number>();
+      const topicsPerCourse = new Map<string, number>();
+      
+      effectiveCourseData.forEach(c => {
+        courseDaysUntilExam.set(c.id, c.days_until_exam);
+        topicsPerCourse.set(c.id, c.topics.length);
+        c.topics.forEach(t => topicToCourse.set(t.id, c.id));
+      });
+      
+      // Sort using enhanced priority scoring algorithm
+      const topicsWithPriority = allPendingTopics.map(topic => {
+        const courseId = topicToCourse.get(topic.id);
+        const daysUntilExam = courseId ? (courseDaysUntilExam.get(courseId) || 30) : 30;
+        const prereqDepth = calculatePrereqDepth(topic.id, prereqMap);
+        const totalTopicsInCourse = courseId ? (topicsPerCourse.get(courseId) || 1) : 1;
+        
+        const priorityScore = calculatePriorityScore({
+          topic,
+          daysUntilExam,
+          prereqDepth,
+          totalTopicsInCourse,
+        });
+        
+        return { topic, priorityScore, prereqDepth };
+      });
+      
+      // Sort by priority score descending, but respect prerequisite order
+      const sortedTopics = topicsWithPriority
+        .sort((a, b) => {
+          // If prereq depths differ significantly, respect that
+          const depthDiff = a.prereqDepth - b.prereqDepth;
+          if (Math.abs(depthDiff) > 1) return depthDiff;
+          // Otherwise use priority score
+          return b.priorityScore - a.priorityScore;
+        })
+        .map(t => t.topic);
       
       // Calculate how many topics can realistically fit with compressed hours
       // Use 80% of available hours for main study, 20% buffer for reviews
