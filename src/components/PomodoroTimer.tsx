@@ -24,6 +24,8 @@ import {
 
 type TimerMode = 'work' | 'shortBreak' | 'longBreak';
 
+// Simplified interface for plan items used by the Pomodoro timer
+// This is a subset of StudyPlanItem from usePlanGeneration.ts
 interface PlanItem {
   id: string;
   course_id: string;
@@ -78,7 +80,7 @@ export function PomodoroTimer({ planItems = [], onTopicStatusChange, compact = f
   const [sessionsCompleted, setSessionsCompleted] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [currentSessionDuration, setCurrentSessionDuration] = useState(0);
-  const { language, t } = useLanguage();
+  const { language } = useLanguage();
   
   // New states for topic selection and completion
   const [showTopicSelector, setShowTopicSelector] = useState(false);
@@ -179,10 +181,6 @@ export function PomodoroTimer({ planItems = [], onTopicStatusChange, compact = f
       const item = availableItems.find(i => i.id === selectedItemId);
       if (item) {
         setCurrentWorkingItem(item);
-        // Update topic status to in_progress
-        if (item.topic_id && onTopicStatusChange) {
-          // We'll handle this via the parent component
-        }
       }
     }
     setShowTopicSelector(false);
