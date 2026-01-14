@@ -115,12 +115,19 @@ export default function Layout() {
   }
 
   return (
-    <div className="min-h-screen flex bg-background" dir={dir}>
+    <div className="min-h-screen flex bg-[#0A0A0F] relative overflow-hidden" dir={dir}>
+      {/* Ambient Background Glows */}
+      <div className="fixed inset-0 pointer-events-none" aria-hidden="true">
+        <div className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] bg-blue-600/8 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] bg-purple-600/6 rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 right-1/4 w-[300px] h-[300px] bg-primary/5 rounded-full blur-[80px]" />
+      </div>
+
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 bg-card border-r border-border p-6 space-y-6">
+      <aside className="hidden md:flex flex-col w-64 bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 space-y-6 relative z-10">
         <div className="flex items-center justify-between">
           <Link to="/app/dashboard" className="flex items-center gap-2 px-2">
-            <span className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
               StudyBudy
             </span>
           </Link>
@@ -129,7 +136,7 @@ export default function Layout() {
         {/* Language Toggle */}
         <button
           onClick={toggleLanguage}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted hover:bg-muted/80 text-sm font-medium transition-colors w-full"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium transition-colors w-full text-white/80"
         >
           <Languages size={18} />
           <span>{language === 'ar' ? 'English' : 'العربية'}</span>
@@ -143,10 +150,10 @@ export default function Layout() {
               <Link
                 key={item.href}
                 to={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${
                   isActive
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-muted-foreground hover:bg-muted"
+                    ? "bg-primary/20 text-primary font-medium border border-primary/30"
+                    : "text-gray-400 hover:bg-white/5 hover:text-white"
                 }`}
               >
                 <Icon size={20} />
@@ -179,31 +186,31 @@ export default function Layout() {
       </aside>
 
       {/* Mobile Header */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="md:hidden flex items-center justify-between p-4 bg-card border-b border-border">
+      <div className="flex-1 flex flex-col min-w-0 relative z-10">
+        <header className="md:hidden flex items-center justify-between p-4 bg-white/5 backdrop-blur-xl border-b border-white/10">
           <Link to="/app/dashboard" className="flex items-center gap-2">
-            <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
               StudyBudy
             </span>
           </Link>
           <div className="flex items-center gap-2">
             <button
               onClick={toggleLanguage}
-              className="p-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
+              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
               title={language === 'ar' ? 'Switch to English' : 'التبديل إلى العربية'}
             >
-              <Languages size={18} />
+              <Languages size={18} className="text-white/80" />
             </button>
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="text-white/80 hover:text-white">
                   <Menu size={24} />
                 </Button>
               </SheetTrigger>
-              <SheetContent side={language === 'ar' ? 'right' : 'left'} className="w-64 p-6">
+              <SheetContent side={language === 'ar' ? 'right' : 'left'} className="w-64 p-6 bg-[#0A0A0F]/95 backdrop-blur-xl border-white/10">
                 <div className="flex flex-col h-full space-y-6">
                   <Link to="/app/dashboard" className="px-2">
-                    <span className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                    <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
                       StudyBudy
                     </span>
                   </Link>
@@ -212,7 +219,7 @@ export default function Layout() {
                       <Link
                         key={item.href}
                         to={item.href}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-muted"
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-all duration-200"
                       >
                         <item.icon size={20} />
                         <span>{item.label}</span>
@@ -242,7 +249,7 @@ export default function Layout() {
         {/* Main Content */}
         <main className="flex-1 p-6 overflow-auto">
           {status === "loading" ? (
-            <div className="text-center text-muted-foreground">{t('loading')}</div>
+            <div className="text-center text-gray-400">{t('loading')}</div>
           ) : (
             <Outlet />
           )}

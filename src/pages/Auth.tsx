@@ -254,10 +254,12 @@ export default function Auth() {
     t("signInDescription");
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6" dir={dir}>
-      {/* Subtle Background */}
-      <div className="absolute inset-0" aria-hidden="true">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-primary/5 rounded-full blur-3xl" />
+    <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center p-6 relative overflow-hidden" dir={dir}>
+      {/* Enhanced Ambient Background Glows (Mesh Gradient Effect) */}
+      <div className="fixed inset-0 pointer-events-none" aria-hidden="true">
+        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-purple-600/15 rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-primary/10 rounded-full blur-[80px]" />
       </div>
 
       {/* Language toggle */}
@@ -274,20 +276,20 @@ export default function Auth() {
         <span className="text-sm">{language === "ar" ? "الرئيسية" : "Home"}</span>
       </Link>
 
-      <LiquidGlassCard variant="elevated" className="w-full max-w-md p-8 animate-fade-in">
+      <LiquidGlassCard variant="elevated" className="w-full max-w-md p-8">
         <div className="text-center mb-8">
           <Link to="/" className="inline-block mb-6">
-            <span className="text-2xl font-bold text-foreground">StudyBudy</span>
+            <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">StudyBudy</span>
           </Link>
-          <h1 className="text-xl font-medium mb-2">{title}</h1>
-          {subtitle ? <p className="text-sm text-muted-foreground">{subtitle}</p> : null}
+          <h1 className="text-xl font-medium mb-2 text-white/90">{title}</h1>
+          {subtitle ? <p className="text-sm text-gray-400">{subtitle}</p> : null}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Email */}
           {(mode === "signIn" || mode === "signUp" || mode === "reset") && (
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm">{t("email")}</Label>
+              <Label htmlFor="email" className="text-sm text-white/80">{t("email")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -295,7 +297,8 @@ export default function Auth() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-11 bg-secondary/30 border-border/50 focus:border-primary transition-colors"
+                glassEffect
+                className="h-11"
                 dir="ltr"
                 autoComplete="email"
               />
@@ -306,56 +309,60 @@ export default function Auth() {
           {mode === "signUp" && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="fullName" className="text-sm">{t("fullName")} <span className="text-destructive">*</span></Label>
+                <Label htmlFor="fullName" className="text-sm text-white/80">{t("fullName")} <span className="text-destructive">*</span></Label>
                 <Input
                   id="fullName"
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder={t("fullNamePlaceholder")}
-                  className="h-11 bg-secondary/30 border-border/50 focus:border-primary transition-colors"
+                  glassEffect
+                  className="h-11"
                   dir="auto"
                   autoComplete="name"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="department" className="text-sm">{t("department")} <span className="text-destructive">*</span></Label>
+                <Label htmlFor="department" className="text-sm text-white/80">{t("department")} <span className="text-destructive">*</span></Label>
                 <Input
                   id="department"
                   required
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
                   placeholder={t("departmentPlaceholder")}
-                  className="h-11 bg-secondary/30 border-border/50 focus:border-primary transition-colors"
+                  glassEffect
+                  className="h-11"
                   dir="auto"
                   autoComplete="organization"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="university" className="text-sm">{t("university")} <span className="text-destructive">*</span></Label>
+                <Label htmlFor="university" className="text-sm text-white/80">{t("university")} <span className="text-destructive">*</span></Label>
                 <Input
                   id="university"
                   required
                   value={university}
                   onChange={(e) => setUniversity(e.target.value)}
                   placeholder={t("universityPlaceholder")}
-                  className="h-11 bg-secondary/30 border-border/50 focus:border-primary transition-colors"
+                  glassEffect
+                  className="h-11"
                   dir="auto"
                   autoComplete="organization"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-sm">{t("phoneNumber")} ({t("optional")})</Label>
+                <Label htmlFor="phone" className="text-sm text-white/80">{t("phoneNumber")} ({t("optional")})</Label>
                 <Input
                   id="phone"
                   type="tel"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   placeholder={t("phonePlaceholder")}
-                  className="h-11 bg-secondary/30 border-border/50 focus:border-primary transition-colors"
+                  glassEffect
+                  className="h-11"
                   dir="ltr"
                   autoComplete="tel"
                 />
@@ -367,7 +374,7 @@ export default function Auth() {
           {(mode === "signIn" || mode === "signUp") && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-sm">{t("password")}</Label>
+                <Label htmlFor="password" className="text-sm text-white/80">{t("password")}</Label>
                 {mode === "signIn" && (
                   <button
                     type="button"
@@ -385,14 +392,15 @@ export default function Auth() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="h-11 bg-secondary/30 border-border/50 focus:border-primary transition-colors pe-11"
+                  glassEffect
+                  className="h-11 pe-11"
                   dir="ltr"
                   autoComplete={mode === "signIn" ? "current-password" : "new-password"}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
@@ -408,7 +416,7 @@ export default function Auth() {
           {/* Confirm Password (sign up) */}
           {mode === "signUp" && (
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-sm">{t("confirmPassword")}</Label>
+              <Label htmlFor="confirmPassword" className="text-sm text-white/80">{t("confirmPassword")}</Label>
               <div className="relative">
                 <Input
                   id="confirmPassword"
@@ -416,14 +424,15 @@ export default function Auth() {
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="h-11 bg-secondary/30 border-border/50 focus:border-primary transition-colors pe-11"
+                  glassEffect
+                  className="h-11 pe-11"
                   dir="ltr"
                   autoComplete="new-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword((v) => !v)}
-                  className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
                   aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                 >
                   {showConfirmPassword ? (
@@ -440,7 +449,7 @@ export default function Auth() {
           {mode === "updatePassword" && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="newPassword" className="text-sm">{t("newPassword")}</Label>
+                <Label htmlFor="newPassword" className="text-sm text-white/80">{t("newPassword")}</Label>
                 <div className="relative">
                   <Input
                     id="newPassword"
@@ -448,14 +457,15 @@ export default function Auth() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="h-11 bg-secondary/30 border-border/50 focus:border-primary transition-colors pe-11"
+                    glassEffect
+                    className="h-11 pe-11"
                     dir="ltr"
                     autoComplete="new-password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? (
@@ -468,7 +478,7 @@ export default function Auth() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmNewPassword" className="text-sm">{t("confirmPassword")}</Label>
+                <Label htmlFor="confirmNewPassword" className="text-sm text-white/80">{t("confirmPassword")}</Label>
                 <div className="relative">
                   <Input
                     id="confirmNewPassword"
@@ -476,14 +486,15 @@ export default function Auth() {
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="h-11 bg-secondary/30 border-border/50 focus:border-primary transition-colors pe-11"
+                    glassEffect
+                    className="h-11 pe-11"
                     dir="ltr"
                     autoComplete="new-password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword((v) => !v)}
-                    className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
                     aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                   >
                     {showConfirmPassword ? (
@@ -527,17 +538,17 @@ export default function Auth() {
           <>
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border/50" />
+                <span className="w-full border-t border-white/10" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">{t('orContinueWith')}</span>
+                <span className="bg-transparent px-2 text-gray-500">{t('orContinueWith')}</span>
               </div>
             </div>
 
             <Button
               type="button"
               variant="outline"
-              className="w-full h-11 gap-3"
+              className="w-full h-11 gap-3 bg-white/5 border-white/10 hover:bg-white/10 text-white/90"
               disabled={loading}
               onClick={handleGoogleSignIn}
             >
@@ -570,7 +581,7 @@ export default function Auth() {
             <button
               type="button"
               onClick={() => switchMode(mode === "signUp" ? "signIn" : "signUp")}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm text-gray-400 hover:text-white transition-colors"
             >
               {mode === "signUp" ? t("alreadyHaveAccount") : t("dontHaveAccount")}{" "}
               <span className="text-primary font-medium hover:underline">
