@@ -73,12 +73,19 @@ export function PlanSummaryCard({ metrics, totalPlanDays }: PlanSummaryCardProps
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return null;
-    const date = new Date(dateStr);
-    return date.toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
+    try {
+      const date = new Date(dateStr);
+      // Check if date is valid
+      if (isNaN(date.getTime())) return dateStr;
+      return date.toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch {
+      // Fallback to raw date string if locale formatting fails
+      return dateStr;
+    }
   };
 
   return (

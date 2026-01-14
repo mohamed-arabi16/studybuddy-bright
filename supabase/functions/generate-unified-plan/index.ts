@@ -305,6 +305,7 @@ serve(async (req) => {
 
     if (!courses || courses.length === 0) {
       return new Response(JSON.stringify({ 
+        success: false,
         error: "No active courses found",
         error_code: "NO_ACTIVE_COURSES",
         suggestion: "Add a course with topics and an exam date to generate a study plan",
@@ -740,8 +741,11 @@ serve(async (req) => {
     // Calculate estimated completion date
     let estimatedCompletionDate: string | null = null;
     if (studyDaysCreated > 0 && scheduledTopicIds.size === totalTopicsCount) {
-      // All topics scheduled - find the last study day
-      const lastStudyDate = Array.from(dailySchedule.keys()).sort().pop();
+      // All topics scheduled - find the last study day using proper date comparison
+      const scheduleDates = Array.from(dailySchedule.keys());
+      const lastStudyDate = scheduleDates.sort((a, b) => 
+        new Date(a).getTime() - new Date(b).getTime()
+      ).pop();
       if (lastStudyDate) {
         estimatedCompletionDate = lastStudyDate;
       }
