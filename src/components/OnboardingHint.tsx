@@ -38,26 +38,32 @@ export function OnboardingHint({ steps, className }: OnboardingHintProps) {
       </div>
 
       <div className="space-y-3">
-        {steps.map((step, index) => (
-          <div
-            key={step.id}
-            className={cn(
-              "flex items-start gap-3 p-3 rounded-lg transition-all duration-200",
-              step.isCurrent ? "bg-primary/10 border border-primary/30" : 
-              step.isComplete ? "bg-success/5 border border-success/20" : 
-              "bg-muted/30 border border-transparent"
-            )}
-          >
-            <div className="flex-shrink-0 mt-0.5">
-              {step.isComplete ? (
-                <CheckCircle2 className="w-5 h-5 text-success" />
-              ) : (
-                <div className={cn(
-                  "w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium border-2",
-                  step.isCurrent ? "border-primary text-primary bg-primary/10" : "border-muted-foreground/30 text-muted-foreground"
-                )}>
-                  {index + 1}
-                </div>
+        {steps.map((step, index) => {
+          // Helper function to determine step container styles
+          const getStepContainerStyles = () => {
+            if (step.isCurrent) return "bg-primary/10 border border-primary/30";
+            if (step.isComplete) return "bg-success/5 border border-success/20";
+            return "bg-muted/30 border border-transparent";
+          };
+
+          return (
+            <div
+              key={step.id}
+              className={cn(
+                "flex items-start gap-3 p-3 rounded-lg transition-all duration-200",
+                getStepContainerStyles()
+              )}
+            >
+              <div className="flex-shrink-0 mt-0.5">
+                {step.isComplete ? (
+                  <CheckCircle2 className="w-5 h-5 text-success" />
+                ) : (
+                  <div className={cn(
+                    "w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium border-2",
+                    step.isCurrent ? "border-primary text-primary bg-primary/10" : "border-muted-foreground/30 text-muted-foreground"
+                  )}>
+                    {index + 1}
+                  </div>
               )}
             </div>
             
@@ -89,7 +95,8 @@ export function OnboardingHint({ steps, className }: OnboardingHintProps) {
               )}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

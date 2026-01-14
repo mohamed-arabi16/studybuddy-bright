@@ -51,7 +51,11 @@ export default function Plan() {
           .eq('status', 'active')
           .not('exam_date', 'is', null);
 
-        const hasTopics = courses?.some(c => (c.topics as { id: string }[])?.length > 0) || false;
+        // Check if any course has topics
+        const hasTopics = courses?.some(c => {
+          const topics = c.topics;
+          return Array.isArray(topics) && topics.length > 0;
+        }) || false;
         setHasCoursesWithTopics(hasTopics);
       } catch {
         // Silently fail
