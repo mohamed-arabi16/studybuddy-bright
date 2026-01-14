@@ -305,7 +305,10 @@ serve(async (req) => {
 
     if (!courses || courses.length === 0) {
       return new Response(JSON.stringify({ 
+        success: false,
         error: "No active courses found",
+        error_code: "NO_ACTIVE_COURSES",
+        suggestion: "Add a course with topics and an exam date to generate a study plan",
         plan_days: 0,
         plan_items: 0 
       }), {
@@ -338,13 +341,24 @@ serve(async (req) => {
 
     if (processedCourses.length === 0) {
       return new Response(JSON.stringify({ 
+        success: true,
         message: "All topics are completed!",
+        message_code: "ALL_COMPLETED",
         plan_days: 0,
-        plan_items: 0 
+        plan_items: 0,
+        suggestions: ["celebrate_achievement", "add_new_topics_for_review"]
       }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Check if any courses have exam dates set - warn if none do
+    const coursesWithExamDates = processedCourses.filter(c => c.exam_date !== null);
+    const coursesWithoutExamDates = processedCourses.filter(c => c.exam_date === null);
+    
+    if (coursesWithExamDates.length === 0) {
+      console.log("Warning: No courses have exam dates set - using default 30-day horizon");
     }
 
     // Apply topological sort to each course's topics
@@ -697,6 +711,7 @@ serve(async (req) => {
           ? (hoursScheduled / Math.min(daysLeft, studyDaysCreated || 1)).toFixed(1)
           : hoursScheduled.toFixed(1),
         urgency: daysLeft && daysLeft <= 7 ? "high" : daysLeft && daysLeft <= 14 ? "medium" : "low",
+        has_exam_date: !!c.exam_date,
       };
     });
 
@@ -704,6 +719,54 @@ serve(async (req) => {
     if (hasAnyCycles) warnings.push("circular_dependencies_detected");
     if (isPriorityMode) {
       warnings.push(`time_compressed: ${(coverageRatio * 100).toFixed(0)}% coverage ratio applied`);
+    }
+    if (coursesWithoutExamDates.length > 0) {
+      warnings.push(`${coursesWithoutExamDates.length} course(s) without exam dates - using default schedule`);
+    }
+
+    // Calculate study recommendations based on workload analysis
+    const avgHoursPerStudyDay = studyDaysCreated > 0 
+      ? Array.from(dailySchedule.values()).reduce((s, d) => s + d.hours, 0) / studyDaysCreated 
+      : 0;
+    
+    // Determine workload intensity for UI feedback
+    type WorkloadIntensity = 'light' | 'moderate' | 'heavy' | 'overloaded';
+    let workloadIntensity: WorkloadIntensity = 'moderate';
+    if (avgHoursPerStudyDay < dailyStudyHours * 0.5) {
+      workloadIntensity = 'light';
+    } else if (avgHoursPerStudyDay > dailyStudyHours * 0.9) {
+      workloadIntensity = isPriorityMode ? 'overloaded' : 'heavy';
+    }
+
+    // Calculate estimated completion date
+    let estimatedCompletionDate: string | null = null;
+    if (studyDaysCreated > 0 && scheduledTopicIds.size === totalTopicsCount) {
+      // All topics scheduled - find the last study day using proper date comparison
+      const scheduleDates = Array.from(dailySchedule.keys());
+      const lastStudyDate = scheduleDates.sort((a, b) => 
+        new Date(a).getTime() - new Date(b).getTime()
+      ).pop();
+      if (lastStudyDate) {
+        estimatedCompletionDate = lastStudyDate;
+      }
+    }
+
+    // Generate actionable suggestions based on plan analysis
+    const suggestions: string[] = [];
+    if (isPriorityMode && coverageRatio < 0.7) {
+      suggestions.push("consider_extending_daily_hours");
+      suggestions.push("consider_adding_study_days");
+    }
+    if (hasAnyCycles) {
+      suggestions.push("review_topic_prerequisites");
+    }
+    if (avgHoursPerStudyDay > dailyStudyHours * 0.95) {
+      suggestions.push("consider_topic_splitting");
+    }
+    // Add suggestion if some courses have topics very close to exam
+    const urgentCourses = coursesIncluded.filter(c => c.urgency === 'high');
+    if (urgentCourses.length > 0) {
+      suggestions.push("focus_on_urgent_courses");
     }
 
     return new Response(
@@ -723,6 +786,13 @@ serve(async (req) => {
         total_available_hours: totalAvailableHours,
         topics_scheduled: scheduledTopicIds.size,
         topics_total: totalTopicsCount,
+        // New enhanced feedback for better UX
+        workload_intensity: workloadIntensity,
+        avg_hours_per_study_day: Math.round(avgHoursPerStudyDay * 10) / 10,
+        study_days_created: studyDaysCreated,
+        estimated_completion_date: estimatedCompletionDate,
+        suggestions,
+        urgent_courses_count: urgentCourses.length,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

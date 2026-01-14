@@ -14,6 +14,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { usePlanGeneration } from '@/hooks/usePlanGeneration';
 import { useToast } from '@/hooks/use-toast';
 import { RescheduleCard } from '@/components/RescheduleCard';
+import { PlanSummaryCard } from '@/components/PlanSummaryCard';
+import { PlanWarningBanner } from '@/components/PlanWarningBanner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -23,6 +25,7 @@ export default function Plan() {
     courseInfo,
     missedDays,
     totalMissedItems,
+    planMetrics,
     isLoading, 
     isGenerating, 
     error,
@@ -135,6 +138,38 @@ export default function Plan() {
     );
   }
 
+  // Enhanced generating state with progress feedback
+  // Uses motion-safe variants to respect user's reduced motion preference
+  const GeneratingOverlay = () => (
+    <Card className="border-primary/30 bg-primary/5">
+      <CardContent className="py-8 flex flex-col items-center justify-center text-center">
+        <div className="relative mb-4">
+          <div className="w-16 h-16 rounded-full border-4 border-primary/20 motion-safe:animate-pulse" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Sparkles className="w-6 h-6 text-primary motion-safe:animate-pulse" />
+          </div>
+        </div>
+        <h3 className="text-lg font-semibold mb-2">
+          {language === 'ar' ? 'جاري إنشاء خطتك الذكية...' : 'Creating your smart plan...'}
+        </h3>
+        <p className="text-muted-foreground text-sm max-w-md">
+          {language === 'ar' 
+            ? 'نقوم بتحليل موادك وتوزيع المواضيع بذكاء حسب تواريخ الامتحانات وصعوبة كل موضوع.'
+            : 'Analyzing your courses and intelligently distributing topics based on exam dates and difficulty.'}
+        </p>
+        <div className="flex gap-1 mt-4 motion-reduce:hidden">
+          <div className="w-2 h-2 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
+          <div className="w-2 h-2 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
+          <div className="w-2 h-2 rounded-full bg-primary animate-bounce" />
+        </div>
+        {/* Static indicator for reduced motion preference */}
+        <div className="mt-4 motion-safe:hidden">
+          <Loader2 className="w-5 h-5 text-primary" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="space-y-6" dir={dir}>
       {/* Header */}
@@ -158,6 +193,31 @@ export default function Plan() {
           {planDays.length > 0 ? t('recreatePlan') : t('createPlan')}
         </Button>
       </div>
+
+      {/* Show generating overlay when generating */}
+      {isGenerating && <GeneratingOverlay />}
+
+      {/* Plan Summary Card - shows metrics when plan exists */}
+      {planMetrics && planDays.length > 0 && (
+        <PlanSummaryCard 
+          metrics={planMetrics} 
+          totalPlanDays={planDays.length} 
+        />
+      )}
+
+      {/* Plan Warning Banner - shows when there are warnings or priority mode */}
+      {planMetrics && planMetrics.warnings.length > 0 && (
+        <PlanWarningBanner
+          warnings={planMetrics.warnings}
+          coverageRatio={planMetrics.coverageRatio}
+          totalRequiredHours={planMetrics.totalRequiredHours}
+          totalAvailableHours={planMetrics.totalAvailableHours}
+          isOverloaded={planMetrics.workloadIntensity === 'overloaded'}
+          isPriorityMode={planMetrics.isPriorityMode}
+          topicsScheduled={planMetrics.topicsScheduled}
+          topicsProvided={planMetrics.topicsTotal}
+        />
+      )}
 
       {/* Reschedule Card - shows when there are missed items */}
       {totalMissedItems > 0 && planDays.length > 0 && (

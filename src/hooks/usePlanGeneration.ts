@@ -44,6 +44,22 @@ interface MissedDay {
   totalItems: number;
 }
 
+interface PlanMetrics {
+  isPriorityMode: boolean;
+  coverageRatio: number;
+  totalRequiredHours: number;
+  totalAvailableHours: number;
+  topicsScheduled: number;
+  topicsTotal: number;
+  workloadIntensity: 'light' | 'moderate' | 'heavy' | 'overloaded';
+  avgHoursPerStudyDay: number;
+  studyDaysCreated: number;
+  estimatedCompletionDate: string | null;
+  suggestions: string[];
+  urgentCoursesCount: number;
+  warnings: string[];
+}
+
 export function usePlanGeneration() {
   const [planDays, setPlanDays] = useState<StudyPlanDay[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,6 +68,7 @@ export function usePlanGeneration() {
   const [courseInfo, setCourseInfo] = useState<CourseInfo[]>([]);
   const [missedDays, setMissedDays] = useState<MissedDay[]>([]);
   const [totalMissedItems, setTotalMissedItems] = useState(0);
+  const [planMetrics, setPlanMetrics] = useState<PlanMetrics | null>(null);
 
   const fetchPlan = async () => {
     try {
@@ -230,6 +247,25 @@ export function usePlanGeneration() {
         setCourseInfo(response.data.courses_included);
       }
 
+      // Capture plan metrics for UI display
+      if (response.data) {
+        setPlanMetrics({
+          isPriorityMode: response.data.is_priority_mode || false,
+          coverageRatio: response.data.coverage_ratio || 1,
+          totalRequiredHours: response.data.total_required_hours || 0,
+          totalAvailableHours: response.data.total_available_hours || 0,
+          topicsScheduled: response.data.topics_scheduled || 0,
+          topicsTotal: response.data.topics_total || 0,
+          workloadIntensity: response.data.workload_intensity || 'moderate',
+          avgHoursPerStudyDay: response.data.avg_hours_per_study_day || 0,
+          studyDaysCreated: response.data.study_days_created || 0,
+          estimatedCompletionDate: response.data.estimated_completion_date || null,
+          suggestions: response.data.suggestions || [],
+          urgentCoursesCount: response.data.urgent_courses_count || 0,
+          warnings: response.data.warnings || [],
+        });
+      }
+
       // Refresh the plan and missed days analysis
       await Promise.all([fetchPlan(), analyzeMissedDays()]);
 
@@ -303,6 +339,7 @@ export function usePlanGeneration() {
     courseInfo,
     missedDays,
     totalMissedItems,
+    planMetrics,
     isLoading,
     isGenerating,
     error,
