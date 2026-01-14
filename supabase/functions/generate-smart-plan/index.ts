@@ -1004,6 +1004,47 @@ REQUIREMENTS:
 
     log('Calling AI for scheduling');
 
+    // Define tool for structured output
+    const scheduleTool = {
+      type: "function" as const,
+      function: {
+        name: "create_study_schedule",
+        description: "Create a study schedule with topics assigned to dates",
+        parameters: {
+          type: "object",
+          properties: {
+            schedule: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  date: { type: "string", description: "Date in YYYY-MM-DD format" },
+                  topic_id: { type: "string", description: "UUID of the topic" },
+                  course_id: { type: "string", description: "UUID of the course" },
+                  hours: { type: "number", description: "Study hours (0.25 to 3)" },
+                  is_review: { type: "boolean", description: "Whether this is a review session" },
+                  order_index: { type: "number", description: "Order within the day" }
+                },
+                required: ["date", "topic_id", "course_id", "hours", "is_review", "order_index"],
+                additionalProperties: false
+              }
+            },
+            warnings: {
+              type: "array",
+              items: { type: "string" },
+              description: "Any warnings about the schedule"
+            },
+            total_topics_scheduled: {
+              type: "number",
+              description: "Count of unique topics scheduled"
+            }
+          },
+          required: ["schedule"],
+          additionalProperties: false
+        }
+      }
+    };
+
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -1016,6 +1057,8 @@ REQUIREMENTS:
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
+        tools: [scheduleTool],
+        tool_choice: { type: "function", function: { name: "create_study_schedule" } }
       }),
     });
 
@@ -1040,34 +1083,82 @@ REQUIREMENTS:
     }
 
     const aiData = await response.json();
-    const content = aiData.choices?.[0]?.message?.content;
-
-    if (!content) {
-      throw new Error('Empty response from AI');
-    }
-
-    log('AI response received', { length: content.length });
-
-    // Parse AI response
+    
+    // Parse AI response - check for tool calls first, then fall back to content
     let parsed: { 
       schedule: ScheduledItem[], 
       warnings?: string[], 
       total_topics_scheduled?: number 
     };
+    
     try {
-      let cleanContent = content.trim();
-      if (cleanContent.startsWith('```json')) cleanContent = cleanContent.slice(7);
-      if (cleanContent.startsWith('```')) cleanContent = cleanContent.slice(3);
-      if (cleanContent.endsWith('```')) cleanContent = cleanContent.slice(0, -3);
-      
-      parsed = JSON.parse(cleanContent.trim());
+      // Check for tool call response (preferred)
+      const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+      if (toolCall?.function?.arguments) {
+        log('AI response via tool call');
+        parsed = JSON.parse(toolCall.function.arguments);
+      } else {
+        // Fall back to content parsing
+        const content = aiData.choices?.[0]?.message?.content;
+        if (!content) {
+          throw new Error('No content in AI response');
+        }
+        
+        log('AI response via content', { length: content.length });
+        
+        let cleanContent = content.trim();
+        if (cleanContent.startsWith('```json')) cleanContent = cleanContent.slice(7);
+        if (cleanContent.startsWith('```')) cleanContent = cleanContent.slice(3);
+        if (cleanContent.endsWith('```')) cleanContent = cleanContent.slice(0, -3);
+        
+        parsed = JSON.parse(cleanContent.trim());
+      }
     } catch (parseError) {
-      log('Failed to parse AI response', { error: parseError });
-      throw new Error('AI returned invalid format');
+      log('Failed to parse AI response - falling back to deterministic scheduler', { error: parseError });
+      
+      // Use deterministic fallback instead of failing
+      const fallbackSchedule = createFallbackSchedule({
+        topics: triageTopics,
+        availableDates,
+        courseExamDates: validationContext.courseExamDates,
+        topicToCourse: validationContext.topicToCourse,
+        dailyCapacity: dailyStudyHours,
+        coverageRatio: Math.max(0.25, feasibility.coverageRatio),
+      });
+      
+      if (fallbackSchedule.length > 0) {
+        log('Using fallback scheduler due to AI parse failure', { items: fallbackSchedule.length });
+        parsed = { 
+          schedule: fallbackSchedule, 
+          warnings: ['Used deterministic scheduler due to AI response issues.'] 
+        };
+      } else {
+        return new Response(
+          JSON.stringify({
+            error: 'plan_not_created',
+            message: 'Could not generate a valid schedule. Please check your topics and dates.',
+            suggestion: 'Try reducing topics or extending exam dates.',
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     if (!Array.isArray(parsed.schedule)) {
-      throw new Error('Invalid response: missing schedule array');
+      log('Invalid schedule format - using fallback');
+      const fallbackSchedule = createFallbackSchedule({
+        topics: triageTopics,
+        availableDates,
+        courseExamDates: validationContext.courseExamDates,
+        topicToCourse: validationContext.topicToCourse,
+        dailyCapacity: dailyStudyHours,
+        coverageRatio: Math.max(0.25, feasibility.coverageRatio),
+      });
+      
+      parsed = { 
+        schedule: fallbackSchedule, 
+        warnings: ['Used deterministic scheduler due to invalid AI response.'] 
+      };
     }
 
     // ========================
@@ -1083,81 +1174,23 @@ REQUIREMENTS:
 
     if (!validation.valid) {
       log('Validation errors (first 10)', validation.errors.slice(0, 10));
+      log('Using fallback scheduler due to validation errors');
       
-      // Try repair loop
-      log('Attempting repair loop');
-      
-      const repairPrompt = `Your previous schedule had validation errors. Please correct and return a valid schedule.
-
-ERRORS:
-${validation.errors.slice(0, 10).join('\n')}
-
-ORIGINAL DATA (unchanged):
-${userPrompt}
-
-Return ONLY corrected JSON with the same schema.`;
-
-      const repairResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-            { role: 'assistant', content: content },
-            { role: 'user', content: repairPrompt }
-          ],
-        }),
+      // Use deterministic fallback that respects exam dates
+      const fallbackSchedule = createFallbackSchedule({
+        topics: triageTopics,
+        availableDates,
+        courseExamDates: validationContext.courseExamDates,
+        topicToCourse: validationContext.topicToCourse,
+        dailyCapacity: dailyStudyHours,
+        coverageRatio: Math.max(0.25, feasibility.coverageRatio),
       });
-
-      if (repairResponse.ok) {
-        const repairData = await repairResponse.json();
-        const repairContent = repairData.choices?.[0]?.message?.content;
-        
-        if (repairContent) {
-          try {
-            let cleanRepair = repairContent.trim();
-            if (cleanRepair.startsWith('```json')) cleanRepair = cleanRepair.slice(7);
-            if (cleanRepair.startsWith('```')) cleanRepair = cleanRepair.slice(3);
-            if (cleanRepair.endsWith('```')) cleanRepair = cleanRepair.slice(0, -3);
-            
-            const repairedParsed = JSON.parse(cleanRepair.trim());
-            
-            if (Array.isArray(repairedParsed.schedule)) {
-              const repairValidation = validateSchedule(repairedParsed.schedule, validationContext);
-              
-              if (repairValidation.valid) {
-                log('Repair successful');
-                parsed = repairedParsed;
-              } else {
-                log('Repair still has errors - using fallback scheduler');
-                
-                // Use deterministic fallback that respects exam dates
-                const fallbackSchedule = createFallbackSchedule({
-                  topics: triageTopics,  // triageTopics already has the correct shape
-                  availableDates,
-                  courseExamDates: validationContext.courseExamDates,
-                  topicToCourse: validationContext.topicToCourse,
-                  dailyCapacity: dailyStudyHours,
-                  coverageRatio: Math.max(0.25, feasibility.coverageRatio),
-                });
-                
-                if (fallbackSchedule.length > 0) {
-                  parsed.schedule = fallbackSchedule;
-                  log('Fallback scheduler used after failed repair', { items: fallbackSchedule.length });
-                } else {
-                  log('Fallback also empty, proceeding with original (will be filtered)');
-                }
-              }
-            }
-          } catch {
-            log('Repair parse failed');
-          }
-        }
+      
+      if (fallbackSchedule.length > 0) {
+        parsed.schedule = fallbackSchedule;
+        log('Fallback scheduler used', { items: fallbackSchedule.length });
+      } else {
+        log('Fallback also empty, proceeding with original (will be filtered)');
       }
     }
 

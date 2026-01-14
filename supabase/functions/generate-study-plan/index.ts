@@ -19,6 +19,7 @@ interface Topic {
   title: string;
   difficulty_weight: number;
   exam_importance: number;
+  estimated_hours: number;
   status: string;
 }
 
