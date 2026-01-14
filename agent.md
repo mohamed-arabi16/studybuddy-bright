@@ -757,7 +757,7 @@ startSession(topicId);
 
 ```bash
 # Clone repository
-git clone https://github.com/mohamed-arabi16/studybuddy-bright.git
+git clone <YOUR_REPOSITORY_URL>
 cd studybuddy-bright
 
 # Install dependencies
@@ -1441,6 +1441,6 @@ CREATE INDEX idx_topics_user_id ON topics(user_id);
 
 ---
 
-**Last Updated**: 2026-01-14  
+**Last Updated**: 2024-01-14  
 **Version**: 1.0.0  
 **Maintained By**: StudyBuddy Development Team
