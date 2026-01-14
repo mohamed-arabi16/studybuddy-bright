@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { format, isToday, isTomorrow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import { 
   Calendar, Clock, CheckCircle2, 
-  ChevronDown, ChevronUp, Loader2, Sparkles
+  ChevronDown, ChevronUp, Loader2, Sparkles, BookOpen, ArrowRight, ArrowLeft
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ import { usePlanGeneration } from '@/hooks/usePlanGeneration';
 import { useToast } from '@/hooks/use-toast';
 import { RescheduleCard } from '@/components/RescheduleCard';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Plan() {
   const { 
@@ -31,7 +33,32 @@ export default function Plan() {
   const { toast } = useToast();
   const { t, dir, language } = useLanguage();
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
+  const [hasCoursesWithTopics, setHasCoursesWithTopics] = useState<boolean | null>(null);
   const dateLocale = language === 'ar' ? ar : enUS;
+  const ArrowIcon = dir === 'rtl' ? ArrowLeft : ArrowRight;
+
+  // Check if user has courses with topics for contextual guidance
+  useEffect(() => {
+    const checkCourses = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: courses } = await supabase
+          .from('courses')
+          .select('id, topics(id)')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .not('exam_date', 'is', null);
+
+        const hasTopics = courses?.some(c => (c.topics as { id: string }[])?.length > 0) || false;
+        setHasCoursesWithTopics(hasTopics);
+      } catch {
+        // Silently fail
+      }
+    };
+    checkCourses();
+  }, []);
 
   const handleGenerate = async () => {
     try {
@@ -167,7 +194,7 @@ export default function Plan() {
         </div>
       )}
 
-      {/* Empty State */}
+      {/* Empty State with Contextual Guidance */}
       {planDays.length === 0 && !isGenerating && (
         <Card className="border-dashed">
           <CardContent className="py-12 text-center">
@@ -176,10 +203,32 @@ export default function Plan() {
             <p className="text-muted-foreground mb-4">
               {t('noPlanDesc')}
             </p>
-            <Button onClick={handleGenerate} disabled={isGenerating}>
-              <Sparkles className="w-4 h-4 me-2" />
-              {t('createPlan')}
-            </Button>
+            
+            {/* Contextual guidance based on user state */}
+            {hasCoursesWithTopics === false ? (
+              <div className="space-y-4">
+                <div className="text-sm text-muted-foreground bg-muted/30 rounded-lg p-4 max-w-md mx-auto">
+                  <div className="flex items-center gap-2 mb-2 justify-center">
+                    <BookOpen className="w-4 h-4 text-primary" />
+                    <span className="font-medium">{t('hintGetStarted')}</span>
+                  </div>
+                  <p className="text-xs mb-3">
+                    {t('hintAddTopicsDesc')}
+                  </p>
+                  <Button asChild size="sm" variant="outline" className="gap-1">
+                    <Link to="/app/courses">
+                      {t('hintNavigateToCoursesBtn')}
+                      <ArrowIcon className="w-3 h-3" />
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button onClick={handleGenerate} disabled={isGenerating}>
+                <Sparkles className="w-4 h-4 me-2" />
+                {t('createPlan')}
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}

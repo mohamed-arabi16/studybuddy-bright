@@ -32,6 +32,16 @@ interface CourseAllocation {
   remaining_topics: Topic[];
 }
 
+// Detailed error codes for better client-side handling
+const ErrorCode = {
+  NO_COURSES: 'NO_COURSES',
+  NO_EXAM_DATES: 'NO_EXAM_DATES',
+  NO_TOPICS: 'NO_TOPICS',
+  ALL_TOPICS_DONE: 'ALL_TOPICS_DONE',
+  EXAM_PASSED: 'EXAM_PASSED',
+  INSUFFICIENT_TIME: 'INSUFFICIENT_TIME',
+} as const;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -153,7 +163,12 @@ serve(async (req) => {
 
     if (!courses || courses.length === 0) {
       return new Response(
-        JSON.stringify({ error: 'No active courses with exam dates found' }),
+        JSON.stringify({ 
+          error: 'No active courses with exam dates found',
+          code: ErrorCode.NO_EXAM_DATES,
+          hint: 'Add courses with exam dates to generate a study plan. Go to Courses > Add Course and set an exam date.',
+          action: 'add_course',
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -163,16 +178,30 @@ serve(async (req) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Track courses with past exam dates for warning
+    const coursesWithPastExams: string[] = [];
+    const coursesWithNoTopics: string[] = [];
+
     // Calculate course allocations using enhanced priority scoring
-    const courseAllocations: CourseAllocation[] = courses.map((course: any) => {
+    const courseAllocations: CourseAllocation[] = courses.map((course: Course) => {
       const examDate = new Date(course.exam_date);
       examDate.setHours(0, 0, 0, 0);
       
-      const daysLeft = Math.max(1, Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+      // Check if exam date has passed
+      const rawDaysLeft = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      if (rawDaysLeft < 0) {
+        coursesWithPastExams.push(course.title);
+        console.log(`Skipping course "${course.title}" - exam date has passed (${rawDaysLeft} days ago)`);
+        return null;
+      }
+      
+      const daysLeft = Math.max(1, rawDaysLeft);
       
       const remainingTopics = (course.topics || []).filter((t: Topic) => t.status !== 'done');
       
       if (remainingTopics.length === 0) {
+        coursesWithNoTopics.push(course.title);
+        console.log(`Skipping course "${course.title}" - no remaining topics`);
         return null;
       }
       
@@ -228,7 +257,12 @@ serve(async (req) => {
 
     if (courseAllocations.length === 0) {
       return new Response(
-        JSON.stringify({ message: 'All topics are completed!', plan_days: [] }),
+        JSON.stringify({ 
+          message: 'All topics are completed!', 
+          code: ErrorCode.ALL_TOPICS_DONE,
+          hint: 'Great job! All your topics are complete. Add new topics or courses to create a new study plan.',
+          plan_days: [],
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -379,8 +413,19 @@ serve(async (req) => {
         courses_included: courseAllocations.length,
         missed_items_redistributed: missedItemsData.length,
         reschedule_mode: rescheduleMode,
+        courses_skipped_past_exam: coursesWithPastExams.length,
+        courses_skipped_no_topics: coursesWithNoTopics.length,
       },
     });
+
+    // Build warnings array for client feedback
+    const warnings: string[] = [];
+    if (coursesWithPastExams.length > 0) {
+      warnings.push(`Skipped ${coursesWithPastExams.length} course(s) with past exam dates: ${coursesWithPastExams.join(', ')}`);
+    }
+    if (coursesWithNoTopics.length > 0) {
+      warnings.push(`Skipped ${coursesWithNoTopics.length} course(s) with no remaining topics`);
+    }
 
     return new Response(
       JSON.stringify({
@@ -390,6 +435,7 @@ serve(async (req) => {
         reschedule_mode: rescheduleMode,
         missed_items_count: missedItemsData.length,
         missed_days_count: missedDaysCount,
+        warnings: warnings.length > 0 ? warnings : undefined,
         courses_included: courseAllocations.map(ca => ({
           id: ca.course.id,
           title: ca.course.title,
