@@ -85,7 +85,19 @@ export default function Courses() {
             description={t('noCoursesDesc')}
             className="py-16"
           >
-            <CreateCourseDialog onCourseCreated={fetchCourses} />
+            <div className="space-y-4">
+              <CreateCourseDialog onCourseCreated={fetchCourses} />
+              
+              {/* Helpful hint for next steps */}
+              <div className="text-xs text-muted-foreground max-w-md mx-auto mt-4 p-4 bg-muted/30 rounded-lg">
+                <p className="font-medium mb-2">{t('hintGetStarted')}:</p>
+                <ol className="list-decimal list-inside space-y-1 text-start">
+                  <li>{t('addFirstCourseStep')}</li>
+                  <li>{t('addTopicsStep')}</li>
+                  <li>{t('getPlanStep')}</li>
+                </ol>
+              </div>
+            </div>
           </EmptyState>
         </Card>
       ) : (

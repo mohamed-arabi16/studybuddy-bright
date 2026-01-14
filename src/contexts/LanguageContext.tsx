@@ -602,6 +602,21 @@ const translations: Record<Language, Record<string, string>> = {
     'proOverride': 'Pro (تجاوز)',
     'trialActive': 'تجربة نشطة',
     'trialDaysLeft': 'يوم متبقي',
+
+    // Onboarding hints
+    'hintStep': 'الخطوة',
+    'hintGetStarted': 'ابدأ هنا',
+    'hintNoCoursesTitle': 'ابدأ رحلتك الدراسية',
+    'hintNoCoursesDesc': 'أضف مادتك الأولى لتنظيم دراستك. انقر على الزر أعلاه لإضافة مادة.',
+    'hintAddTopicsTitle': 'أضف مواضيعك',
+    'hintAddTopicsDesc': 'بعد إنشاء المادة، أضف المواضيع يدوياً أو استخرجها من ملفات PDF.',
+    'hintGeneratePlanTitle': 'أنشئ خطتك',
+    'hintGeneratePlanDesc': 'بمجرد إضافة المواضيع، انتقل إلى صفحة "الخطة" لإنشاء جدول دراسي ذكي.',
+    'hintNavigateToCoursesBtn': 'انتقل إلى المواد',
+    'hintNavigateToPlanBtn': 'انتقل إلى الخطة',
+    'nextStep': 'الخطوة التالية',
+    'currentStep': 'الخطوة الحالية',
+    'completedStep': 'مكتمل',
   },
   en: {
     // Layout
@@ -1195,6 +1210,21 @@ const translations: Record<Language, Record<string, string>> = {
     'proOverride': 'Pro (Override)',
     'trialActive': 'Trial Active',
     'trialDaysLeft': 'days left',
+
+    // Onboarding hints
+    'hintStep': 'Step',
+    'hintGetStarted': 'Get Started',
+    'hintNoCoursesTitle': 'Start Your Study Journey',
+    'hintNoCoursesDesc': 'Add your first course to organize your studies. Click the button above to add a course.',
+    'hintAddTopicsTitle': 'Add Your Topics',
+    'hintAddTopicsDesc': 'After creating a course, add topics manually or extract them from PDF files.',
+    'hintGeneratePlanTitle': 'Generate Your Plan',
+    'hintGeneratePlanDesc': 'Once you have topics, go to the "Plan" page to create a smart study schedule.',
+    'hintNavigateToCoursesBtn': 'Go to Courses',
+    'hintNavigateToPlanBtn': 'Go to Plan',
+    'nextStep': 'Next Step',
+    'currentStep': 'Current Step',
+    'completedStep': 'Completed',
   }
 };
 
