@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkRateLimit, createRateLimitResponse } from "../_shared/rate-limit.ts";
+import { calculateUrgencyScore } from "../_shared/urgency-constants.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -140,7 +141,19 @@ function topologicalSort(topics: Topic[]): { sorted: Topic[]; hasCycles: boolean
   return { sorted, hasCycles };
 }
 
-// Calculate priority score for a course based on exam proximity and workload
+// ========================
+// ENHANCED COURSE PRIORITY CALCULATION
+// Uses exponential urgency decay and weighted workload assessment
+// ========================
+
+interface CoursePriorityContext {
+  daysUntilExam: number;
+  remainingTopics: number;
+  totalHours: number;
+  avgDifficulty: number;
+  avgImportance: number;
+}
+
 function calculateCoursePriority(course: Course, today: Date): number {
   if (!course.exam_date) return 0;
   
@@ -149,12 +162,61 @@ function calculateCoursePriority(course: Course, today: Date): number {
   
   if (daysUntilExam <= 0) return 0;
   
-  const remainingTopics = course.topics.filter(t => t.status !== 'done').length;
-  const totalHours = course.topics
-    .filter(t => t.status !== 'done')
-    .reduce((sum, t) => sum + (t.estimated_hours || 1), 0);
+  const pendingTopics = course.topics.filter(t => t.status !== 'done');
+  const remainingTopics = pendingTopics.length;
   
-  return (1 / daysUntilExam) * (totalHours + remainingTopics);
+  if (remainingTopics === 0) return 0;
+  
+  const totalHours = pendingTopics.reduce((sum, t) => sum + (t.estimated_hours || 1), 0);
+  const avgDifficulty = pendingTopics.reduce((sum, t) => sum + (t.difficulty_weight || 3), 0) / remainingTopics;
+  const avgImportance = pendingTopics.reduce((sum, t) => sum + (t.exam_importance || 3), 0) / remainingTopics;
+  
+  // Calculate priority using enhanced algorithm
+  return calculateEnhancedPriority({
+    daysUntilExam,
+    remainingTopics,
+    totalHours,
+    avgDifficulty,
+    avgImportance,
+  });
+}
+
+function calculateEnhancedPriority(ctx: CoursePriorityContext): number {
+  const { daysUntilExam, remainingTopics, totalHours, avgDifficulty, avgImportance } = ctx;
+  
+  // 1. Exponential Urgency Score using shared calculation function
+  // Sharp increase as deadline approaches (sigmoid-like curve)
+  // Critical zone: < 7 days (very high urgency)
+  // Warning zone: 7-14 days (high urgency)
+  // Comfortable zone: > 14 days (moderate urgency)
+  const urgencyFactor = calculateUrgencyScore(daysUntilExam);
+  
+  // 2. Workload Density Score
+  // How much work per available day
+  const hoursPerDay = totalHours / Math.max(1, daysUntilExam);
+  const workloadDensity = Math.min(1, hoursPerDay / 3); // Normalize to max 3 hours/day being "full"
+  
+  // 3. Topic Importance Score
+  // Higher importance courses get priority
+  const importanceScore = (avgImportance - 1) / 4; // Normalize 1-5 to 0-1
+  
+  // 4. Difficulty Adjustment
+  // Harder courses need to start earlier (more time for understanding)
+  const difficultyBonus = (avgDifficulty - 3) * 0.1; // +/- 0.2 for extreme difficulties
+  
+  // 5. Volume Factor
+  // More topics means more scheduling priority
+  const volumeFactor = Math.min(1, remainingTopics / 15); // Normalize to 15 topics being "full course"
+  
+  // Combined weighted priority score
+  const priority = 
+    (urgencyFactor * 40) +           // Urgency dominates (0-40)
+    (workloadDensity * 25) +         // Workload density (0-25)
+    (importanceScore * 20) +         // Importance (0-20)
+    (difficultyBonus * 10) +         // Difficulty adjustment (-2 to +2)
+    (volumeFactor * 15);             // Volume (0-15)
+  
+  return Math.max(0, priority);
 }
 
 serve(async (req) => {

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { calculateUrgencyScore } from "../_shared/urgency-constants.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -82,7 +83,7 @@ serve(async (req) => {
     const daysOff: string[] = profile?.days_off || [];
 
     // If reschedule mode, analyze missed items first
-    let missedItemsData: any[] = [];
+    const missedItemsData: any[] = [];
     let missedDaysCount = 0;
     
     if (rescheduleMode && includeMissedItems) {
@@ -161,7 +162,7 @@ serve(async (req) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Calculate course allocations using cross-course weighting
+    // Calculate course allocations using enhanced priority scoring
     const courseAllocations: CourseAllocation[] = courses.map((course: any) => {
       const examDate = new Date(course.exam_date);
       examDate.setHours(0, 0, 0, 0);
@@ -170,33 +171,59 @@ serve(async (req) => {
       
       const remainingTopics = (course.topics || []).filter((t: Topic) => t.status !== 'done');
       
-      // Calculate workload: sum of (difficulty * importance) for remaining topics
-      let workload = remainingTopics.reduce((sum: number, t: Topic) => {
-        return sum + (t.difficulty_weight || 3) * (t.exam_importance || 3);
-      }, 0);
-      
-      // In reschedule mode, add extra weight for missed items from this course
-      if (rescheduleMode && includeMissedItems) {
-        const missedForCourse = missedItemsData.filter((i: any) => i.course_id === course.id);
-        workload += missedForCourse.length * 5; // Boost urgency for missed items
+      if (remainingTopics.length === 0) {
+        return null;
       }
       
-      // Urgency = workload / days_left
-      const urgency = workload / daysLeft;
+      // Calculate average difficulty and importance for smarter allocation
+      const avgDifficulty = remainingTopics.reduce((sum: number, t: Topic) => 
+        sum + (t.difficulty_weight || 3), 0) / remainingTopics.length;
+      const avgImportance = remainingTopics.reduce((sum: number, t: Topic) => 
+        sum + (t.exam_importance || 3), 0) / remainingTopics.length;
+      const totalHours = remainingTopics.reduce((sum: number, t: Topic) => 
+        sum + (t.estimated_hours || 1), 0);
+      
+      // Enhanced urgency calculation using shared function
+      // Critical zone: < 7 days (urgency 0.7-1.0)
+      // Warning zone: 7-14 days (urgency 0.4-0.7)
+      // Comfortable zone: > 14 days (urgency 0.1-0.4)
+      const urgencyBase = calculateUrgencyScore(daysLeft);
+      
+      // Workload density: hours needed per day
+      const workloadDensity = totalHours / Math.max(1, daysLeft);
+      
+      // Calculate workload: weighted combination of factors
+      const workload = 
+        (urgencyBase * 40) +                                    // Urgency (0-40)
+        (workloadDensity * 25) +                                // Density (0-25)
+        ((avgImportance - 1) / 4 * 20) +                       // Importance (0-20)
+        ((avgDifficulty - 3) * 3) +                            // Difficulty adjustment (-6 to +6)
+        (Math.min(remainingTopics.length / 15, 1) * 15);       // Volume (0-15)
+      
+      // In reschedule mode, add extra weight for missed items from this course
+      let adjustedWorkload = workload;
+      if (rescheduleMode && includeMissedItems) {
+        const missedForCourse = missedItemsData.filter((i: any) => i.course_id === course.id);
+        adjustedWorkload += missedForCourse.length * 8; // Boost urgency for missed items
+      }
+      
+      // Urgency is now the combined score
+      const urgency = Math.max(0, adjustedWorkload);
 
       return {
         course,
         days_left: daysLeft,
-        workload,
+        workload: adjustedWorkload,
         urgency,
         daily_hours: 0,
         remaining_topics: remainingTopics.sort((a: Topic, b: Topic) => {
-          const scoreA = (a.difficulty_weight || 3) * (a.exam_importance || 3);
-          const scoreB = (b.difficulty_weight || 3) * (b.exam_importance || 3);
+          // Enhanced sorting: prioritize by combined score
+          const scoreA = ((a.exam_importance || 3) * 2) + (a.difficulty_weight || 3);
+          const scoreB = ((b.exam_importance || 3) * 2) + (b.difficulty_weight || 3);
           return scoreB - scoreA; // Highest score first
         }),
       };
-    }).filter((ca: CourseAllocation) => ca.remaining_topics.length > 0);
+    }).filter((ca): ca is CourseAllocation => ca !== null && ca.remaining_topics.length > 0);
 
     if (courseAllocations.length === 0) {
       return new Response(
@@ -205,7 +232,7 @@ serve(async (req) => {
       );
     }
 
-    // Calculate daily hours per course (proportional to urgency)
+    // Calculate daily hours per course (proportional to urgency with better balancing)
     const totalUrgency = courseAllocations.reduce((sum, ca) => sum + ca.urgency, 0);
     
     // In reschedule mode, allow slightly more hours per day to catch up
@@ -218,8 +245,11 @@ serve(async (req) => {
         ? (ca.urgency / totalUrgency) * effectiveDailyHours 
         : effectiveDailyHours / courseAllocations.length;
       
-      // Cap at 70% of daily hours to prevent single-course dominance
-      ca.daily_hours = Math.min(ca.daily_hours, effectiveDailyHours * 0.7);
+      // Dynamic cap based on urgency - very urgent courses can take more time
+      const urgencyRatio = ca.urgency / totalUrgency;
+      const maxRatio = urgencyRatio > 0.5 ? 0.8 : 0.7; // Higher cap for dominant urgent course
+      ca.daily_hours = Math.min(ca.daily_hours, effectiveDailyHours * maxRatio);
+      
       // Minimum 0.5 hours per course
       ca.daily_hours = Math.max(ca.daily_hours, 0.5);
     });
