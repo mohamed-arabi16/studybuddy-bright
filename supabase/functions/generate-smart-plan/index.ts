@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { 
+  calculateUrgencyScore, 
+  PRIORITY_WEIGHTS 
+} from "../_shared/urgency-constants.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -283,18 +287,14 @@ interface PriorityScoreContext {
 }
 
 function calculatePriorityScore(ctx: PriorityScoreContext): number {
-  const { topic, daysUntilExam, prereqDepth, totalTopicsInCourse } = ctx;
+  const { topic, daysUntilExam, prereqDepth } = ctx;
   
-  // Weights for different factors (sum to 1.0)
-  const W_URGENCY = 0.35;     // Exam proximity weight
-  const W_IMPORTANCE = 0.30;  // Exam importance weight
-  const W_DIFFICULTY = 0.20;  // Difficulty weight (harder = schedule earlier)
-  const W_PREREQ = 0.15;      // Prerequisite depth weight (foundations first)
+  // Use shared weight constants
+  const { URGENCY: W_URGENCY, IMPORTANCE: W_IMPORTANCE, DIFFICULTY: W_DIFFICULTY, PREREQUISITE: W_PREREQ } = PRIORITY_WEIGHTS;
   
-  // 1. Urgency Score: Exponential decay as exam approaches
+  // 1. Urgency Score: Use shared urgency calculation function
   // Score increases dramatically as deadline nears
-  // Formula: 1 / (1 + e^(0.1 * (days - 7))) normalized to [0, 1]
-  const urgencyRaw = 1 / (1 + Math.exp(0.1 * (daysUntilExam - 7)));
+  const urgencyRaw = calculateUrgencyScore(daysUntilExam);
   const urgencyScore = Math.min(1, Math.max(0, urgencyRaw * 1.2)); // Boost urgent items
   
   // 2. Importance Score: Normalize 1-5 scale to 0-1

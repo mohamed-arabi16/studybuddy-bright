@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { calculateUrgencyScore } from "../_shared/urgency-constants.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -182,11 +183,11 @@ serve(async (req) => {
       const totalHours = remainingTopics.reduce((sum: number, t: Topic) => 
         sum + (t.estimated_hours || 1), 0);
       
-      // Enhanced urgency calculation using exponential decay
+      // Enhanced urgency calculation using shared function
       // Critical zone: < 7 days (urgency 0.7-1.0)
       // Warning zone: 7-14 days (urgency 0.4-0.7)
       // Comfortable zone: > 14 days (urgency 0.1-0.4)
-      const urgencyBase = 1 / (1 + Math.exp(0.15 * (daysLeft - 10)));
+      const urgencyBase = calculateUrgencyScore(daysLeft);
       
       // Workload density: hours needed per day
       const workloadDensity = totalHours / Math.max(1, daysLeft);

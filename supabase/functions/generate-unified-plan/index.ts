@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkRateLimit, createRateLimitResponse } from "../_shared/rate-limit.ts";
+import { calculateUrgencyScore } from "../_shared/urgency-constants.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -183,12 +184,12 @@ function calculateCoursePriority(course: Course, today: Date): number {
 function calculateEnhancedPriority(ctx: CoursePriorityContext): number {
   const { daysUntilExam, remainingTopics, totalHours, avgDifficulty, avgImportance } = ctx;
   
-  // 1. Exponential Urgency Score
+  // 1. Exponential Urgency Score using shared calculation function
   // Sharp increase as deadline approaches (sigmoid-like curve)
   // Critical zone: < 7 days (very high urgency)
   // Warning zone: 7-14 days (high urgency)
   // Comfortable zone: > 14 days (moderate urgency)
-  const urgencyFactor = 1 / (1 + Math.exp(0.15 * (daysUntilExam - 10)));
+  const urgencyFactor = calculateUrgencyScore(daysUntilExam);
   
   // 2. Workload Density Score
   // How much work per available day
