@@ -275,10 +275,10 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Main Grid - Today's Plan + Progress */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      {/* Main Grid - Today's Plan + Pomodoro Timer + Progress */}
+      <div className="grid lg:grid-cols-3 gap-6">
         {/* Today's Plan */}
-        <LiquidGlassCard className="overflow-hidden">
+        <LiquidGlassCard className="overflow-hidden lg:col-span-1">
           <div className="p-4 border-b border-border/10 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <ListTodo className="w-4 h-4 text-primary" strokeWidth={1.5} />
@@ -380,12 +380,20 @@ export default function Dashboard() {
           </div>
         </LiquidGlassCard>
 
-        {/* Overall Progress Section */}
-        <OverallProgressSection courses={courses} />
-      </div>
+        {/* Pomodoro Timer - Now in main grid */}
+        <div className="lg:col-span-1">
+          <PomodoroTimer 
+            planItems={todayPlan?.items}
+            onTopicStatusChange={toggleItemCompletion}
+            compact={false}
+          />
+        </div>
 
-      {/* Pomodoro Timer */}
-      <PomodoroTimer />
+        {/* Overall Progress Section */}
+        <div className="lg:col-span-1">
+          <OverallProgressSection courses={courses} />
+        </div>
+      </div>
 
       {/* Collapsible Information Sections */}
       <div className="space-y-3">
