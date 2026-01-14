@@ -83,6 +83,21 @@ function getDayOfWeek(date: Date): string {
 }
 
 // ========================
+// SCHEDULING CONSTANTS
+// ========================
+
+// In priority mode, use 95% of available hours for main study
+// Only reserve 5% buffer (vs 20% before) when time is severely constrained
+const PRIORITY_MODE_HOURS_RATIO = 0.95;
+
+// Minimum guaranteed hours per topic to ensure meaningful study sessions
+const MIN_HOURS_PER_TOPIC_FALLBACK = 1.5;
+
+// Maximum number of topics to include in AI prompt in triage mode
+// Increased from 15 to allow more topics to be scheduled when time permits
+const MAX_TRIAGE_TOPICS = 30;
+
+// ========================
 // SANITIZATION UTILITIES
 // ========================
 
@@ -446,7 +461,10 @@ function createFallbackSchedule(ctx: FallbackContext): ScheduledItem[] {
     }
     
     // Calculate compressed hours based on coverage ratio
-    const hours = Math.max(0.25, Math.min(1.5, topic.estimated_hours * ctx.coverageRatio));
+    // Allow topics to use up to half of daily capacity to better utilize available time
+    // when there are fewer topics scheduled per day
+    const maxHoursPerTopic = Math.max(MIN_HOURS_PER_TOPIC_FALLBACK, ctx.dailyCapacity / 2);
+    const hours = Math.max(0.25, Math.min(maxHoursPerTopic, topic.estimated_hours * ctx.coverageRatio));
     
     // Find first available date with capacity, respecting prereq order
     for (let i = earliestValidIdx; i < validDates.length; i++) {
@@ -853,8 +871,9 @@ serve(async (req) => {
         .map(t => t.topic);
       
       // Calculate how many topics can realistically fit with compressed hours
-      // Use 80% of available hours for main study, 20% buffer for reviews
-      const effectiveHours = feasibility.totalAvailableHours * 0.8;
+      // Use PRIORITY_MODE_HOURS_RATIO of available hours for main study - when time is severely constrained,
+      // we need to maximize topic coverage rather than reserving buffer for reviews
+      const effectiveHours = feasibility.totalAvailableHours * PRIORITY_MODE_HOURS_RATIO;
       
       // Greedy selection: add topics until hours are exhausted
       let accumulatedHours = 0;
@@ -897,8 +916,9 @@ serve(async (req) => {
         );
       }
       
-      // Limit to max 15 topics for triage to keep AI focused
-      triageTopics = selectedTopics.slice(0, Math.min(15, selectedTopics.length));
+      // Allow more topics to be scheduled - use all selected topics that fit within available hours
+      // Only limit if AI prompt would become too large
+      triageTopics = selectedTopics.slice(0, Math.min(MAX_TRIAGE_TOPICS, selectedTopics.length));
       unscheduledTopics = sortedTopics.filter(t => !triageTopics.includes(t));
       
       triageWarnings.push(`PRIORITY MODE: ${triageTopics.length} of ${allPendingTopics.length} highest-priority topics scheduled.`);
