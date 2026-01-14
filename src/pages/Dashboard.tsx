@@ -276,7 +276,7 @@ export default function Dashboard() {
       )}
 
       {/* Main Grid - Today's Plan + Pomodoro Timer + Progress */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Today's Plan */}
         <LiquidGlassCard className="overflow-hidden lg:col-span-1">
           <div className="p-4 border-b border-border/10 flex items-center justify-between">
@@ -381,7 +381,7 @@ export default function Dashboard() {
         </LiquidGlassCard>
 
         {/* Pomodoro Timer - Now in main grid */}
-        <div className="lg:col-span-1">
+        <div className="md:col-span-1">
           <PomodoroTimer 
             planItems={todayPlan?.items}
             onTopicStatusChange={toggleItemCompletion}
@@ -390,7 +390,7 @@ export default function Dashboard() {
         </div>
 
         {/* Overall Progress Section */}
-        <div className="lg:col-span-1">
+        <div className="md:col-span-2 lg:col-span-1">
           <OverallProgressSection courses={courses} />
         </div>
       </div>

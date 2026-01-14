@@ -20,9 +20,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Crown, Clock, Settings, RotateCcw, Search, UserCog, Shield, ShieldOff } from "lucide-react";
+import { Crown, Clock, Settings, RotateCcw, Search, UserCog, Shield, ShieldOff } from "lucide-react";
 import AdminSubscriptionDialog from "@/components/AdminSubscriptionDialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type User = {
   id: string;
@@ -53,6 +54,7 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
+  const { t, dir, language } = useLanguage();
 
   useEffect(() => {
     fetchUsers();
@@ -263,17 +265,17 @@ export default function AdminUsers() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Users</h1>
-        <div className="flex w-1/3 gap-2">
+    <div className="space-y-6" dir={dir}>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('users')}</h1>
+        <div className="flex w-full sm:w-1/3 gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground ${dir === 'rtl' ? 'right-3' : 'left-3'}`} />
             <Input
-              placeholder="Search by email..."
+              placeholder={t('searchByEmail')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
+              className={dir === 'rtl' ? 'pr-9' : 'pl-9'}
             />
           </div>
         </div>
@@ -283,14 +285,14 @@ export default function AdminUsers() {
         <Table className="min-w-[1000px]">
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead className="w-56 px-4 py-3">User</TableHead>
-              <TableHead className="w-32 px-4 py-3">Contact</TableHead>
-              <TableHead className="w-44 px-4 py-3">University / Dept</TableHead>
-              <TableHead className="w-20 px-4 py-3">Role</TableHead>
-              <TableHead className="w-32 px-4 py-3">Plan</TableHead>
-              <TableHead className="w-24 px-4 py-3">Status</TableHead>
-              <TableHead className="w-28 px-4 py-3">Joined</TableHead>
-              <TableHead className="w-36 px-4 py-3 text-right">Actions</TableHead>
+              <TableHead className="w-56 px-4 py-3">{t('user')}</TableHead>
+              <TableHead className="w-32 px-4 py-3">{t('contact')}</TableHead>
+              <TableHead className="w-44 px-4 py-3">{t('universityDept')}</TableHead>
+              <TableHead className="w-20 px-4 py-3">{t('role')}</TableHead>
+              <TableHead className="w-32 px-4 py-3">{t('plan')}</TableHead>
+              <TableHead className="w-24 px-4 py-3">{t('status')}</TableHead>
+              <TableHead className="w-28 px-4 py-3">{t('joined')}</TableHead>
+              <TableHead className="w-36 px-4 py-3 text-end">{t('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -304,13 +306,13 @@ export default function AdminUsers() {
                   <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-32 ml-auto" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-32 ms-auto" /></TableCell>
                 </TableRow>
               ))
             ) : filteredUsers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
-                  No users found.
+                  {t('noUsersFound')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -318,8 +320,8 @@ export default function AdminUsers() {
                 <TableRow key={user.id} className="hover:bg-muted/30">
                   <TableCell className="px-4 py-3">
                     <div className="flex flex-col min-w-0">
-                      <span className="font-medium truncate max-w-[200px]" title={user.display_name || 'No Name'}>
-                        {user.display_name || 'No Name'}
+                      <span className="font-medium truncate max-w-[200px]" title={user.display_name || t('noName')}>
+                        {user.display_name || t('noName')}
                       </span>
                       <span className="text-xs text-muted-foreground truncate max-w-[200px]" title={user.email}>
                         {user.email}
@@ -349,15 +351,15 @@ export default function AdminUsers() {
                     <Badge variant={user.role === 'admin' ? 'default' : 'outline'} className="whitespace-nowrap">
                       {user.role === 'admin' ? (
                         <span className="flex items-center gap-1">
-                          <Shield className="h-3 w-3" /> Admin
+                          <Shield className="h-3 w-3" /> {language === 'ar' ? 'أدمن' : 'Admin'}
                         </span>
-                      ) : 'User'}
+                      ) : (language === 'ar' ? 'مستخدم' : 'User')}
                     </Badge>
                   </TableCell>
                   <TableCell className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <Badge variant={user.has_override ? 'default' : 'secondary'} className="whitespace-nowrap">
-                        {user.has_override && <Crown className="h-3 w-3 mr-1" />}
+                        {user.has_override && <Crown className={`h-3 w-3 ${dir === 'rtl' ? 'ml-1' : 'mr-1'}`} />}
                         {user.plan_name}
                       </Badge>
                     </div>
@@ -367,59 +369,59 @@ export default function AdminUsers() {
                       variant={user.is_disabled ? 'destructive' : user.subscription_status === 'active' ? 'default' : 'outline'}
                       className="whitespace-nowrap"
                     >
-                      {user.is_disabled ? 'Disabled' : user.subscription_status}
+                      {user.is_disabled ? t('disabled') : user.subscription_status}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm px-4 py-3 whitespace-nowrap">
-                    {new Date(user.created_at).toLocaleDateString()}
+                    {new Date(user.created_at).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US')}
                   </TableCell>
-                  <TableCell className="text-right px-4 py-3">
+                  <TableCell className="text-end px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="outline" size="sm">
-                            <UserCog className="h-4 w-4 mr-2" />
-                            Manage
+                            <UserCog className={`h-4 w-4 ${dir === 'rtl' ? 'ml-2' : 'mr-2'}`} />
+                            {t('manage')}
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56">
-                          <DropdownMenuLabel>Subscription</DropdownMenuLabel>
+                          <DropdownMenuLabel>{t('subscriptionLabel')}</DropdownMenuLabel>
                           <DropdownMenuItem onClick={() => quickGrantPro(user)}>
-                            <Crown className="h-4 w-4 mr-2 text-amber-500" />
-                            Grant Pro Access
+                            <Crown className={`h-4 w-4 text-amber-500 ${dir === 'rtl' ? 'ml-2' : 'mr-2'}`} />
+                            {t('grantProAccess')}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => quickExtendTrial(user, 7)}>
-                            <Clock className="h-4 w-4 mr-2 text-blue-500" />
-                            Add 7 Days Trial
+                            <Clock className={`h-4 w-4 text-blue-500 ${dir === 'rtl' ? 'ml-2' : 'mr-2'}`} />
+                            {t('add7DaysTrial')}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => quickExtendTrial(user, 30)}>
-                            <Clock className="h-4 w-4 mr-2 text-blue-500" />
-                            Add 30 Days Trial
+                            <Clock className={`h-4 w-4 text-blue-500 ${dir === 'rtl' ? 'ml-2' : 'mr-2'}`} />
+                            {t('add30DaysTrial')}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => openSubscriptionDialog(user)}>
-                            <Settings className="h-4 w-4 mr-2" />
-                            Custom Settings...
+                            <Settings className={`h-4 w-4 ${dir === 'rtl' ? 'ml-2' : 'mr-2'}`} />
+                            {t('customSettings')}
                           </DropdownMenuItem>
                           {user.has_override && (
                             <DropdownMenuItem onClick={() => resetOverrides(user)} className="text-destructive">
-                              <RotateCcw className="h-4 w-4 mr-2" />
-                              Reset to Free
+                              <RotateCcw className={`h-4 w-4 ${dir === 'rtl' ? 'ml-2' : 'mr-2'}`} />
+                              {t('resetToFree')}
                             </DropdownMenuItem>
                           )}
                           
                           <DropdownMenuSeparator />
-                          <DropdownMenuLabel>Account</DropdownMenuLabel>
+                          <DropdownMenuLabel>{t('account')}</DropdownMenuLabel>
                           
                           <DropdownMenuItem onClick={() => toggleRole(user.user_id, user.role)}>
                             {user.role === 'admin' ? (
                               <>
-                                <ShieldOff className="h-4 w-4 mr-2 text-orange-500" />
-                                Remove Admin
+                                <ShieldOff className={`h-4 w-4 text-orange-500 ${dir === 'rtl' ? 'ml-2' : 'mr-2'}`} />
+                                {t('removeAdmin')}
                               </>
                             ) : (
                               <>
-                                <Shield className="h-4 w-4 mr-2 text-green-500" />
-                                Make Admin
+                                <Shield className={`h-4 w-4 text-green-500 ${dir === 'rtl' ? 'ml-2' : 'mr-2'}`} />
+                                {t('makeAdmin')}
                               </>
                             )}
                           </DropdownMenuItem>
@@ -428,7 +430,7 @@ export default function AdminUsers() {
                             onClick={() => toggleDisable(user.user_id, user.is_disabled)}
                             className={user.is_disabled ? 'text-green-600' : 'text-destructive'}
                           >
-                            {user.is_disabled ? 'Enable Account' : 'Disable Account'}
+                            {user.is_disabled ? t('enableAccount') : t('disableAccount')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

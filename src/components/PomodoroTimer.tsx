@@ -80,7 +80,7 @@ export function PomodoroTimer({ planItems = [], onTopicStatusChange, compact = f
   const [sessionsCompleted, setSessionsCompleted] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [currentSessionDuration, setCurrentSessionDuration] = useState(0);
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   
   // New states for topic selection and completion
   const [showTopicSelector, setShowTopicSelector] = useState(false);
@@ -115,8 +115,12 @@ export function PomodoroTimer({ planItems = [], onTopicStatusChange, compact = f
         const newSessions = sessionsCompleted + 1;
         setSessionsCompleted(newSessions);
 
-        // If working on a topic, show completion dialog
+        // If working on a topic, auto-complete it and show completion dialog
         if (currentWorkingItem) {
+          // Auto-complete the topic
+          if (onTopicStatusChange) {
+            onTopicStatusChange(currentWorkingItem.id, true);
+          }
           setShowCompletionDialog(true);
         } else {
           // Auto-switch to break mode if no topic is being tracked
@@ -193,16 +197,13 @@ export function PomodoroTimer({ planItems = [], onTopicStatusChange, compact = f
     setIsRunning(true);
   };
   
-  // Handle completion - mark topic as done
+  // Handle confirming completion - topic is already auto-completed, just close dialog
   const handleTopicCompleted = () => {
-    if (currentWorkingItem && onTopicStatusChange) {
-      onTopicStatusChange(currentWorkingItem.id, true);
-      toast.success(
-        language === 'ar' 
-          ? `أحسنت! تم إكمال "${currentWorkingItem.topic?.title}"` 
-          : `Great job! "${currentWorkingItem.topic?.title}" completed!`
-      );
-    }
+    toast.success(
+      language === 'ar' 
+        ? `أحسنت! تم إكمال "${currentWorkingItem?.topic?.title}"` 
+        : `Great job! "${currentWorkingItem?.topic?.title}" completed!`
+    );
     setCurrentWorkingItem(null);
     setShowCompletionDialog(false);
     
@@ -217,8 +218,12 @@ export function PomodoroTimer({ planItems = [], onTopicStatusChange, compact = f
     }
   };
   
-  // Handle not completed - suggest break and continue with same topic
+  // Handle undo - revert the auto-completion and continue with same topic
   const handleTopicNotCompleted = () => {
+    // Undo the auto-completion
+    if (currentWorkingItem && onTopicStatusChange) {
+      onTopicStatusChange(currentWorkingItem.id, false);
+    }
     setShowCompletionDialog(false);
     toast.info(
       language === 'ar' 
@@ -457,23 +462,18 @@ export function PomodoroTimer({ planItems = [], onTopicStatusChange, compact = f
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <span>🎉</span>
-              {language === 'ar' ? 'انتهى الوقت!' : 'Time\'s up!'}
+              {t('timesUp')}
             </DialogTitle>
             <DialogDescription>
-              {language === 'ar' 
-                ? `هل أكملت دراسة "${currentWorkingItem?.topic?.title}"؟`
-                : `Did you finish studying "${currentWorkingItem?.topic?.title}"?`}
+              {t('topicAutoCompleted').replace('{topic}', currentWorkingItem?.topic?.title || '')}
             </DialogDescription>
           </DialogHeader>
           
           {currentWorkingItem && (
             <div className="py-4">
-              <div className="p-4 rounded-lg bg-muted/30 border border-border/30">
+              <div className="p-4 rounded-lg bg-success/10 border border-success/20">
                 <div className="flex items-center gap-3">
-                  <div 
-                    className="w-3 h-3 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: currentWorkingItem.course?.color || 'hsl(var(--primary))' }}
-                  />
+                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
                   <div>
                     <p className="font-medium">{currentWorkingItem.topic?.title}</p>
                     <p className="text-sm text-muted-foreground">{currentWorkingItem.course?.title}</p>
@@ -490,14 +490,14 @@ export function PomodoroTimer({ planItems = [], onTopicStatusChange, compact = f
               className="w-full sm:w-auto gap-2"
             >
               <XCircle className="w-4 h-4" />
-              {language === 'ar' ? 'لم أنتهِ بعد' : 'Not yet'}
+              {t('notYetUndo')}
             </Button>
             <Button 
               onClick={handleTopicCompleted}
               className="w-full sm:w-auto gap-2"
             >
               <CheckCircle2 className="w-4 h-4" />
-              {language === 'ar' ? 'نعم، أكملته!' : 'Yes, done!'}
+              {t('yesDone')}
             </Button>
           </DialogFooter>
         </DialogContent>
