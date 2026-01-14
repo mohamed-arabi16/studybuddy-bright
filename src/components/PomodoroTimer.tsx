@@ -80,7 +80,7 @@ export function PomodoroTimer({ planItems = [], onTopicStatusChange, compact = f
   const [sessionsCompleted, setSessionsCompleted] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [currentSessionDuration, setCurrentSessionDuration] = useState(0);
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   
   // New states for topic selection and completion
   const [showTopicSelector, setShowTopicSelector] = useState(false);
@@ -462,12 +462,10 @@ export function PomodoroTimer({ planItems = [], onTopicStatusChange, compact = f
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <span>🎉</span>
-              {language === 'ar' ? 'انتهى الوقت!' : 'Time\'s up!'}
+              {t('timesUp')}
             </DialogTitle>
             <DialogDescription>
-              {language === 'ar' 
-                ? `تم تحديد "${currentWorkingItem?.topic?.title}" كمكتمل. هل تريد الاحتفاظ به كمكتمل؟`
-                : `"${currentWorkingItem?.topic?.title}" has been marked as complete. Keep it as completed?`}
+              {t('topicAutoCompleted').replace('{topic}', currentWorkingItem?.topic?.title || '')}
             </DialogDescription>
           </DialogHeader>
           
@@ -492,14 +490,14 @@ export function PomodoroTimer({ planItems = [], onTopicStatusChange, compact = f
               className="w-full sm:w-auto gap-2"
             >
               <XCircle className="w-4 h-4" />
-              {language === 'ar' ? 'لم أنتهِ بعد (تراجع)' : 'Not yet (undo)'}
+              {t('notYetUndo')}
             </Button>
             <Button 
               onClick={handleTopicCompleted}
               className="w-full sm:w-auto gap-2"
             >
               <CheckCircle2 className="w-4 h-4" />
-              {language === 'ar' ? 'نعم، أكملته!' : 'Yes, done!'}
+              {t('yesDone')}
             </Button>
           </DialogFooter>
         </DialogContent>
