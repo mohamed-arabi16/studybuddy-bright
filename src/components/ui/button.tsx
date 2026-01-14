@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-import { motion, HTMLMotionProps } from "framer-motion";
+import { motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 
@@ -43,15 +43,27 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       return <Slot className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />;
     }
     
+    // Extract only button-specific props to pass to motion.button
+    const { type, disabled, onClick, onMouseDown, onMouseUp, onFocus, onBlur, children, ...restProps } = props;
+    
     return (
       <motion.button 
         className={cn(buttonVariants({ variant, size, className }))} 
         ref={ref}
-        whileHover={{ scale: 1.02, y: -1 }}
-        whileTap={{ scale: 0.98 }}
+        type={type}
+        disabled={disabled}
+        onClick={onClick}
+        onMouseDown={onMouseDown}
+        onMouseUp={onMouseUp}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        whileHover={disabled ? undefined : { scale: 1.02, y: -1 }}
+        whileTap={disabled ? undefined : { scale: 0.98 }}
         transition={{ type: "spring", stiffness: 400, damping: 17 }}
-        {...props as HTMLMotionProps<"button">} 
-      />
+        {...restProps}
+      >
+        {children}
+      </motion.button>
     );
   },
 );

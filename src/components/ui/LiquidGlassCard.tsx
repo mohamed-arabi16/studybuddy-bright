@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils';
 import { forwardRef, HTMLAttributes } from 'react';
-import { motion, HTMLMotionProps } from 'framer-motion';
+import { motion, MotionProps } from 'framer-motion';
 
-export interface LiquidGlassCardProps extends Omit<HTMLMotionProps<"div">, 'ref'> {
+export interface LiquidGlassCardProps extends HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'elevated' | 'subtle';
   hover?: boolean;
   delay?: number;
@@ -10,14 +10,14 @@ export interface LiquidGlassCardProps extends Omit<HTMLMotionProps<"div">, 'ref'
 }
 
 const LiquidGlassCard = forwardRef<HTMLDivElement, LiquidGlassCardProps>(
-  ({ className, variant = 'default', hover = false, delay = 0, disableAnimation = false, children, ...props }, ref) => {
+  ({ className, variant = 'default', hover = false, delay = 0, disableAnimation = false, children, style, ...props }, ref) => {
     const variantClasses = {
       default: 'liquid-glass',
       elevated: 'liquid-glass-elevated',
       subtle: 'liquid-glass-subtle'
     };
 
-    const animationProps = disableAnimation ? {} : {
+    const animationProps: MotionProps = disableAnimation ? {} : {
       initial: { opacity: 0, y: 20 },
       animate: { opacity: 1, y: 0 },
       transition: { 
@@ -43,6 +43,7 @@ const LiquidGlassCard = forwardRef<HTMLDivElement, LiquidGlassCardProps>(
           'rounded-2xl relative overflow-hidden',
           className
         )}
+        style={style}
         {...animationProps}
         {...props}
       >
