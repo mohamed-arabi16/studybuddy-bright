@@ -318,7 +318,7 @@ serve(async (req) => {
     const today = getTodayUTC();
     const todayStr = getDateStr(today);
 
-    // Process courses and filter topics
+    // Process courses and filter topics (initial pass without hour compression)
     const processedCourses: Course[] = courses.map(c => ({
       id: c.id,
       title: c.title,
@@ -330,8 +330,8 @@ serve(async (req) => {
           ...t,
           difficulty_weight: t.difficulty_weight || 3,
           exam_importance: t.exam_importance || 3,
-          // Apply minimum hours based on difficulty
-          estimated_hours: Math.max(t.estimated_hours || 1.5, (t.difficulty_weight || 3) * 0.5),
+          // Store original estimated hours (will be compressed if needed)
+          estimated_hours: t.estimated_hours || 1.5,
           order_index: t.order_index || 0,
         })),
     })).filter(c => c.topics.length > 0);
@@ -375,13 +375,53 @@ serve(async (req) => {
 
     console.log(`Planning horizon: ${planDays} days (max exam in ${maxExamDays} days)`);
 
+    // ========================
+    // FEASIBILITY CHECK & TIME COMPRESSION
+    // Calculate available vs required hours and compress topic hours if needed
+    // ========================
+    
+    // Count available study days (excluding days off and days past exam dates)
+    let availableStudyDays = 0;
+    let tempDate = new Date(today);
+    for (let i = 0; i < planDays; i++) {
+      const dayOfWeek = getDayOfWeek(tempDate);
+      if (!daysOff.includes(dayOfWeek)) {
+        availableStudyDays++;
+      }
+      tempDate = addDays(tempDate, 1);
+    }
+    
+    // Calculate total hours needed and available
+    const totalRequiredHours = sortedCourses.reduce((sum, c) => 
+      sum + c.topics.reduce((s, t) => s + t.estimated_hours, 0), 0);
+    const totalAvailableHours = availableStudyDays * dailyStudyHours;
+    const minHoursPerTopic = 0.25;
+    const totalTopicsCount = sortedCourses.reduce((s, c) => s + c.topics.length, 0);
+    const minRequiredHours = totalTopicsCount * minHoursPerTopic;
+    
+    // Calculate coverage ratio - how much of the required time we can cover
+    const coverageRatio = totalRequiredHours > 0 
+      ? Math.min(1, totalAvailableHours / totalRequiredHours)
+      : 1;
+    
+    const isPriorityMode = coverageRatio < 1;
+    
+    console.log(`Feasibility: ${totalRequiredHours.toFixed(1)}h required, ${totalAvailableHours.toFixed(1)}h available, coverage: ${(coverageRatio * 100).toFixed(0)}%, priority mode: ${isPriorityMode}`);
+
     // Track scheduling state
     const scheduledTopicIds = new Set<string>(); // All topics scheduled so far
     const topicRemainingHours = new Map<string, number>(); // Track split topics
     const coursePointers = new Map<string, number>();
     sortedCourses.forEach(c => {
       coursePointers.set(c.id, 0);
-      c.topics.forEach(t => topicRemainingHours.set(t.id, t.estimated_hours));
+      // Apply time compression when time is insufficient (coverageRatio < 1)
+      // This ensures topics get scheduled even when time is limited
+      c.topics.forEach(t => {
+        const compressedHours = isPriorityMode 
+          ? Math.max(minHoursPerTopic, t.estimated_hours * coverageRatio)
+          : t.estimated_hours;
+        topicRemainingHours.set(t.id, compressedHours);
+      });
     });
 
     const schedule: ScheduledItem[] = [];
@@ -401,7 +441,11 @@ serve(async (req) => {
         let remainingHours = dailyStudyHours;
         const dayItems: ScheduledItem[] = [];
         let noProgressIterations = 0;
-        const maxNoProgressIterations = sortedCourses.length + 1;
+        // Increase max iterations to allow more attempts when topics complete and unlock others
+        const maxNoProgressIterations = (sortedCourses.length + 1) * 2;
+        
+        // Track topics scheduled THIS DAY for same-day prerequisite checking
+        const topicsScheduledToday = new Set<string>();
 
         while (remainingHours > 0.25 && noProgressIterations < maxNoProgressIterations) {
           let madeProgress = false;
@@ -434,10 +478,11 @@ serve(async (req) => {
 
             const topic = course.topics[pointer];
             
-            // Check prerequisites - now includes topics scheduled earlier today
+            // Check prerequisites - includes topics scheduled earlier today for same-day dependency resolution
             const prereqs = topic.prerequisite_ids || [];
             const allPrereqsMet = prereqs.every(prereqId => 
               scheduledTopicIds.has(prereqId) || 
+              topicsScheduledToday.has(prereqId) ||
               !sortedCourses.some(c => c.topics.some(t => t.id === prereqId && t.status !== 'done'))
             );
 
@@ -465,6 +510,7 @@ serve(async (req) => {
             // Only advance pointer and mark as scheduled when topic is fully scheduled
             if (newRemaining <= 0.1) {
               scheduledTopicIds.add(topic.id);
+              topicsScheduledToday.add(topic.id);
               coursePointers.set(course.id, pointer + 1);
             }
 
@@ -656,6 +702,9 @@ serve(async (req) => {
 
     const warnings: string[] = [];
     if (hasAnyCycles) warnings.push("circular_dependencies_detected");
+    if (isPriorityMode) {
+      warnings.push(`time_compressed: ${(coverageRatio * 100).toFixed(0)}% coverage ratio applied`);
+    }
 
     return new Response(
       JSON.stringify({
@@ -667,6 +716,13 @@ serve(async (req) => {
         total_hours: Array.from(dailySchedule.values()).reduce((s, d) => s + d.hours, 0),
         courses_included: coursesIncluded,
         warnings,
+        // Feasibility metrics returned to client for UI display and monitoring
+        is_priority_mode: isPriorityMode,
+        coverage_ratio: coverageRatio,
+        total_required_hours: totalRequiredHours,
+        total_available_hours: totalAvailableHours,
+        topics_scheduled: scheduledTopicIds.size,
+        topics_total: totalTopicsCount,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
