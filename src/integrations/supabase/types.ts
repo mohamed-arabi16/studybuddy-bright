@@ -383,6 +383,80 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_codes: {
+        Row: {
+          id: string
+          code: string
+          description: string | null
+          trial_days: number
+          max_redemptions: number
+          current_redemptions: number
+          is_active: boolean
+          expires_at: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          code: string
+          description?: string | null
+          trial_days?: number
+          max_redemptions?: number
+          current_redemptions?: number
+          is_active?: boolean
+          expires_at?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          code?: string
+          description?: string | null
+          trial_days?: number
+          max_redemptions?: number
+          current_redemptions?: number
+          is_active?: boolean
+          expires_at?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      promo_redemptions: {
+        Row: {
+          id: string
+          promo_code_id: string
+          user_id: string
+          redeemed_at: string
+          trial_end_date: string
+        }
+        Insert: {
+          id?: string
+          promo_code_id: string
+          user_id: string
+          redeemed_at?: string
+          trial_end_date: string
+        }
+        Update: {
+          id?: string
+          promo_code_id?: string
+          user_id?: string
+          redeemed_at?: string
+          trial_end_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_redemptions_promo_code_id_fkey"
+            columns: ["promo_code_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pomodoro_sessions: {
         Row: {
           completed_at: string | null
@@ -840,6 +914,12 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      redeem_promo_code: {
+        Args: {
+          p_code: string
+        }
+        Returns: Json
       }
     }
     Enums: {
