@@ -419,6 +419,7 @@ export default function CourseDetail() {
                                 <Sparkles className="w-4 h-4" />
                               )}
                               {t('extractTopics')}
+                              <span className="text-xs opacity-75">({t('creditCost').replace('{n}', '30')})</span>
                             </Button>
                           )}
                           {/* Delete button */}
