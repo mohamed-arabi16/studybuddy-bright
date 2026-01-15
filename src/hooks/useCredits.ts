@@ -33,6 +33,13 @@ const DEFAULT_COSTS: Record<string, number> = {
   chat_with_tutor: 2,
 };
 
+// Default allowances from credit_plans table (fallback values)
+const DEFAULT_ALLOWANCES: Record<string, number> = {
+  free: 50,
+  trial: 1500,
+  pro: 1500,
+};
+
 export function useCredits(): UseCreditsReturn {
   const [credits, setCredits] = useState<CreditState | null>(null);
   const [costs, setCosts] = useState<CreditCost[]>([]);
@@ -67,17 +74,66 @@ export function useCredits(): UseCreditsReturn {
         });
         setError(null);
       } else {
-        // No credit record yet - user hasn't made any AI calls
-        // Set default based on subscription (will be created on first AI call)
+        // No credit record yet - determine plan tier from subscription
+        // This will be auto-created on first AI call via consume_credits()
+        const [subResult, overrideResult, creditPlansResult] = await Promise.all([
+          supabase
+            .from('subscriptions')
+            .select('status, trial_end, plans(name)')
+            .eq('user_id', user.id)
+            .maybeSingle(),
+          supabase
+            .from('admin_overrides')
+            .select('quota_overrides')
+            .eq('user_id', user.id)
+            .maybeSingle(),
+          supabase
+            .from('credit_plans')
+            .select('tier, monthly_allowance')
+            .eq('is_active', true),
+        ]);
+
+        // Build allowance map from DB
+        const allowanceMap: Record<string, number> = { ...DEFAULT_ALLOWANCES };
+        if (creditPlansResult.data) {
+          for (const plan of creditPlansResult.data) {
+            allowanceMap[plan.tier] = plan.monthly_allowance;
+          }
+        }
+
+        // Determine tier from subscription/overrides
+        let tier: 'free' | 'trial' | 'pro' = 'free';
+        
+        // Check admin override first
+        const quotaOverrides = overrideResult.data?.quota_overrides as { courses?: number } | null;
+        if (quotaOverrides?.courses === -1) {
+          tier = 'pro';
+        } else if (subResult.data) {
+          const sub = subResult.data;
+          const planName = (sub.plans as { name: string } | null)?.name?.toLowerCase() || '';
+          
+          if (sub.status === 'active' && planName.includes('pro')) {
+            tier = 'pro';
+          } else if (sub.status === 'trialing' && sub.trial_end) {
+            const trialEnd = new Date(sub.trial_end);
+            if (trialEnd > new Date()) {
+              tier = 'trial';
+            }
+          }
+        }
+
+        const allowance = allowanceMap[tier] ?? 50;
+        
         setCredits({
-          balance: 50, // Default free tier
-          monthlyAllowance: 50,
+          balance: allowance, // Full balance since no usage yet
+          monthlyAllowance: allowance,
           lastResetDate: new Date().toISOString(),
-          planTier: 'free',
+          planTier: tier,
         });
+        setError(null);
       }
 
-      // Fetch credit costs
+      // Fetch credit costs from DB
       const { data: costsData, error: costsError } = await supabase
         .from('credit_costs')
         .select('action_type, cost_credits')

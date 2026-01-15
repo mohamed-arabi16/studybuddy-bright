@@ -102,14 +102,16 @@ export function CreditIndicator({ className }: CreditIndicatorProps) {
 
       {/* Plan Tier Badge */}
       <div className="pt-1.5 border-t border-white/10">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between">
           <span className={cn(
             "text-[10px] font-medium px-1.5 py-0.5 rounded uppercase tracking-wide",
             credits.planTier === 'pro' ? 'bg-primary/20 text-primary' :
             credits.planTier === 'trial' ? 'bg-purple-500/20 text-purple-400' :
             'bg-white/10 text-white/60'
           )}>
-            {credits.planTier === 'trial' ? t('trial') : credits.planTier}
+            {credits.planTier === 'trial' ? t('trial') : 
+             credits.planTier === 'pro' ? 'Pro' : 
+             credits.planTier.toUpperCase()}
           </span>
           <span className="text-[10px] text-white/40">
             {credits.monthlyAllowance} {t('creditsPerMonth')}
