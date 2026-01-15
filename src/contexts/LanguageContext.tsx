@@ -750,6 +750,18 @@ const translations: Record<Language, Record<string, string>> = {
     'promoRedeemed': 'تم استخدام الكود بنجاح!',
     'promoTrialGranted': 'تم منحك وصول Pro لمدة {days} يوم!',
     'havePromoCode': 'لديك كود ترويجي؟',
+    
+    // OTP Verification
+    'verificationCodeSent': 'تم إرسال رمز التحقق إلى بريدك الإلكتروني',
+    'enterVerificationCode': 'أدخل رمز التحقق',
+    'verificationCodeDescription': 'أدخل الرمز المكون من 6 أرقام المرسل إلى بريدك',
+    'verifyCode': 'تحقق',
+    'verifying': 'جاري التحقق...',
+    'resendCode': 'إعادة إرسال الرمز',
+    'invalidVerificationCode': 'رمز التحقق غير صحيح',
+    'codeExpired': 'انتهت صلاحية الرمز. أعد الإرسال.',
+    'proTrial': 'تجربة Pro',
+    'trialEndsIn': 'تنتهي خلال {days} يوم',
   },
   en: {
     // Layout
@@ -1491,6 +1503,18 @@ const translations: Record<Language, Record<string, string>> = {
     'promoRedeemed': 'Promo code redeemed successfully!',
     'promoTrialGranted': 'You have been granted Pro access for {days} days!',
     'havePromoCode': 'Have a promo code?',
+    
+    // OTP Verification
+    'verificationCodeSent': 'Verification code sent to your email',
+    'enterVerificationCode': 'Enter verification code',
+    'verificationCodeDescription': 'Enter the 6-digit code sent to your email',
+    'verifyCode': 'Verify',
+    'verifying': 'Verifying...',
+    'resendCode': 'Resend code',
+    'invalidVerificationCode': 'Invalid verification code',
+    'codeExpired': 'Code expired. Please resend.',
+    'proTrial': 'Pro Trial',
+    'trialEndsIn': 'Ends in {days} days',
   }
 };
 

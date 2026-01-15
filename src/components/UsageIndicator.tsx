@@ -9,7 +9,7 @@ interface UsageIndicatorProps {
 }
 
 export function UsageIndicator({ compact = false, className }: UsageIndicatorProps) {
-  const { usage, limits, planName, isLoading, isTrial } = useSubscription();
+  const { usage, limits, planName, isLoading, isTrial, isPro } = useSubscription();
   const { t } = useLanguage();
 
   if (isLoading) {
@@ -47,6 +47,9 @@ export function UsageIndicator({ compact = false, className }: UsageIndicatorPro
     );
   }
 
+  // Show "Pro Trial" for promo code users, "Free Trial" for regular trial
+  const trialLabel = isPro && isTrial ? t('proTrial') : t('freeTrial');
+
   return (
     <div className={cn("p-3 rounded-lg bg-muted/50 space-y-2", className)}>
       <div className="flex items-center justify-between">
@@ -59,7 +62,7 @@ export function UsageIndicator({ compact = false, className }: UsageIndicatorPro
           </div>
           <div>
             <p className="text-xs font-medium">{planName}</p>
-            {isTrial && <p className="text-[10px] text-muted-foreground">{t('freeTrial')}</p>}
+            {isTrial && <p className="text-[10px] text-muted-foreground">{trialLabel}</p>}
           </div>
         </div>
         <span className={cn(
