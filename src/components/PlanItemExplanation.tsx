@@ -2,7 +2,6 @@ import { Info } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
@@ -58,21 +57,20 @@ export function PlanItemExplanation({
   };
 
   return (
-    <TooltipProvider>
-      <Tooltip delayDuration={200}>
-        <TooltipTrigger asChild>
-          <button
-            className="p-1 rounded-full hover:bg-muted/50 transition-colors"
-            aria-label={language === "ar" ? "لماذا هذا التاريخ؟" : "Why this date?"}
-          >
-            <Info className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent 
-          side="top" 
-          className="max-w-[280px] p-3"
-          dir={language === "ar" ? "rtl" : "ltr"}
+    <Tooltip delayDuration={200}>
+      <TooltipTrigger asChild>
+        <button
+          className="p-1 rounded-full hover:bg-muted/50 transition-colors"
+          aria-label={language === "ar" ? "لماذا هذا التاريخ؟" : "Why this date?"}
         >
+          <Info className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent 
+        side="top" 
+        className="max-w-[280px] p-3"
+        dir={language === "ar" ? "rtl" : "ltr"}
+      >
           <div className="space-y-2">
             {/* Main explanation text */}
             {explanationText && (
@@ -123,6 +121,5 @@ export function PlanItemExplanation({
           </div>
         </TooltipContent>
       </Tooltip>
-    </TooltipProvider>
   );
 }

@@ -60,7 +60,7 @@ export function DependencyFlowVisual({ courseId }: DependencyFlowVisualProps) {
     fetchTopics();
   }, [courseId]);
 
-  // Detect cycles using DFS
+  // Detect cycles using DFS with proper back-edge detection
   const detectCycles = (topicList: Topic[]): { cycles: boolean; topicsInCycles: string[] } => {
     const topicMap = new Map<string, Topic>();
     topicList.forEach(t => topicMap.set(t.id, t));
@@ -69,21 +69,20 @@ export function DependencyFlowVisual({ courseId }: DependencyFlowVisualProps) {
     const recStack = new Set<string>();
     const topicsInCycles: string[] = [];
 
-    const hasCycleDFS = (topicId: string, path: string[]): boolean => {
+    const hasCycleDFS = (topicId: string): boolean => {
+      // If already in current recursion stack, we found a back edge (cycle)
       if (recStack.has(topicId)) {
-        // Found cycle - mark all topics in the path
-        const cycleStart = path.indexOf(topicId);
-        if (cycleStart !== -1) {
-          path.slice(cycleStart).forEach(id => {
-            if (!topicsInCycles.includes(id)) topicsInCycles.push(id);
-          });
+        // Mark this topic as part of a cycle
+        if (!topicsInCycles.includes(topicId)) {
+          topicsInCycles.push(topicId);
         }
         return true;
       }
 
+      // If already fully processed, no cycle through this node
       if (visited.has(topicId)) return false;
 
-      visited.add(topicId);
+      // Mark as being processed (in current recursion stack)
       recStack.add(topicId);
 
       const topic = topicMap.get(topicId);
@@ -92,12 +91,18 @@ export function DependencyFlowVisual({ courseId }: DependencyFlowVisualProps) {
 
       for (const prereqId of prereqs) {
         if (topicMap.has(prereqId)) {
-          if (hasCycleDFS(prereqId, [...path, topicId])) {
+          if (hasCycleDFS(prereqId)) {
             foundCycle = true;
+            // Mark this topic too since it's part of the cycle path
+            if (!topicsInCycles.includes(topicId)) {
+              topicsInCycles.push(topicId);
+            }
           }
         }
       }
 
+      // Mark as fully processed and remove from recursion stack
+      visited.add(topicId);
       recStack.delete(topicId);
       return foundCycle;
     };
@@ -105,7 +110,7 @@ export function DependencyFlowVisual({ courseId }: DependencyFlowVisualProps) {
     let cycles = false;
     for (const topic of topicList) {
       if (!visited.has(topic.id)) {
-        if (hasCycleDFS(topic.id, [])) {
+        if (hasCycleDFS(topic.id)) {
           cycles = true;
         }
       }
