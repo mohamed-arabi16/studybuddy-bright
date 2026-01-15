@@ -811,6 +811,33 @@ const translations: Record<Language, Record<string, string>> = {
     'privacyUserRights': 'حقوقك',
     'privacySecurity': 'الأمان',
     'privacyContact': 'التواصل معنا',
+    
+    // Plan Summary Card
+    'planSummary': 'ملخص الخطة',
+    'studyDays': 'أيام الدراسة',
+    'totalHours': 'إجمالي الساعات',
+    'dailyAvg': 'المعدل اليومي',
+    'coverageRatioLabel': 'نسبة التغطية',
+    'topicsScheduledLabel': 'المواضيع المجدولة',
+    'estCompletion': 'تاريخ الإتمام المتوقع',
+    'creatingSmartPlan': 'جاري إنشاء خطتك الذكية...',
+    
+    // Pomodoro Timer additional
+    'selectTopicToStudy': 'اختر موضوعاً للدراسة',
+    'selectTopic': 'اختر موضوعاً...',
+    'startWithoutTopic': 'ابدأ بدون موضوع',
+    'startStudying': 'ابدأ الدراسة',
+    'sessionRecordedToast': 'تم تسجيل الجلسة!',
+    
+    // Admin Dashboard / Users
+    'superAdmin': 'الإدارة العليا',
+    'monetizationControl': 'الإدارة والتحكم',
+    'backToApp': 'العودة للتطبيق',
+    'auditLog': 'سجل التدقيق',
+    'adminRole': 'أدمن',
+    'userRole': 'مستخدم',
+    'notApplicable': 'غ/م',
+    'lastUpdated': 'آخر تحديث',
   },
   en: {
     // Layout
@@ -1612,6 +1639,33 @@ const translations: Record<Language, Record<string, string>> = {
     'privacyUserRights': 'Your Rights',
     'privacySecurity': 'Security',
     'privacyContact': 'Contact Us',
+    
+    // Plan Summary Card
+    'planSummary': 'Plan Summary',
+    'studyDays': 'Study Days',
+    'totalHours': 'Total Hours',
+    'dailyAvg': 'Daily Avg',
+    'coverageRatioLabel': 'Coverage Ratio',
+    'topicsScheduledLabel': 'Topics Scheduled',
+    'estCompletion': 'Est. Completion',
+    'creatingSmartPlan': 'Creating your smart plan...',
+    
+    // Pomodoro Timer additional
+    'selectTopicToStudy': 'Select a Topic to Study',
+    'selectTopic': 'Select a topic...',
+    'startWithoutTopic': 'Start without topic',
+    'startStudying': 'Start studying',
+    'sessionRecordedToast': 'Session recorded!',
+    
+    // Admin Dashboard / Users
+    'superAdmin': 'Super Admin',
+    'monetizationControl': 'Monetization & Control',
+    'backToApp': 'Back to App',
+    'auditLog': 'Audit Log',
+    'adminRole': 'Admin',
+    'userRole': 'User',
+    'notApplicable': 'N/A',
+    'lastUpdated': 'Last updated',
   }
 };
 
