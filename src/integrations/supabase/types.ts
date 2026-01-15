@@ -293,6 +293,136 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_costs: {
+        Row: {
+          action_type: string
+          cost_credits: number
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          action_type: string
+          cost_credits: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          cost_credits?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      credit_plans: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          monthly_allowance: number
+          reset_rule: string
+          tier: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          monthly_allowance: number
+          reset_rule?: string
+          tier: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          monthly_allowance?: number
+          reset_rule?: string
+          tier?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      credit_usage_events: {
+        Row: {
+          action_type: string
+          computed_cost_usd: number | null
+          course_id: string | null
+          created_at: string
+          credits_charged: number
+          id: string
+          job_id: string | null
+          latency_ms: number | null
+          model: string | null
+          provider_response_metadata: Json | null
+          tokens_in: number | null
+          tokens_out: number | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          computed_cost_usd?: number | null
+          course_id?: string | null
+          created_at?: string
+          credits_charged: number
+          id?: string
+          job_id?: string | null
+          latency_ms?: number | null
+          model?: string | null
+          provider_response_metadata?: Json | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          computed_cost_usd?: number | null
+          course_id?: string | null
+          created_at?: string
+          credits_charged?: number
+          id?: string
+          job_id?: string | null
+          latency_ms?: number | null
+          model?: string | null
+          provider_response_metadata?: Json | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_usage_events_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_usage_events_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "ai_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_usage_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       feedback: {
         Row: {
           admin_notes: string | null
@@ -915,6 +1045,41 @@ export type Database = {
         }
         Relationships: []
       }
+      user_credits: {
+        Row: {
+          balance: number
+          last_reset_date: string
+          monthly_allowance: number
+          plan_tier: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          last_reset_date?: string
+          monthly_allowance?: number
+          plan_tier?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          last_reset_date?: string
+          monthly_allowance?: number
+          plan_tier?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_credits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -965,9 +1130,51 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      admin_credit_analytics: {
+        Row: {
+          action_type: string | null
+          avg_latency_ms: number | null
+          avg_tokens_in: number | null
+          avg_tokens_out: number | null
+          median_total_tokens: number | null
+          p95_total_tokens: number | null
+          total_cost_usd: number | null
+          total_credits: number | null
+          total_events: number | null
+        }
+        Relationships: []
+      }
+      admin_full_course_cost: {
+        Row: {
+          course_id: string | null
+          extract_count: number | null
+          plan_count: number | null
+          total_cost_usd: number | null
+          total_credits: number | null
+          total_tokens: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_usage_events_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      consume_credits: {
+        Args: {
+          p_action: string
+          p_amount: number
+          p_course_id?: string
+          p_job_id?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -977,6 +1184,17 @@ export type Database = {
       }
       is_user_enabled: { Args: { _user_id: string }; Returns: boolean }
       redeem_promo_code: { Args: { p_code: string }; Returns: Json }
+      update_credit_usage_tokens: {
+        Args: {
+          p_event_id: string
+          p_latency_ms: number
+          p_metadata?: Json
+          p_model?: string
+          p_tokens_in: number
+          p_tokens_out: number
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"

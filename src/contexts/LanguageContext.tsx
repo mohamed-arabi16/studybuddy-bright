@@ -487,6 +487,17 @@ const translations: Record<Language, Record<string, string>> = {
     'freeTrial': 'تجربة مجانية',
     'nearLimit': 'قاربت على الحد الأقصى',
     'usage': 'الاستخدام',
+    
+    // Credit System (Phase 2)
+    'credits': 'رصيد',
+    'resetsOn': 'يتجدد في',
+    'lowCredits': 'رصيد منخفض',
+    'noCreditsLeft': 'نفد الرصيد',
+    'creditsPerMonth': 'رصيد/شهر',
+    'insufficientCredits': 'رصيد غير كافٍ',
+    'upgradeForMore': 'قم بالترقية للحصول على المزيد من الرصيد',
+    'creditCost': 'يستخدم {n} رصيد',
+    'trial': 'تجربة',
 
     // Courses List
     'noCoursesTitle': 'لا توجد مواد بعد',
@@ -1243,6 +1254,17 @@ const translations: Record<Language, Record<string, string>> = {
     'freeTrial': 'Free Trial',
     'nearLimit': 'Near Limit',
     'usage': 'Usage',
+    
+    // Credit System (Phase 2)
+    'credits': 'credits',
+    'resetsOn': 'Resets on',
+    'lowCredits': 'Low credits',
+    'noCreditsLeft': 'No credits left',
+    'creditsPerMonth': 'credits/mo',
+    'insufficientCredits': 'Insufficient credits',
+    'upgradeForMore': 'Upgrade for more credits',
+    'creditCost': 'Uses {n} credits',
+    'trial': 'Trial',
 
     // Courses List
     'noCoursesTitle': 'No courses yet',

@@ -15,6 +15,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Session } from "@supabase/supabase-js";
 import { UsageIndicator } from "@/components/UsageIndicator";
+import { CreditIndicator } from "@/components/CreditIndicator";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -186,6 +187,9 @@ export default function Layout() {
           {/* Feedback Form */}
           {session && <FeedbackForm language={language} />}
         </nav>
+
+        {/* Credit Indicator (Phase 2) */}
+        {session && <CreditIndicator className="mb-2" />}
 
         {/* Usage Indicator */}
         {session && <UsageIndicator />}
