@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-import { motion } from "framer-motion";
+import { motion, HTMLMotionProps } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 
@@ -32,19 +32,45 @@ const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  extends VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  className?: string;
+  children?: React.ReactNode;
+  type?: "button" | "submit" | "reset";
+  disabled?: boolean;
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  onMouseDown?: React.MouseEventHandler<HTMLButtonElement>;
+  onMouseUp?: React.MouseEventHandler<HTMLButtonElement>;
+  onFocus?: React.FocusEventHandler<HTMLButtonElement>;
+  onBlur?: React.FocusEventHandler<HTMLButtonElement>;
+  id?: string;
+  name?: string;
+  value?: string;
+  form?: string;
+  formAction?: string;
+  formMethod?: string;
+  formNoValidate?: boolean;
+  formTarget?: string;
+  autoFocus?: boolean;
+  tabIndex?: number;
+  "aria-label"?: string;
+  "aria-labelledby"?: string;
+  "aria-describedby"?: string;
+  "aria-expanded"?: boolean;
+  "aria-haspopup"?: boolean | "menu" | "listbox" | "tree" | "grid" | "dialog";
+  "aria-controls"?: string;
+  "aria-pressed"?: boolean | "mixed";
+  "data-state"?: string;
+  "data-disabled"?: boolean | string;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, children, ...props }, ref) => {
     if (asChild) {
-      return <Slot className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />;
+      return <Slot className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props}>{children}</Slot>;
     }
     
-    // Extract only button-specific props to pass to motion.button
-    const { type, disabled, onClick, onMouseDown, onMouseUp, onFocus, onBlur, children, ...restProps } = props;
+    const { type, disabled, onClick, onMouseDown, onMouseUp, onFocus, onBlur, ...restProps } = props;
     
     return (
       <motion.button 
@@ -60,7 +86,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         whileHover={disabled ? undefined : { scale: 1.02, y: -1 }}
         whileTap={disabled ? undefined : { scale: 0.98 }}
         transition={{ type: "spring", stiffness: 400, damping: 17 }}
-        {...restProps}
+        {...(restProps as any)}
       >
         {children}
       </motion.button>

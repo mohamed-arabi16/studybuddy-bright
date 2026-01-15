@@ -48,10 +48,13 @@ export const FeatureShowcase = () => {
 
   return (
     <section ref={sectionRef} className="py-32 relative overflow-hidden" dir={dir}>
-      {/* Animated Background Elements */}
+      {/* Top gradient fade for smooth transition */}
+      <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-b from-[#0A0A0F] via-[#0A0A0F]/50 to-transparent pointer-events-none" />
+
+      {/* Animated Background Elements - softer intensities */}
       <div className="absolute inset-0 pointer-events-none">
         <motion.div 
-          className="absolute top-1/3 right-[-15%] w-[600px] h-[600px] bg-purple-600/8 rounded-full blur-[150px]"
+          className="absolute top-1/3 right-[-15%] w-[600px] h-[600px] bg-purple-600/5 rounded-full blur-[180px]"
           animate={{ 
             x: [0, 50, 0],
             scale: [1, 1.1, 1],
@@ -59,7 +62,7 @@ export const FeatureShowcase = () => {
           transition={{ duration: 15, repeat: Infinity }}
         />
         <motion.div 
-          className="absolute bottom-1/3 left-[-15%] w-[600px] h-[600px] bg-blue-600/8 rounded-full blur-[150px]"
+          className="absolute bottom-1/3 left-[-15%] w-[600px] h-[600px] bg-blue-600/5 rounded-full blur-[180px]"
           animate={{ 
             x: [0, -50, 0],
             scale: [1.1, 1, 1.1],
@@ -88,7 +91,7 @@ export const FeatureShowcase = () => {
           <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6">
             {t('featuresTitle')} <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">{t('featuresTitleHighlight')}</span>
           </h2>
-          <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+          <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
             {t('featuresSubtitle')}
           </p>
         </motion.div>
@@ -144,10 +147,10 @@ export const FeatureShowcase = () => {
                 </div>
 
                 {/* Content */}
-                <h3 className="text-xl font-bold mb-3 text-white/90 relative">
+                <h3 className="text-xl font-bold mb-3 text-foreground/90 relative">
                   {t(feature.titleKey)}
                 </h3>
-                <p className="text-gray-400 leading-relaxed relative">
+                <p className="text-muted-foreground leading-relaxed relative">
                   {t(feature.descKey)}
                 </p>
 
@@ -180,6 +183,9 @@ export const FeatureShowcase = () => {
           </motion.div>
         </motion.div>
       </div>
+
+      {/* Bottom gradient fade for smooth transition to footer */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0A0A0F] to-transparent pointer-events-none" />
     </section>
   );
 };

@@ -84,7 +84,7 @@ const FloatingIcon = ({
   </motion.div>
 );
 
-// Glowing orb component
+// Glowing orb component - reduced opacity for softer blending
 const GlowingOrb = ({ color, size, x, y, delay }: { 
   color: string; 
   size: number; 
@@ -93,7 +93,7 @@ const GlowingOrb = ({ color, size, x, y, delay }: {
   delay: number;
 }) => (
   <motion.div
-    className="absolute rounded-full blur-[100px]"
+    className="absolute rounded-full blur-[120px]"
     style={{
       background: color,
       width: size,
@@ -103,7 +103,7 @@ const GlowingOrb = ({ color, size, x, y, delay }: {
     }}
     animate={{
       scale: [1, 1.3, 1],
-      opacity: [0.3, 0.6, 0.3],
+      opacity: [0.2, 0.4, 0.2],
     }}
     transition={{
       duration: 8,
@@ -131,12 +131,12 @@ export const HeroSection = () => {
 
   return (
     <section className="relative min-h-[100vh] flex items-center justify-center overflow-hidden" dir={dir}>
-      {/* Animated gradient mesh background */}
+      {/* Animated gradient mesh background - softer colors */}
       <div className="absolute inset-0 overflow-hidden">
-        <GlowingOrb color="rgba(59, 130, 246, 0.4)" size={800} x={50} y={-20} delay={0} />
-        <GlowingOrb color="rgba(147, 51, 234, 0.3)" size={600} x={70} y={60} delay={2} />
-        <GlowingOrb color="rgba(59, 130, 246, 0.25)" size={500} x={10} y={40} delay={4} />
-        <GlowingOrb color="rgba(236, 72, 153, 0.15)" size={400} x={80} y={20} delay={1} />
+        <GlowingOrb color="rgba(59, 130, 246, 0.25)" size={800} x={50} y={-20} delay={0} />
+        <GlowingOrb color="rgba(147, 51, 234, 0.2)" size={600} x={70} y={60} delay={2} />
+        <GlowingOrb color="rgba(59, 130, 246, 0.15)" size={500} x={10} y={40} delay={4} />
+        <GlowingOrb color="rgba(236, 72, 153, 0.1)" size={400} x={80} y={20} delay={1} />
       </div>
 
       {/* Animated grid pattern */}
@@ -227,7 +227,7 @@ export const HeroSection = () => {
 
           {/* Subtitle with fade-in effect */}
           <motion.p 
-            className="text-xl md:text-2xl text-gray-400 max-w-2xl leading-relaxed"
+            className="text-xl md:text-2xl text-muted-foreground max-w-2xl leading-relaxed"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3, type: "spring", stiffness: 80 }}
@@ -293,8 +293,8 @@ export const HeroSection = () => {
         </div>
       </div>
 
-      {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0A0A0F] to-transparent pointer-events-none" />
+      {/* Bottom gradient fade - taller for smoother blend */}
+      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F]/70 to-transparent pointer-events-none" />
     </section>
   );
 };
