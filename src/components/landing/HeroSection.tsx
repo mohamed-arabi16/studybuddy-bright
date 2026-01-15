@@ -204,16 +204,16 @@ export const HeroSection = () => {
           </motion.div>
 
           {/* Main Heading with staggered word animation */}
-          <motion.div className="space-y-2">
+          <motion.div className="space-y-2 mb-4">
             <motion.h1 
-              className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.05]"
+              className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.15]"
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.15, type: "spring", stiffness: 80 }}
             >
               <span className="block text-foreground">{t('heroTitle1')}</span>
               <motion.span 
-                className="block bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400"
+                className="block bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 pb-2"
                 animate={{ 
                   backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
                 }}

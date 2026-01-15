@@ -189,24 +189,24 @@ export default function AdminQuotas() {
         />
       </div>
 
-      <div className="border rounded-lg overflow-x-auto">
+      <div className="border rounded-lg overflow-x-auto" dir="ltr">
         <Table className="min-w-[800px]">
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead className="w-64 px-4 py-3">User</TableHead>
-              <TableHead className="w-52 px-4 py-3">Plan Limits</TableHead>
-              <TableHead className="w-60 px-4 py-3">Active Override</TableHead>
-              <TableHead className="w-44 px-4 py-3 text-right">Actions</TableHead>
+              <TableHead className="w-64 px-4 py-3 text-sm text-gray-400">User</TableHead>
+              <TableHead className="w-52 px-4 py-3 text-sm text-gray-400">Plan Limits</TableHead>
+              <TableHead className="w-60 px-4 py-3 text-sm text-gray-400">Active Override</TableHead>
+              <TableHead className="w-44 px-4 py-3 text-right text-sm text-gray-400">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+                <TableRow key={i} className="border-b border-white/5">
+                  <TableCell className="py-4"><Skeleton className="h-4 w-40" /></TableCell>
+                  <TableCell className="py-4"><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell className="py-4"><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell className="py-4"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
                 </TableRow>
               ))
             ) : filteredUsers.length === 0 ? (
@@ -217,13 +217,13 @@ export default function AdminQuotas() {
               </TableRow>
             ) : (
               filteredUsers.map((user) => (
-                <TableRow key={user.user_id} className="hover:bg-muted/30">
-                  <TableCell className="px-4 py-3">
-                    <span className="font-medium truncate block max-w-[240px]" dir="auto" title={user.email}>
+                <TableRow key={user.user_id} className="hover:bg-muted/30 border-b border-white/5">
+                  <TableCell className="px-4 py-4 text-left">
+                    <span className="font-medium truncate block max-w-[240px]" dir="ltr" title={user.email}>
                       {user.email}
                     </span>
                   </TableCell>
-                  <TableCell className="px-4 py-3">
+                  <TableCell className="px-4 py-4">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
                       <span className="whitespace-nowrap">{formatLimit(user.plan_limits?.courses)} courses</span>
                       <span>•</span>
@@ -232,7 +232,7 @@ export default function AdminQuotas() {
                       <span className="whitespace-nowrap">{formatLimit(user.plan_limits?.ai_extractions)} AI</span>
                     </div>
                   </TableCell>
-                  <TableCell className="px-4 py-3">
+                  <TableCell className="px-4 py-4">
                     {user.quota_overrides ? (
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="default" className="flex items-center gap-1 whitespace-nowrap">
@@ -247,7 +247,7 @@ export default function AdminQuotas() {
                       <span className="text-muted-foreground">—</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-right px-4 py-3">
+                  <TableCell className="text-right px-4 py-4">
                     <div className="flex items-center justify-end gap-2">
                       <Button variant="outline" size="sm" onClick={() => openEdit(user)}>
                         <Pencil className="h-4 w-4 mr-2" />
