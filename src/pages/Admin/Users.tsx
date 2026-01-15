@@ -285,28 +285,28 @@ export default function AdminUsers() {
         <Table className="min-w-[1000px]">
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead className="w-56 px-4 py-3">{t('user')}</TableHead>
-              <TableHead className="w-32 px-4 py-3">{t('contact')}</TableHead>
-              <TableHead className="w-44 px-4 py-3">{t('universityDept')}</TableHead>
-              <TableHead className="w-20 px-4 py-3">{t('role')}</TableHead>
-              <TableHead className="w-32 px-4 py-3">{t('plan')}</TableHead>
-              <TableHead className="w-24 px-4 py-3">{t('status')}</TableHead>
-              <TableHead className="w-28 px-4 py-3">{t('joined')}</TableHead>
-              <TableHead className="w-36 px-4 py-3 text-end">{t('actions')}</TableHead>
+              <TableHead className="w-56 px-4 py-3 text-sm text-gray-400">{t('user')}</TableHead>
+              <TableHead className="w-32 px-4 py-3 text-sm text-gray-400">{t('contact')}</TableHead>
+              <TableHead className="w-44 px-4 py-3 text-sm text-gray-400">{t('universityDept')}</TableHead>
+              <TableHead className="w-20 px-4 py-3 text-sm text-gray-400">{t('role')}</TableHead>
+              <TableHead className="w-32 px-4 py-3 text-sm text-gray-400">{t('plan')}</TableHead>
+              <TableHead className="w-24 px-4 py-3 text-sm text-gray-400">{t('status')}</TableHead>
+              <TableHead className="w-28 px-4 py-3 text-sm text-gray-400">{t('joined')}</TableHead>
+              <TableHead className="w-36 px-4 py-3 text-end text-sm text-gray-400">{t('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell><Skeleton className="h-8 w-40" /></TableCell>
-                  <TableCell><Skeleton className="h-8 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-8 w-36" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-32 ms-auto" /></TableCell>
+                <TableRow key={i} className="border-b border-white/5">
+                  <TableCell className="py-4"><Skeleton className="h-8 w-40" /></TableCell>
+                  <TableCell className="py-4"><Skeleton className="h-8 w-32" /></TableCell>
+                  <TableCell className="py-4"><Skeleton className="h-8 w-36" /></TableCell>
+                  <TableCell className="py-4"><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell className="py-4"><Skeleton className="h-4 w-20" /></TableCell>
+                  <TableCell className="py-4"><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell className="py-4"><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell className="py-4"><Skeleton className="h-4 w-32 ms-auto" /></TableCell>
                 </TableRow>
               ))
             ) : filteredUsers.length === 0 ? (
@@ -317,8 +317,8 @@ export default function AdminUsers() {
               </TableRow>
             ) : (
               filteredUsers.map((user) => (
-                <TableRow key={user.id} className="hover:bg-muted/30">
-                  <TableCell className="px-4 py-3">
+                <TableRow key={user.id} className="hover:bg-muted/30 border-b border-white/5">
+                  <TableCell className="px-4 py-4">
                     <div className="flex flex-col min-w-0">
                       <span className="font-medium truncate max-w-[200px]" title={user.display_name || t('noName')}>
                         {user.display_name || t('noName')}
@@ -328,7 +328,7 @@ export default function AdminUsers() {
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="px-4 py-3">
+                  <TableCell className="px-4 py-4">
                     <div className="flex flex-col text-sm">
                       {user.phone_number ? (
                         <span dir="ltr" className="truncate max-w-[120px]">{user.phone_number}</span>
@@ -337,17 +337,17 @@ export default function AdminUsers() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="px-4 py-3">
-                    <div className="flex flex-col text-sm min-w-0">
-                      <span className="font-medium truncate max-w-[160px]" title={user.university || '—'}>
+                  <TableCell className="px-4 py-4">
+                    <div className="flex flex-col text-sm min-w-0 text-right">
+                      <span dir="ltr" className="font-medium truncate max-w-[160px]" title={user.university || ''}>
                         {user.university || '—'}
                       </span>
-                      <span className="text-xs text-muted-foreground truncate max-w-[160px]" title={user.department || '—'}>
+                      <span dir="ltr" className="text-xs text-muted-foreground truncate max-w-[160px]" title={user.department || ''}>
                         {user.department || '—'}
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="px-4 py-3">
+                  <TableCell className="px-4 py-4">
                     <Badge variant={user.role === 'admin' ? 'default' : 'outline'} className="whitespace-nowrap">
                       {user.role === 'admin' ? (
                         <span className="flex items-center gap-1">
@@ -356,26 +356,40 @@ export default function AdminUsers() {
                       ) : (language === 'ar' ? 'مستخدم' : 'User')}
                     </Badge>
                   </TableCell>
-                  <TableCell className="px-4 py-3">
+                  <TableCell className="px-4 py-4">
                     <div className="flex items-center gap-2">
-                      <Badge variant={user.has_override ? 'default' : 'secondary'} className="whitespace-nowrap">
-                        {user.has_override && <Crown className={`h-3 w-3 ${dir === 'rtl' ? 'ml-1' : 'mr-1'}`} />}
-                        {user.plan_name}
-                      </Badge>
+                      {user.plan_name === 'Free' || !user.plan_name ? (
+                        <Badge variant="secondary" className="whitespace-nowrap text-gray-400">
+                          {language === 'ar' ? 'غ/م' : 'N/A'}
+                        </Badge>
+                      ) : (
+                        <Badge variant={user.has_override ? 'default' : 'secondary'} className="whitespace-nowrap">
+                          {user.has_override && <Crown className={`h-3 w-3 ${dir === 'rtl' ? 'ml-1' : 'mr-1'}`} />}
+                          {user.plan_name}
+                        </Badge>
+                      )}
                     </div>
                   </TableCell>
-                  <TableCell className="px-4 py-3">
-                    <Badge 
-                      variant={user.is_disabled ? 'destructive' : user.subscription_status === 'active' ? 'default' : 'outline'}
-                      className="whitespace-nowrap"
-                    >
-                      {user.is_disabled ? t('disabled') : user.subscription_status}
-                    </Badge>
+                  <TableCell className="px-4 py-4">
+                    {user.is_disabled ? (
+                      <Badge variant="destructive" className="whitespace-nowrap">
+                        {t('disabled')}
+                      </Badge>
+                    ) : user.subscription_status === 'none' || !user.subscription_status ? (
+                      <span className="text-muted-foreground">—</span>
+                    ) : (
+                      <Badge 
+                        variant={user.subscription_status === 'active' ? 'default' : 'outline'}
+                        className="whitespace-nowrap"
+                      >
+                        {user.subscription_status}
+                      </Badge>
+                    )}
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-sm px-4 py-3 whitespace-nowrap">
+                  <TableCell className="text-muted-foreground text-sm px-4 py-4 whitespace-nowrap">
                     {new Date(user.created_at).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US')}
                   </TableCell>
-                  <TableCell className="text-end px-4 py-3">
+                  <TableCell className="text-end px-4 py-4">
                     <div className="flex items-center justify-end gap-2">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

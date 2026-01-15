@@ -113,11 +113,11 @@ export const FeatureShowcase = () => {
               <LiquidGlassCard
                 hover
                 disableAnimation
-                className="p-8 h-full group relative overflow-hidden"
+                className="p-8 h-full group relative overflow-hidden border border-white/10"
               >
                 {/* Gradient overlay on hover */}
                 <motion.div 
-                  className={`absolute inset-0 bg-gradient-to-br ${feature.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+                  className={`absolute inset-0 bg-gradient-to-br ${feature.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl`}
                 />
 
                 {/* Decorative corner glow */}
@@ -126,7 +126,7 @@ export const FeatureShowcase = () => {
                 />
 
                 {/* Icon with animated background */}
-                <div className="relative mb-6">
+                <div className="relative mb-6 flex justify-end rtl:justify-start">
                   <motion.div 
                     className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.bgColor} backdrop-blur-md flex items-center justify-center`}
                     whileHover={{ scale: 1.1, rotate: 5 }}
@@ -137,7 +137,7 @@ export const FeatureShowcase = () => {
                   
                   {/* Animated ring */}
                   <motion.div 
-                    className="absolute inset-0 rounded-2xl border border-primary/30"
+                    className="absolute rounded-2xl border border-primary/30 w-16 h-16 right-0 rtl:right-auto rtl:left-0"
                     animate={{ 
                       scale: [1, 1.15, 1],
                       opacity: [0.3, 0, 0.3],
@@ -147,10 +147,10 @@ export const FeatureShowcase = () => {
                 </div>
 
                 {/* Content */}
-                <h3 className="text-xl font-bold mb-3 text-foreground/90 relative">
+                <h3 className="text-xl font-bold mb-3 text-foreground/90 relative text-right">
                   {t(feature.titleKey)}
                 </h3>
-                <p className="text-muted-foreground leading-relaxed relative">
+                <p className="text-muted-foreground leading-relaxed relative text-right">
                   {t(feature.descKey)}
                 </p>
 

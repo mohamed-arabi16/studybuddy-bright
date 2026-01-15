@@ -190,26 +190,26 @@ export default function AdminPromos() {
         <Table className="min-w-[900px]">
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead className="w-40 px-4 py-3">{t('code')}</TableHead>
-              <TableHead className="w-48 px-4 py-3">{t('description')}</TableHead>
-              <TableHead className="w-24 px-4 py-3">{t('trialDays')}</TableHead>
-              <TableHead className="w-32 px-4 py-3">{t('redemptions')}</TableHead>
-              <TableHead className="w-28 px-4 py-3">{t('expires')}</TableHead>
-              <TableHead className="w-24 px-4 py-3">{t('status')}</TableHead>
-              <TableHead className="w-36 px-4 py-3 text-end">{t('actions')}</TableHead>
+              <TableHead className="w-40 px-4 py-3 text-sm text-gray-400">{t('code')}</TableHead>
+              <TableHead className="w-64 px-4 py-3 text-sm text-gray-400">{language === 'ar' ? 'الوصف' : t('description')}</TableHead>
+              <TableHead className="w-24 px-4 py-3 text-sm text-gray-400">{t('trialDays')}</TableHead>
+              <TableHead className="w-32 px-4 py-3 text-sm text-gray-400">{t('redemptions')}</TableHead>
+              <TableHead className="w-28 px-4 py-3 text-sm text-gray-400">{t('expires')}</TableHead>
+              <TableHead className="w-24 px-4 py-3 text-sm text-gray-400">{t('status')}</TableHead>
+              <TableHead className="w-36 px-4 py-3 text-end text-sm text-gray-400">{t('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               Array.from({ length: 3 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24 ms-auto" /></TableCell>
+                <TableRow key={i} className="border-b border-white/5">
+                  <TableCell className="py-4"><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell className="py-4"><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell className="py-4"><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell className="py-4"><Skeleton className="h-4 w-20" /></TableCell>
+                  <TableCell className="py-4"><Skeleton className="h-4 w-20" /></TableCell>
+                  <TableCell className="py-4"><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell className="py-4"><Skeleton className="h-4 w-24 ms-auto" /></TableCell>
                 </TableRow>
               ))
             ) : promoCodes.length === 0 ? (
@@ -221,8 +221,8 @@ export default function AdminPromos() {
               </TableRow>
             ) : (
               promoCodes.map((promo) => (
-                <TableRow key={promo.id} className="hover:bg-muted/30">
-                  <TableCell className="px-4 py-3">
+                <TableRow key={promo.id} className="hover:bg-muted/30 border-b border-white/5">
+                  <TableCell className="px-4 py-4">
                     <div className="flex items-center gap-2">
                       <code className="font-mono text-sm bg-muted px-2 py-1 rounded">
                         {promo.code}
@@ -237,16 +237,20 @@ export default function AdminPromos() {
                       </Button>
                     </div>
                   </TableCell>
-                  <TableCell className="px-4 py-3 text-sm text-muted-foreground max-w-[200px] truncate">
-                    {promo.description || '—'}
+                  <TableCell className="px-4 py-4 text-sm text-muted-foreground">
+                    <span className="block max-w-[240px] line-clamp-2">
+                      {promo.description || '—'}
+                    </span>
                   </TableCell>
-                  <TableCell className="px-4 py-3">
-                    <Badge variant="secondary" className="flex items-center gap-1 w-fit">
-                      <Clock className="h-3 w-3" />
-                      {promo.trial_days} {t('daysLabel')}
-                    </Badge>
+                  <TableCell className="px-4 py-4">
+                    <div className="flex items-center">
+                      <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                        <Clock className="h-3 w-3" />
+                        {promo.trial_days} {t('daysLabel')}
+                      </Badge>
+                    </div>
                   </TableCell>
-                  <TableCell className="px-4 py-3">
+                  <TableCell className="px-4 py-4">
                     <div className="flex items-center gap-2">
                       <Badge
                         variant={promo.current_redemptions >= promo.max_redemptions ? 'destructive' : 'outline'}
@@ -269,7 +273,7 @@ export default function AdminPromos() {
                       />
                     </div>
                   </TableCell>
-                  <TableCell className="px-4 py-3 text-sm">
+                  <TableCell className="px-4 py-4 text-sm">
                     {promo.expires_at ? (
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <Calendar className="h-3 w-3" />
@@ -279,12 +283,14 @@ export default function AdminPromos() {
                       <span className="text-muted-foreground">—</span>
                     )}
                   </TableCell>
-                  <TableCell className="px-4 py-3">
-                    <Badge variant={promo.is_active ? 'default' : 'secondary'}>
-                      {promo.is_active ? t('active') : t('inactive')}
-                    </Badge>
+                  <TableCell className="px-4 py-4">
+                    <div className="flex items-center">
+                      <Badge variant={promo.is_active ? 'default' : 'secondary'}>
+                        {promo.is_active ? t('active') : t('inactive')}
+                      </Badge>
+                    </div>
                   </TableCell>
-                  <TableCell className="px-4 py-3 text-end">
+                  <TableCell className="px-4 py-4 text-end">
                     <div className="flex items-center justify-end gap-2">
                       <Switch
                         checked={promo.is_active}

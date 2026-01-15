@@ -142,45 +142,45 @@ export const HowItWorksSection = () => {
               <LiquidGlassCard 
                 hover
                 disableAnimation
-                className="p-8 relative h-full group"
+                className="p-6 relative h-full group border border-white/10"
               >
                 {/* Gradient background on hover */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${step.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl`} />
                 
                 {/* Step number with glow */}
-                <div className="relative">
+                <div className="relative text-right">
                   <motion.span 
-                    className="text-7xl font-bold text-primary/5 absolute -top-4 -left-2"
+                    className="text-6xl font-bold text-primary/5 absolute -top-2 right-0 rtl:right-auto rtl:left-0"
                     animate={{ opacity: [0.03, 0.08, 0.03] }}
                     transition={{ duration: 3, repeat: Infinity }}
                   >
                     {step.number}
                   </motion.span>
-                  <span className="text-xs font-mono text-primary/60 mb-6 block relative">
+                  <span className="text-xs font-mono text-primary/60 mb-4 block relative">
                     {step.number}
                   </span>
                 </div>
 
                 {/* Icon with animated ring */}
-                <div className="relative mb-6">
+                <div className="relative mb-4 flex justify-end rtl:justify-start">
                   <motion.div 
-                    className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${step.color} backdrop-blur-md flex items-center justify-center ${step.iconColor}`}
+                    className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${step.color} backdrop-blur-md flex items-center justify-center ${step.iconColor}`}
                     whileHover={{ scale: 1.1, rotate: 5 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
-                    <step.icon className="w-8 h-8" strokeWidth={1.5} />
+                    <step.icon className="w-7 h-7" strokeWidth={1.5} />
                   </motion.div>
                   {/* Pulse ring */}
                   <motion.div 
-                    className={`absolute inset-0 rounded-2xl border-2 border-primary/20`}
+                    className={`absolute inset-0 rounded-2xl border-2 border-primary/20 w-14 h-14 right-0 rtl:right-auto rtl:left-0`}
                     animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
                     transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
                   />
                 </div>
 
                 {/* Content */}
-                <h3 className="text-xl font-bold mb-3 text-foreground/90 relative">{t(step.titleKey)}</h3>
-                <p className="text-muted-foreground leading-relaxed relative">
+                <h3 className="text-lg font-bold mb-2 text-foreground/90 relative text-right">{t(step.titleKey)}</h3>
+                <p className="text-muted-foreground leading-relaxed relative text-sm text-right">
                   {t(step.descKey)}
                 </p>
               </LiquidGlassCard>
