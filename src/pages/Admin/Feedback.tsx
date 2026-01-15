@@ -139,7 +139,7 @@ export default function AdminFeedback() {
       case 'bug': return t('bug');
       case 'feature': return t('feature');
       case 'improvement': return t('improvement');
-      default: return type;
+      default: return t('other');
     }
   };
 
@@ -148,7 +148,7 @@ export default function AdminFeedback() {
       case 'new': return t('new');
       case 'reviewed': return t('reviewed');
       case 'resolved': return t('resolved');
-      default: return status;
+      default: return t('other');
     }
   };
 

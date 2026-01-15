@@ -860,16 +860,16 @@ const translations: Record<Language, Record<string, string>> = {
     // Admin Quotas Page
     'quotasAndCredits': 'الحصص ورصيد الذكاء الاصطناعي',
     'activeOverrides': 'تجاوزات نشطة',
-    'aiCreditsUsed': 'رصيد AI (المستخدم)',
+    'aiCreditsUsed': 'رصيد الذكاء الاصطناعي (المستخدم)',
     'editQuotasAndCredits': 'تعديل الحصص والرصيد',
     'setCustomLimitsFor': 'تعيين حدود مخصصة لـ',
-    'aiUsageCredits': 'رصيد استخدام AI',
-    'creditsConsumedBy': 'يتم استهلاك الرصيد بواسطة إجراءات AI: استخراج المواضيع (30)، إنشاء الخطة (15)، تحليل الموضوع (5)',
+    'aiUsageCredits': 'رصيد استخدام الذكاء الاصطناعي',
+    'creditsConsumedBy': 'يُستهلك الرصيد بواسطة: استخراج المواضيع (30)، إنشاء الخطة (15)، تحليل الموضوع (5)',
     'currentBalance': 'الرصيد الحالي',
     'creditsAvailableNow': 'الرصيد المتاح حالياً',
     'monthlyAllowance': 'الحصة الشهرية',
     'resetsToThisEachMonth': 'يتجدد إلى هذا كل شهر',
-    'defaultCreditsInfo': '💡 افتراضي: مجاني = 50 رصيد/شهر، Pro = 1500 رصيد/شهر',
+    'defaultCreditsInfo': '💡 افتراضي: مجاني = 50 رصيد/شهر، المميز = 1500 رصيد/شهر',
     'coursesLimit': 'حد المواد',
     'topicsPerCourseLimit': 'المواضيع لكل مادة',
     'saveOverride': 'حفظ التجاوز',
@@ -898,6 +898,7 @@ const translations: Record<Language, Record<string, string>> = {
     'bug': 'خطأ برمجي',
     'feature': 'ميزة جديدة',
     'improvement': 'تحسين',
+    'other': 'أخرى',
     
     // Admin Plans Page
     'noPlansConfigured': 'لم يتم إعداد أي خطط. سيتم إنشاء الخطط تلقائياً عند إعداد التطبيق.',
@@ -1797,6 +1798,7 @@ const translations: Record<Language, Record<string, string>> = {
     'bug': 'Bug',
     'feature': 'Feature',
     'improvement': 'Improvement',
+    'other': 'Other',
     
     // Admin Plans Page
     'noPlansConfigured': 'No plans configured. Plans will be created automatically when the app is set up.',
