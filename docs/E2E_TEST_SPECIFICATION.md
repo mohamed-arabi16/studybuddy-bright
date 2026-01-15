@@ -1312,7 +1312,7 @@ StudyBuddy is an AI-powered study planning SaaS application designed to help stu
 | E-AUD-003 | Promo code creation logged | promo_codes.created_by populated | P1 |
 | E-AUD-004 | User role changes tracked | user_roles.created_at timestamp | P0 |
 
-**OPEN ITEM:** No dedicated audit_log table exists. Audit is implicit via created_by/created_at fields. Consider adding explicit audit logging for compliance.
+**⚠️ CRITICAL OPEN ITEM (P0):** No dedicated audit_log table exists. Audit is implicit via created_by/created_at fields. **MUST** add explicit audit logging before production for compliance. This affects tests E-AUD-001 through E-AUD-004.
 
 ### E.2 Role Changes and Permission Escalation Prevention
 
@@ -1344,7 +1344,7 @@ StudyBuddy is an AI-powered study planning SaaS application designed to help stu
 | E-BAN-004 | Admin can re-enable account | is_disabled=false set | P0 |
 | E-BAN-005 | Re-enabled user can sign in | Auth succeeds | P0 |
 
-**OPEN ITEM:** Verify that is_disabled check happens on every authenticated request, not just sign-in.
+**⚠️ CRITICAL SECURITY ITEM (P0):** Verify that is_disabled check happens on every authenticated request, not just sign-in. If disabled users can continue using active sessions, this creates a significant security vulnerability. **MUST** be resolved before production.
 
 ### E.5 Security-Sensitive Changes
 
@@ -1420,8 +1420,8 @@ StudyBuddy is an AI-powered study planning SaaS application designed to help stu
 | Sentry error tracking connected | ✅ Configured in main.tsx | P0 |
 | Structured logging in edge functions | ✅ logger.ts shared | P1 |
 | Admin health check endpoint | ✅ admin-health-check | P1 |
-| Uptime monitoring | **OPEN ITEM**: Not configured | P2 |
-| Alert thresholds defined | **OPEN ITEM**: Not defined | P2 |
+| Uptime monitoring | **⚠️ CRITICAL**: Not configured - MUST add before production | P0 |
+| Alert thresholds defined | **⚠️ CRITICAL**: Not defined - MUST define before production | P0 |
 
 ---
 
@@ -1442,16 +1442,16 @@ StudyBuddy is an AI-powered study planning SaaS application designed to help stu
 
 ### G.2 Assumptions Made
 
-| ID | Assumption | Verification Needed |
+| ID | Assumption | Verification Status |
 |----|------------|---------------------|
-| AS-001 | Disabled users (is_disabled=true) cannot sign in | Test E-BAN-002 |
+| AS-001 | Disabled users (is_disabled=true) cannot sign in | ⚠️ **NEEDS VERIFICATION** - Test E-BAN-002 |
 | AS-002 | Email verification is required before full access | Test U-AUTH-001 |
-| AS-003 | Course quota is 3 for Free, unlimited (-1) for Pro | Check plans table |
-| AS-004 | Topic quota is 50 for Free, unlimited for Pro | Check plans table |
-| AS-005 | AI extraction quota is 3/month for Free, 1000 for Pro | Check plans table |
+| AS-003 | Course quota is 3 for Free, unlimited (-1) for Pro | ✅ **VERIFIED** in useSubscription.ts:28 |
+| AS-004 | Topic quota is 50 for Free, unlimited for Pro | ✅ **VERIFIED** in useSubscription.ts:29 |
+| AS-005 | AI extraction quota is 3/month for Free, 50 for Pro | ✅ **VERIFIED** in check-quota/index.ts and migrations |
 | AS-006 | Promo code redemption extends trial_end date | Test J-004 |
-| AS-007 | Plan generation uses topological sort for prerequisites | Code review |
-| AS-008 | OAuth tokens are encrypted before storage | Check encryption_version column |
+| AS-007 | Plan generation uses topological sort for prerequisites | ✅ **VERIFIED** in PIPELINE_CONTRACT.md |
+| AS-008 | OAuth tokens are encrypted before storage | ✅ **VERIFIED** - encrypted_* columns in schema |
 
 ### G.3 Recommended Pre-Launch Verifications
 
