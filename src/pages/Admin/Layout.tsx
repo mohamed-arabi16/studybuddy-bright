@@ -59,6 +59,7 @@ export default function AdminLayout() {
     { href: "/admin/quotas", icon: Settings, label: t('quotas') },
     { href: "/admin/trials", icon: Shield, label: t('trials') },
     { href: "/admin/feedback", icon: MessageSquare, label: t('feedbackTitle') },
+    { href: "/admin/audit", icon: Shield, label: language === 'ar' ? 'سجل التدقيق' : 'Audit Log' },
   ];
 
   const NavContent = () => (
