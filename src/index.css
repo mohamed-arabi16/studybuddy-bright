@@ -320,6 +320,29 @@
     border-color: hsl(var(--primary) / 0.2);
   }
 
+  /* Liquid Glass Hover Effect - Premium smooth radial gradient */
+  .liquid-glass-hover-effect {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .liquid-glass-hover-effect::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(circle at center, hsl(var(--primary) / 0.12) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity var(--duration-slow) var(--ease-out);
+    pointer-events: none;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .liquid-glass-hover-effect:hover::after {
+    opacity: 1;
+  }
+
   /* Gradient text using accent color only */
   .gradient-text {
     @apply bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent;
