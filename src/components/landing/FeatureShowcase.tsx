@@ -129,7 +129,7 @@ export const FeatureShowcase = () => {
                     whileHover={{ scale: 1.1, rotate: 5 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
-                    <feature.icon className={`w-8 h-8 bg-gradient-to-br ${feature.color} bg-clip-text`} strokeWidth={1.5} style={{ color: 'inherit' }} />
+                    <feature.icon className="w-8 h-8 text-primary" strokeWidth={1.5} />
                   </motion.div>
                   
                   {/* Animated ring */}
