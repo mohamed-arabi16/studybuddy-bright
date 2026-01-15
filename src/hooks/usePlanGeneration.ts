@@ -118,6 +118,8 @@ export function usePlanGeneration() {
       }
 
       // Transform the nested data structure
+      // Note: Supabase returns joined data with plural names (courses, topics) but as single objects
+      // for many-to-one relationships, not arrays
       const daysWithItems: StudyPlanDay[] = days.map(day => {
         const items = (day.study_plan_items || [])
           .sort((a, b) => a.order_index - b.order_index)
@@ -128,6 +130,7 @@ export function usePlanGeneration() {
             hours: item.hours,
             order_index: item.order_index,
             is_completed: item.is_completed,
+            // Supabase returns the joined course/topic as singular objects despite plural table names
             course: item.courses || undefined,
             topic: item.topics || undefined,
           }));

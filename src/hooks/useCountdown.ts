@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { TimeLeft, getTimeLeft } from '@/lib/timeUtils';
 
 /**
@@ -10,7 +10,7 @@ import { TimeLeft, getTimeLeft } from '@/lib/timeUtils';
 // Global state to track all active countdowns
 const subscribers = new Map<string, Set<(time: TimeLeft) => void>>();
 const timeCache = new Map<string, TimeLeft>();
-let globalTimer: NodeJS.Timeout | null = null;
+let globalTimer: ReturnType<typeof setInterval> | null = null;
 
 function tick() {
   subscribers.forEach((callbacks, dateKey) => {
@@ -41,20 +41,20 @@ function stopGlobalTimer() {
  * @returns TimeLeft object with days, hours, minutes, seconds remaining
  */
 export function useCountdown(targetDate: Date | string | null): TimeLeft {
-  const [timeLeft, setTimeLeft] = useState<TimeLeft>(() => {
-    if (!targetDate) return { days: 0, hours: 0, minutes: 0, seconds: 0, total: 0 };
+  // Memoize the ISO string to avoid reference comparison issues with Date objects
+  const dateKey = useMemo(() => {
+    if (!targetDate) return null;
     const date = typeof targetDate === 'string' ? new Date(targetDate) : targetDate;
-    return getTimeLeft(date);
+    return date.toISOString();
+  }, [typeof targetDate === 'string' ? targetDate : targetDate?.getTime()]);
+
+  const [timeLeft, setTimeLeft] = useState<TimeLeft>(() => {
+    if (!dateKey) return { days: 0, hours: 0, minutes: 0, seconds: 0, total: 0 };
+    return getTimeLeft(new Date(dateKey));
   });
 
-  const dateKeyRef = useRef<string | null>(null);
-
   useEffect(() => {
-    if (!targetDate) return;
-
-    const date = typeof targetDate === 'string' ? new Date(targetDate) : targetDate;
-    const dateKey = date.toISOString();
-    dateKeyRef.current = dateKey;
+    if (!dateKey) return;
 
     // Subscribe to updates for this date
     if (!subscribers.has(dateKey)) {
@@ -84,7 +84,7 @@ export function useCountdown(targetDate: Date | string | null): TimeLeft {
       // Stop global timer if no more subscribers
       stopGlobalTimer();
     };
-  }, [targetDate]);
+  }, [dateKey]);
 
   return timeLeft;
 }
