@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { validateAuthenticatedUser, isAuthError, createAuthErrorResponse } from "../_shared/auth-guard.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,7 +10,6 @@ const corsHeaders = {
 
 const CALENDAR_ENCRYPTION_KEY = Deno.env.get('CALENDAR_ENCRYPTION_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 
 // AES-256-GCM decryption
 async function getEncryptionKey(): Promise<CryptoKey> {
@@ -45,34 +45,17 @@ serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
-        status: 401, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      });
-    }
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } }
-    });
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !user) {
-      console.error('Auth error:', userError);
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
-        status: 401, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      });
-    }
-
-    const userId = user.id;
-
     const supabaseAdmin = createClient(
       SUPABASE_URL,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
+
+    // ============= P0: AUTH GUARD (Zombie Session Fix) =============
+    const authResult = await validateAuthenticatedUser(req, { supabaseAdmin });
+    if (isAuthError(authResult)) {
+      return createAuthErrorResponse(authResult);
+    }
+    const userId = authResult.userId;
 
     // Get current connection to revoke token
     const { data: connection } = await supabaseAdmin

@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { validateAuthenticatedUser, isAuthError, createAuthErrorResponse } from "../_shared/auth-guard.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -70,16 +71,18 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const action = body.action || 'status';
 
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAdmin = createClient(SUPABASE_URL, supabaseServiceKey);
+
+    // ============= P0: AUTH GUARD (Zombie Session Fix) =============
+    const authResult = await validateAuthenticatedUser(req, { supabaseAdmin });
+    if (isAuthError(authResult)) {
+      return createAuthErrorResponse(authResult);
+    }
+    const userId = authResult.userId;
+
     // Generate OAuth URL for the frontend to redirect to
     if (action === 'auth-url') {
-      const authHeader = req.headers.get('Authorization');
-      if (!authHeader?.startsWith('Bearer ')) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        });
-      }
-
       const { redirectUri } = body;
       
       const params = new URLSearchParams({
@@ -100,29 +103,6 @@ serve(async (req) => {
 
     // Exchange authorization code for tokens
     if (action === 'callback' || action === 'exchange') {
-      const authHeader = req.headers.get('Authorization');
-      if (!authHeader?.startsWith('Bearer ')) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        });
-      }
-
-      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        global: { headers: { Authorization: authHeader } }
-      });
-
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !user) {
-        console.error('Auth error:', userError);
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        });
-      }
-
-      const userId = user.id;
       const { code, redirectUri } = body;
 
       if (!code || !redirectUri) {
@@ -161,12 +141,6 @@ serve(async (req) => {
       
       const expiresAt = new Date(Date.now() + (tokens.expires_in * 1000)).toISOString();
 
-      // Store encrypted tokens - use service role for this insert
-      const supabaseAdmin = createClient(
-        SUPABASE_URL,
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-      );
-
       const { error: insertError } = await supabaseAdmin
         .from('google_calendar_connections')
         .upsert({
@@ -199,28 +173,9 @@ serve(async (req) => {
 
     // Get connection status
     if (action === 'status') {
-      const authHeader = req.headers.get('Authorization');
-      if (!authHeader?.startsWith('Bearer ')) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        });
-      }
-
       const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        global: { headers: { Authorization: authHeader } }
+        global: { headers: { Authorization: req.headers.get('Authorization')! } }
       });
-
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !user) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        });
-      }
-
-      const userId = user.id;
 
       const { data: connection } = await supabase
         .from('google_calendar_connections')

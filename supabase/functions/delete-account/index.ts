@@ -1,5 +1,6 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { validateAuthenticatedUser, isAuthError, createAuthErrorResponse } from "../_shared/auth-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -37,19 +38,55 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Get user from auth header
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
+    // ============= P0: AUTH GUARD (Zombie Session Fix) =============
+    const authResult = await validateAuthenticatedUser(req, { supabaseAdmin });
+    if (isAuthError(authResult)) {
+      return createAuthErrorResponse(authResult);
+    }
+    const userId = authResult.userId;
+    logStep("User authenticated", { userId });
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
-    
-    if (userError || !userData.user) {
-      throw new Error("User not authenticated");
+    // ============= P0: SERVER-SIDE PASSWORD VERIFICATION =============
+    // Parse request body for password
+    const body = await req.json().catch(() => ({}));
+    const password = body.password;
+
+    if (!password) {
+      return new Response(
+        JSON.stringify({ error: "Password required for account deletion" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    const userId = userData.user.id;
-    logStep("User authenticated", { userId });
+    // Get user email for password verification
+    const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userId);
+    if (!userData.user?.email) {
+      return new Response(
+        JSON.stringify({ error: "User email not found" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Verify password server-side using signInWithPassword
+    const supabaseAuth = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    );
+    
+    const { error: signInError } = await supabaseAuth.auth.signInWithPassword({
+      email: userData.user.email,
+      password: password,
+    });
+
+    if (signInError) {
+      logStep("Password verification failed", { error: signInError.message });
+      return new Response(
+        JSON.stringify({ error: "Invalid password" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    logStep("Password verified successfully");
 
     // ==========================================
     // STEP 1: Capture usage analytics BEFORE deletion
