@@ -1,12 +1,13 @@
 import { cn } from '@/lib/utils';
 import { forwardRef, HTMLAttributes } from 'react';
-import { motion, MotionProps } from 'framer-motion';
+import { motion, MotionProps, HTMLMotionProps } from 'framer-motion';
 
-export interface LiquidGlassCardProps extends HTMLAttributes<HTMLDivElement> {
+export interface LiquidGlassCardProps extends Omit<HTMLMotionProps<"div">, 'children'> {
   variant?: 'default' | 'elevated' | 'subtle';
   hover?: boolean;
   delay?: number;
   disableAnimation?: boolean;
+  children?: React.ReactNode;
 }
 
 const LiquidGlassCard = forwardRef<HTMLDivElement, LiquidGlassCardProps>(

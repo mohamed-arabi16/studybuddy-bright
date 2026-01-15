@@ -1,7 +1,7 @@
 import { BookOpen, Brain, Target, TrendingUp, Sparkles } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LiquidGlassCard } from "@/components/ui/LiquidGlassCard";
-import { motion, useInView } from "framer-motion";
+import { motion, useInView, Variants } from "framer-motion";
 import { useRef } from "react";
 
 export const HowItWorksSection = () => {
@@ -44,8 +44,8 @@ export const HowItWorksSection = () => {
     }
   ];
 
-  // Animation variants
-  const containerVariants = {
+  // Animation variants with proper typing
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -56,14 +56,14 @@ export const HowItWorksSection = () => {
     },
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 40, scale: 0.95 },
     visible: {
       opacity: 1,
       y: 0,
       scale: 1,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         stiffness: 100,
         damping: 15,
       },
@@ -72,21 +72,24 @@ export const HowItWorksSection = () => {
 
   return (
     <section ref={sectionRef} className="py-32 relative overflow-hidden" dir={dir}>
-      {/* Animated Background Elements */}
+      {/* Top gradient fade for smooth transition from hero */}
+      <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-b from-[#0A0A0F] via-[#0A0A0F]/50 to-transparent pointer-events-none" />
+
+      {/* Animated Background Elements - softer for better blending */}
       <div className="absolute inset-0 pointer-events-none">
         <motion.div 
-          className="absolute top-1/4 left-[-10%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px]"
+          className="absolute top-1/4 left-[-10%] w-[500px] h-[500px] bg-blue-600/6 rounded-full blur-[150px]"
           animate={{ 
             scale: [1, 1.2, 1],
-            opacity: [0.1, 0.15, 0.1],
+            opacity: [0.06, 0.1, 0.06],
           }}
           transition={{ duration: 8, repeat: Infinity }}
         />
         <motion.div 
-          className="absolute bottom-1/4 right-[-10%] w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px]"
+          className="absolute bottom-1/4 right-[-10%] w-[500px] h-[500px] bg-purple-600/6 rounded-full blur-[150px]"
           animate={{ 
             scale: [1.2, 1, 1.2],
-            opacity: [0.15, 0.1, 0.15],
+            opacity: [0.1, 0.06, 0.1],
           }}
           transition={{ duration: 8, repeat: Infinity }}
         />
@@ -176,8 +179,8 @@ export const HowItWorksSection = () => {
                 </div>
 
                 {/* Content */}
-                <h3 className="text-xl font-bold mb-3 text-white/90 relative">{t(step.titleKey)}</h3>
-                <p className="text-gray-400 leading-relaxed relative">
+                <h3 className="text-xl font-bold mb-3 text-foreground/90 relative">{t(step.titleKey)}</h3>
+                <p className="text-muted-foreground leading-relaxed relative">
                   {t(step.descKey)}
                 </p>
               </LiquidGlassCard>
@@ -185,6 +188,9 @@ export const HowItWorksSection = () => {
           ))}
         </motion.div>
       </div>
+
+      {/* Bottom gradient fade for smooth transition */}
+      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F]/50 to-transparent pointer-events-none" />
     </section>
   );
 };

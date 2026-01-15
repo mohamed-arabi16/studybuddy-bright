@@ -148,6 +148,7 @@ serve(async (req) => {
           title,
           difficulty_weight,
           exam_importance,
+          estimated_hours,
           status
         )
       `)
