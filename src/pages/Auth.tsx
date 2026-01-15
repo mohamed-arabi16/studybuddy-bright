@@ -9,9 +9,9 @@ import { useLanguage, LanguageToggle } from "@/contexts/LanguageContext";
 import { Eye, EyeOff, ArrowLeft, ArrowRight } from "lucide-react";
 import { LiquidGlassCard } from "@/components/ui/LiquidGlassCard";
 import { z } from "zod";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
-type AuthMode = "signIn" | "signUp" | "reset" | "otpVerify" | "updatePassword";
+
+type AuthMode = "signIn" | "signUp" | "reset" | "updatePassword";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -32,9 +32,6 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // OTP state
-  const [otpCode, setOtpCode] = useState("");
-  const [resetEmail, setResetEmail] = useState("");
 
   const ArrowIcon = dir === "rtl" ? ArrowLeft : ArrowRight;
 
@@ -119,7 +116,6 @@ export default function Auth() {
     setConfirmPassword("");
     setShowPassword(false);
     setShowConfirmPassword(false);
-    setOtpCode("");
   };
 
   const switchMode = (next: AuthMode) => {
@@ -187,83 +183,18 @@ export default function Auth() {
       return;
     }
 
-    // Use signInWithOtp to send a 6-digit code instead of a magic link
-    const { error } = await supabase.auth.signInWithOtp({
-      email: parsed.data.email,
-      options: {
-        shouldCreateUser: false, // Don't create a new user, just send OTP for existing
-      },
+    const redirectUrl = `${window.location.origin}/auth`;
+
+    const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+      redirectTo: redirectUrl,
     });
 
-    if (error) {
-      // If user doesn't exist, show a generic message for security
-      if (error.message.includes("User not found") || error.message.includes("Invalid")) {
-        toast.success(t("verificationCodeSent"));
-        setResetEmail(parsed.data.email);
-        setMode("otpVerify");
-        return;
-      }
-      throw error;
-    }
+    if (error) throw error;
 
-    toast.success(t("verificationCodeSent"));
-    setResetEmail(parsed.data.email);
-    setMode("otpVerify");
+    toast.success(t("checkEmailForReset"));
+    switchMode("signIn");
   };
 
-  const handleVerifyOtp = async () => {
-    if (otpCode.length !== 6) {
-      toast.error(t("invalidVerificationCode"));
-      return;
-    }
-
-    const { data, error } = await supabase.auth.verifyOtp({
-      email: resetEmail,
-      token: otpCode,
-      type: 'email',
-    });
-
-    if (error) {
-      if (error.message.includes("expired")) {
-        toast.error(t("codeExpired"));
-      } else {
-        toast.error(t("invalidVerificationCode"));
-      }
-      return;
-    }
-
-    if (data.session) {
-      // User is now authenticated, can update password
-      setMode("updatePassword");
-      toast.success(t("passwordUpdated").replace(t("passwordUpdated"), t("verifyCode") + " ✓"));
-    }
-  };
-
-  const handleResendCode = async () => {
-    if (!resetEmail) {
-      switchMode("reset");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: resetEmail,
-        options: {
-          shouldCreateUser: false,
-        },
-      });
-
-      if (error) throw error;
-      toast.success(t("verificationCodeSent"));
-      setOtpCode("");
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t("error");
-      toast.error(message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleUpdatePassword = async () => {
     const parsed = schemas.updatePasswordSchema.safeParse({ password, confirmPassword });
@@ -307,7 +238,6 @@ export default function Auth() {
       if (mode === "signIn") await handleSignIn();
       else if (mode === "signUp") await handleSignUp();
       else if (mode === "reset") await handleSendReset();
-      else if (mode === "otpVerify") await handleVerifyOtp();
       else if (mode === "updatePassword") await handleUpdatePassword();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t("error");
@@ -320,14 +250,12 @@ export default function Auth() {
   const title =
     mode === "signUp" ? t("createAccount") :
     mode === "reset" ? t("resetPassword") :
-    mode === "otpVerify" ? t("enterVerificationCode") :
     mode === "updatePassword" ? t("setNewPassword") :
     t("welcomeBack");
 
   const subtitle =
     mode === "signUp" ? t("signUpDescription") :
     mode === "reset" ? t("resetPasswordDescription") :
-    mode === "otpVerify" ? t("verificationCodeDescription") :
     mode === "updatePassword" ? "" :
     t("signInDescription");
 
@@ -383,42 +311,8 @@ export default function Auth() {
             </div>
           )}
 
-          {/* OTP Verification */}
-          {mode === "otpVerify" && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground mb-4">
-                  {language === "ar" ? `تم إرسال الرمز إلى ${resetEmail}` : `Code sent to ${resetEmail}`}
-                </p>
-              </div>
-              <div className="flex justify-center" dir="ltr">
-                <InputOTP
-                  maxLength={6}
-                  value={otpCode}
-                  onChange={(value) => setOtpCode(value)}
-                >
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                  </InputOTPGroup>
-                </InputOTP>
-              </div>
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={handleResendCode}
-                  className="text-sm text-primary hover:underline"
-                  disabled={loading}
-                >
-                  {t("resendCode")}
-                </button>
-              </div>
-            </div>
-          )}
+
+
 
           {/* Signup fields */}
           {mode === "signUp" && (
@@ -631,21 +525,17 @@ export default function Auth() {
                     ? t("signingIn")
                     : mode === "reset"
                       ? t("sending")
-                      : mode === "otpVerify"
-                        ? t("verifying")
-                        : t("updating"))
+                      : t("updating"))
               : (mode === "signUp"
                   ? t("signUp")
                   : mode === "signIn"
                     ? t("signIn")
                     : mode === "reset"
                       ? t("sendResetLink")
-                      : mode === "otpVerify"
-                        ? t("verifyCode")
-                        : t("updatePassword"))}
+                      : t("updatePassword"))}
           </Button>
 
-          {(mode === "reset" || mode === "otpVerify") && (
+          {mode === "reset" && (
             <Button type="button" variant="ghost" className="w-full" onClick={() => switchMode("signIn")}> 
               {t("backToSignIn")}
             </Button>
