@@ -14,7 +14,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Infinity, Pencil, RotateCcw, Crown } from "lucide-react";
+import { Search, Infinity, Pencil, RotateCcw, Crown, Coins } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -28,16 +28,20 @@ import { Switch } from "@/components/ui/switch";
 type UserQuota = {
   user_id: string;
   email: string;
+  plan_tier: string;
+  credit_balance: number;
+  monthly_allowance: number;
   plan_limits: {
     courses: number;
     topics_per_course: number;
-    ai_extractions: number;
   };
   quota_overrides: {
     courses?: number;
     topics_per_course?: number;
-    ai_extractions?: number;
+    credit_balance?: number;
+    credit_allowance?: number;
   } | null;
+  has_override: boolean;
 };
 
 export default function AdminQuotas() {
@@ -53,7 +57,8 @@ export default function AdminQuotas() {
   const [unlimitedTopics, setUnlimitedTopics] = useState(false);
   const [courses, setCourses] = useState(2);
   const [topicsPerCourse, setTopicsPerCourse] = useState(10);
-  const [aiExtractions, setAiExtractions] = useState(5);
+  const [creditBalance, setCreditBalance] = useState(100);
+  const [creditAllowance, setCreditAllowance] = useState(100);
 
   useEffect(() => {
     fetchQuotas();
@@ -73,27 +78,41 @@ export default function AdminQuotas() {
 
     const userIds = profiles.map(p => p.user_id);
 
+    // Get subscriptions for plan limits
     const { data: subscriptions } = await supabase
       .from('subscriptions')
       .select('user_id, plans(limits)')
       .in('user_id', userIds);
 
+    // Get admin overrides
     const { data: overrides } = await supabase
       .from('admin_overrides')
       .select('user_id, quota_overrides')
       .in('user_id', userIds);
 
+    // Get user credits
+    const { data: credits } = await supabase
+      .from('user_credits')
+      .select('user_id, balance, monthly_allowance, plan_tier')
+      .in('user_id', userIds);
+
     const mapped = profiles.map((p: any) => {
       const sub = subscriptions?.find(s => s.user_id === p.user_id);
       const override = overrides?.find(o => o.user_id === p.user_id);
+      const credit = credits?.find(c => c.user_id === p.user_id);
       
-      const defaultLimits = { courses: 2, topics_per_course: 10, ai_extractions: 5 };
+      const defaultLimits = { courses: 2, topics_per_course: 10 };
+      const quotaOverrides = override?.quota_overrides as any || null;
       
       return {
         user_id: p.user_id,
         email: p.email,
+        plan_tier: credit?.plan_tier || 'free',
+        credit_balance: credit?.balance || 0,
+        monthly_allowance: credit?.monthly_allowance || 100,
         plan_limits: (sub?.plans as any)?.limits || defaultLimits,
-        quota_overrides: override?.quota_overrides as any || null,
+        quota_overrides: quotaOverrides,
+        has_override: !!quotaOverrides && Object.keys(quotaOverrides).length > 0,
       };
     });
     
@@ -113,7 +132,8 @@ export default function AdminQuotas() {
     setUnlimitedTopics(currentLimits.topics_per_course === -1);
     setCourses(currentLimits.courses === -1 ? 2 : currentLimits.courses || 2);
     setTopicsPerCourse(currentLimits.topics_per_course === -1 ? 10 : currentLimits.topics_per_course || 10);
-    setAiExtractions(currentLimits.ai_extractions || 5);
+    setCreditBalance(user.quota_overrides?.credit_balance || user.credit_balance || 100);
+    setCreditAllowance(user.quota_overrides?.credit_allowance || user.monthly_allowance || 100);
     
     setShowDialog(true);
   }
@@ -128,7 +148,8 @@ export default function AdminQuotas() {
       const newLimits = {
         courses: unlimitedCourses ? -1 : courses,
         topics_per_course: unlimitedTopics ? -1 : topicsPerCourse,
-        ai_extractions: aiExtractions,
+        credit_balance: creditBalance,
+        credit_allowance: creditAllowance,
       };
 
       const { error } = await supabase
@@ -144,7 +165,7 @@ export default function AdminQuotas() {
 
       if (error) throw error;
 
-      toast({ title: "Success", description: "Quotas updated for user" });
+      toast({ title: "Success", description: "Quotas and credits updated for user" });
       setShowDialog(false);
       fetchQuotas();
 
@@ -172,11 +193,24 @@ export default function AdminQuotas() {
     return value === -1 ? <Infinity className="h-4 w-4 inline" /> : value;
   }
 
+  function getTierBadge(tier: string) {
+    const variants: Record<string, "default" | "secondary" | "outline"> = {
+      pro: "default",
+      trial: "secondary",
+      free: "outline",
+    };
+    return (
+      <Badge variant={variants[tier] || "outline"} className="uppercase text-xs">
+        {tier}
+      </Badge>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Quotas & Overrides</h1>
-        <Badge variant="outline">{users.filter(u => u.quota_overrides).length} active overrides</Badge>
+        <h1 className="text-3xl font-bold tracking-tight">Quotas & AI Credits</h1>
+        <Badge variant="outline">{users.filter(u => u.has_override).length} active overrides</Badge>
       </div>
       
       <div className="relative max-w-sm">
@@ -190,12 +224,14 @@ export default function AdminQuotas() {
       </div>
 
       <div className="border rounded-lg overflow-x-auto" dir="ltr">
-        <Table className="min-w-[800px]">
+        <Table className="min-w-[900px]">
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead className="w-64 px-4 py-3 text-sm text-gray-400">User</TableHead>
-              <TableHead className="w-52 px-4 py-3 text-sm text-gray-400">Plan Limits</TableHead>
-              <TableHead className="w-60 px-4 py-3 text-sm text-gray-400">Active Override</TableHead>
+              <TableHead className="w-24 px-4 py-3 text-sm text-gray-400">Plan</TableHead>
+              <TableHead className="w-40 px-4 py-3 text-sm text-gray-400">AI Credits</TableHead>
+              <TableHead className="w-52 px-4 py-3 text-sm text-gray-400">Limits</TableHead>
+              <TableHead className="w-32 px-4 py-3 text-sm text-gray-400">Override</TableHead>
               <TableHead className="w-44 px-4 py-3 text-right text-sm text-gray-400">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -204,14 +240,16 @@ export default function AdminQuotas() {
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i} className="border-b border-white/5">
                   <TableCell className="py-4"><Skeleton className="h-4 w-40" /></TableCell>
+                  <TableCell className="py-4"><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell className="py-4"><Skeleton className="h-4 w-24" /></TableCell>
                   <TableCell className="py-4"><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell className="py-4"><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell className="py-4"><Skeleton className="h-4 w-20" /></TableCell>
                   <TableCell className="py-4"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
                 </TableRow>
               ))
             ) : filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
                   No users found.
                 </TableCell>
               </TableRow>
@@ -224,25 +262,29 @@ export default function AdminQuotas() {
                     </span>
                   </TableCell>
                   <TableCell className="px-4 py-4">
+                    {getTierBadge(user.plan_tier)}
+                  </TableCell>
+                  <TableCell className="px-4 py-4">
+                    <div className="flex items-center gap-2">
+                      <Coins className="h-4 w-4 text-amber-500" />
+                      <span className="font-mono text-sm">
+                        {user.credit_balance} / {user.monthly_allowance}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-4 py-4">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
                       <span className="whitespace-nowrap">{formatLimit(user.plan_limits?.courses)} courses</span>
                       <span>•</span>
                       <span className="whitespace-nowrap">{formatLimit(user.plan_limits?.topics_per_course)} topics</span>
-                      <span>•</span>
-                      <span className="whitespace-nowrap">{formatLimit(user.plan_limits?.ai_extractions)} AI</span>
                     </div>
                   </TableCell>
                   <TableCell className="px-4 py-4">
-                    {user.quota_overrides ? (
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="default" className="flex items-center gap-1 whitespace-nowrap">
-                          <Crown className="h-3 w-3" />
-                          Override Active
-                        </Badge>
-                        <span className="text-sm text-muted-foreground whitespace-nowrap">
-                          ({formatLimit(user.quota_overrides.courses)} / {formatLimit(user.quota_overrides.topics_per_course)} / {formatLimit(user.quota_overrides.ai_extractions)})
-                        </span>
-                      </div>
+                    {user.has_override ? (
+                      <Badge variant="default" className="flex items-center gap-1 whitespace-nowrap w-fit">
+                        <Crown className="h-3 w-3" />
+                        Active
+                      </Badge>
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
@@ -253,7 +295,7 @@ export default function AdminQuotas() {
                         <Pencil className="h-4 w-4 mr-2" />
                         Edit
                       </Button>
-                      {user.quota_overrides && (
+                      {user.has_override && (
                         <Button variant="ghost" size="sm" onClick={() => clearOverride(user.user_id)}>
                           <RotateCcw className="h-4 w-4 mr-2" />
                           Reset
@@ -271,13 +313,42 @@ export default function AdminQuotas() {
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
-            <DialogTitle>Edit Quotas</DialogTitle>
+            <DialogTitle>Edit Quotas & Credits</DialogTitle>
             <DialogDescription>
               Set custom limits for <strong>{selectedUser?.email}</strong>
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-6 py-4">
+            {/* AI Credits Section */}
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+              <h4 className="font-medium flex items-center gap-2">
+                <Coins className="h-4 w-4 text-amber-500" />
+                AI Credits
+              </h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Credit Balance</Label>
+                  <Input
+                    type="number"
+                    value={creditBalance}
+                    onChange={(e) => setCreditBalance(parseInt(e.target.value) || 0)}
+                    min={0}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Monthly Allowance</Label>
+                  <Input
+                    type="number"
+                    value={creditAllowance}
+                    onChange={(e) => setCreditAllowance(parseInt(e.target.value) || 0)}
+                    min={0}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Course Limits Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label>Courses Limit</Label>
@@ -318,16 +389,6 @@ export default function AdminQuotas() {
                   min={1}
                 />
               )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>AI Extractions per Month</Label>
-              <Input
-                type="number"
-                value={aiExtractions}
-                onChange={(e) => setAiExtractions(parseInt(e.target.value) || 0)}
-                min={0}
-              />
             </div>
           </div>
 

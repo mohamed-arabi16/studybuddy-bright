@@ -45,7 +45,8 @@ export default function AdminSubscriptionDialog({
   const [trialDays, setTrialDays] = useState(14);
   const [courses, setCourses] = useState(-1);
   const [topicsPerCourse, setTopicsPerCourse] = useState(-1);
-  const [aiExtractions, setAiExtractions] = useState(100);
+  const [creditBalance, setCreditBalance] = useState(1500);
+  const [creditAllowance, setCreditAllowance] = useState(1500);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -76,7 +77,8 @@ export default function AdminSubscriptionDialog({
           quotaOverrides = {
             courses: -1,
             topics_per_course: -1,
-            ai_extractions: 1000,
+            credit_balance: 1500,
+            credit_allowance: 1500,
           };
         } else if (action === "grant_trial") {
           trialExtension = trialDays;
@@ -84,7 +86,8 @@ export default function AdminSubscriptionDialog({
           quotaOverrides = {
             courses: courses,
             topics_per_course: topicsPerCourse,
-            ai_extractions: aiExtractions,
+            credit_balance: creditBalance,
+            credit_allowance: creditAllowance,
           };
         }
 
@@ -188,11 +191,20 @@ export default function AdminSubscriptionDialog({
                 />
               </div>
               <div className="space-y-2">
-                <Label>AI Extractions per Month</Label>
+                <Label>AI Credits Balance</Label>
                 <Input
                   type="number"
-                  value={aiExtractions}
-                  onChange={(e) => setAiExtractions(parseInt(e.target.value) || 0)}
+                  value={creditBalance}
+                  onChange={(e) => setCreditBalance(parseInt(e.target.value) || 0)}
+                  min={0}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Monthly Credit Allowance</Label>
+                <Input
+                  type="number"
+                  value={creditAllowance}
+                  onChange={(e) => setCreditAllowance(parseInt(e.target.value) || 0)}
                   min={0}
                 />
               </div>

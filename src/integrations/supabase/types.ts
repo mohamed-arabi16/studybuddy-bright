@@ -756,12 +756,17 @@ export type Database = {
           completed_at: string | null
           course_id: string
           created_at: string
+          exam_proximity_days: number | null
+          explanation_text: string | null
           hours: number
           id: string
           is_completed: boolean
           is_review: boolean | null
+          load_balance_note: string | null
           order_index: number
           plan_day_id: string
+          prereq_topic_ids: string[] | null
+          reason_codes: string[] | null
           topic_extraction_run_id: string | null
           topic_id: string | null
           user_id: string
@@ -770,12 +775,17 @@ export type Database = {
           completed_at?: string | null
           course_id: string
           created_at?: string
+          exam_proximity_days?: number | null
+          explanation_text?: string | null
           hours: number
           id?: string
           is_completed?: boolean
           is_review?: boolean | null
+          load_balance_note?: string | null
           order_index?: number
           plan_day_id: string
+          prereq_topic_ids?: string[] | null
+          reason_codes?: string[] | null
           topic_extraction_run_id?: string | null
           topic_id?: string | null
           user_id: string
@@ -784,12 +794,17 @@ export type Database = {
           completed_at?: string | null
           course_id?: string
           created_at?: string
+          exam_proximity_days?: number | null
+          explanation_text?: string | null
           hours?: number
           id?: string
           is_completed?: boolean
           is_review?: boolean | null
+          load_balance_note?: string | null
           order_index?: number
           plan_day_id?: string
+          prereq_topic_ids?: string[] | null
+          reason_codes?: string[] | null
           topic_extraction_run_id?: string | null
           topic_id?: string | null
           user_id?: string

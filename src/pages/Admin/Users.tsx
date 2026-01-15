@@ -193,7 +193,8 @@ export default function AdminUsers() {
           quota_overrides: {
             courses: -1,
             topics_per_course: -1,
-            ai_extractions: 1000,
+            credit_balance: 1500,
+            credit_allowance: 1500,
           },
           notes: "Quick grant Pro from admin panel",
           created_by: currentUser.id,
@@ -203,7 +204,7 @@ export default function AdminUsers() {
         });
 
       if (error) throw error;
-      toast({ title: "Success", description: "Pro access granted" });
+      toast({ title: "Success", description: "Pro access granted with 1500 AI credits" });
       fetchUsers();
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });

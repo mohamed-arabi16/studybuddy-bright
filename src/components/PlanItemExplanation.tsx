@@ -48,7 +48,7 @@ export function PlanItemExplanation({
   };
 
   // Get urgency color based on exam proximity
-  const getUrgencyColor = (days: number | null | undefined): string => {
+  const getUrgencyColor = (days: number | null | undefined): "default" | "destructive" | "outline" | "secondary" => {
     if (days === null || days === undefined) return "secondary";
     if (days <= 3) return "destructive";
     if (days <= 7) return "destructive";
