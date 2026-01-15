@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { consumeCredits, updateTokenUsage, createInsufficientCreditsResponse } from "../_shared/credits.ts";
 
 // P0 Fix: Complete CORS headers with methods and max-age
 const corsHeaders = {
@@ -76,6 +77,22 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // ============= P2: CONSUME CREDITS BEFORE AI CALL =============
+    const creditResult = await consumeCredits(supabase, user.id, 'analyze_topic', null, courseId);
+    
+    if (!creditResult.success) {
+      console.log(`Insufficient credits for analyze_topic: user ${user.id}, have ${creditResult.balance}, need ${creditResult.required}`);
+      return createInsufficientCreditsResponse(
+        creditResult.balance || 0,
+        creditResult.required || 5,
+        creditResult.plan_tier
+      );
+    }
+    
+    console.log(`Credits consumed for analyze_topic: charged ${creditResult.credits_charged}, balance ${creditResult.balance}`);
+    const creditEventId = creditResult.event_id;
+    const aiCallStartTime = Date.now();
 
     // P1 Fix: Fetch course context for better scoring
     let courseContext = "";
@@ -240,6 +257,22 @@ You MUST call the analyze_topic function. Do not return text responses.`;
     }
 
     const aiResponse = await response.json();
+    const aiCallEndTime = Date.now();
+    const aiLatencyMs = aiCallEndTime - aiCallStartTime;
+    
+    // ============= P2: TRACK TOKEN USAGE =============
+    const usage = aiResponse.usage;
+    if (creditEventId && usage) {
+      await updateTokenUsage(
+        supabase,
+        creditEventId,
+        usage.prompt_tokens || 0,
+        usage.completion_tokens || 0,
+        aiLatencyMs,
+        aiResponse.model || 'google/gemini-2.5-flash',
+        { model: aiResponse.model, usage }
+      );
+    }
     
     // P0 Fix: Log only metadata, not full response
     console.log("AI response metadata:", {
@@ -247,6 +280,7 @@ You MUST call the analyze_topic function. Do not return text responses.`;
       hasToolCalls: !!aiResponse.choices?.[0]?.message?.tool_calls?.length,
       finishReason: aiResponse.choices?.[0]?.finish_reason,
       usage: aiResponse.usage,
+      latencyMs: aiLatencyMs,
     });
 
     // Extract tool call result

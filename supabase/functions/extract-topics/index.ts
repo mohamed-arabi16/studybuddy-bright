@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkRateLimit, createRateLimitResponse, RATE_LIMITS } from "../_shared/rate-limit.ts";
 import { validateAuthenticatedUser, isAuthError, createAuthErrorResponse } from "../_shared/auth-guard.ts";
+import { consumeCredits, updateTokenUsage, createInsufficientCreditsResponse } from "../_shared/credits.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -415,6 +416,37 @@ serve(async (req) => {
     jobId = job.id;
     log('Created AI job', { jobId });
 
+    // ============= P2: CONSUME CREDITS BEFORE AI CALL =============
+    const creditResult = await consumeCredits(supabase, user.id, 'extract_topics', jobId, courseId);
+    
+    if (!creditResult.success) {
+      log('Insufficient credits', { 
+        balance: creditResult.balance, 
+        required: creditResult.required,
+        userId: user.id 
+      });
+      
+      await supabase.from('ai_jobs').update({ 
+        status: 'failed', 
+        error_message: `Insufficient credits: have ${creditResult.balance}, need ${creditResult.required}` 
+      }).eq('id', jobId);
+      
+      return createInsufficientCreditsResponse(
+        creditResult.balance || 0,
+        creditResult.required || 30,
+        creditResult.plan_tier
+      );
+    }
+    
+    log('Credits consumed', { 
+      charged: creditResult.credits_charged, 
+      newBalance: creditResult.balance,
+      eventId: creditResult.event_id 
+    });
+    
+    const creditEventId = creditResult.event_id;
+    const aiCallStartTime = Date.now();
+
     // ============= P2: HEAD + TAIL TRUNCATION =============
     const truncatedText = truncateText(text, 30000);
 
@@ -532,6 +564,28 @@ Extract at most ${maxTopicsToExtract} distinct study topics. Merge duplicates.`;
 
     const aiData = await response.json();
     const content = aiData.choices?.[0]?.message?.content;
+    
+    const aiCallEndTime = Date.now();
+    const aiLatencyMs = aiCallEndTime - aiCallStartTime;
+    
+    // ============= P2: TRACK TOKEN USAGE =============
+    const usage = aiData.usage;
+    if (creditEventId && usage) {
+      await updateTokenUsage(
+        supabase,
+        creditEventId,
+        usage.prompt_tokens || 0,
+        usage.completion_tokens || 0,
+        aiLatencyMs,
+        aiData.model || 'google/gemini-2.5-flash',
+        { model: aiData.model, usage }
+      );
+      log('Token usage recorded', { 
+        tokensIn: usage.prompt_tokens, 
+        tokensOut: usage.completion_tokens,
+        latencyMs: aiLatencyMs 
+      });
+    }
 
     if (!content) {
       throw new Error('Empty response from AI');

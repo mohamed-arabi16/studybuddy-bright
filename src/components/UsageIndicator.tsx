@@ -1,7 +1,8 @@
-import { BookOpen, Sparkles, TrendingUp } from 'lucide-react';
+import { BookOpen, TrendingUp } from 'lucide-react';
 import { useSubscription } from '@/hooks/useSubscription';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface UsageIndicatorProps {
   compact?: boolean;
@@ -9,13 +10,13 @@ interface UsageIndicatorProps {
 }
 
 export function UsageIndicator({ compact = false, className }: UsageIndicatorProps) {
-  const { usage, limits, planName, isLoading, isTrial, isPro } = useSubscription();
+  const { usage, limits, isLoading } = useSubscription();
   const { t } = useLanguage();
 
   if (isLoading) {
     return (
-      <div className={cn("animate-pulse", className)}>
-        <div className="h-4 bg-muted rounded w-24" />
+      <div className={cn("p-3 rounded-lg bg-white/5 border border-white/10", className)}>
+        <Skeleton className="h-4 w-24 bg-white/10" />
       </div>
     );
   }
@@ -36,10 +37,10 @@ export function UsageIndicator({ compact = false, className }: UsageIndicatorPro
   if (compact) {
     return (
       <div className={cn("flex items-center gap-2 text-sm", className)}>
-        <BookOpen className="w-4 h-4 text-muted-foreground" />
+        <BookOpen className="w-4 h-4 text-white/50" />
         <span className={cn(
           "font-medium",
-          isAtLimit ? "text-destructive" : isNearLimit ? "text-warning" : "text-muted-foreground"
+          isAtLimit ? "text-destructive" : isNearLimit ? "text-orange-400" : "text-white/60"
         )}>
           {coursesUsed}/{limitLabel}
         </span>
@@ -47,54 +48,45 @@ export function UsageIndicator({ compact = false, className }: UsageIndicatorPro
     );
   }
 
-  // Show "Pro Trial" for promo code users, "Free Trial" for regular trial
-  const trialLabel = isPro && isTrial ? t('proTrial') : t('freeTrial');
-
   return (
-    <div className={cn("p-3 rounded-lg bg-muted/50 space-y-2", className)}>
+    <div className={cn("p-3 rounded-lg bg-white/5 border border-white/10 space-y-2", className)}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className={cn(
-            "w-6 h-6 rounded-md flex items-center justify-center",
-            isTrial ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
-          )}>
-            {isTrial ? <Sparkles className="w-3.5 h-3.5" /> : <BookOpen className="w-3.5 h-3.5" />}
-          </div>
-          <div>
-            <p className="text-xs font-medium">{planName}</p>
-            {isTrial && <p className="text-[10px] text-muted-foreground">{trialLabel}</p>}
-          </div>
+          <BookOpen className="w-4 h-4 text-white/50" />
+          <span className="text-xs font-medium text-white/80">{t('courses_plural')}</span>
         </div>
         <span className={cn(
-          "text-xs font-semibold px-2 py-0.5 rounded-full",
+          "text-xs font-semibold px-2 py-0.5 rounded-full border",
           isAtLimit 
-            ? "bg-destructive/10 text-destructive" 
+            ? "bg-destructive/20 text-destructive border-destructive/30" 
             : isNearLimit 
-              ? "bg-warning/10 text-warning" 
-              : "bg-muted text-muted-foreground"
+              ? "bg-orange-500/20 text-orange-400 border-orange-500/30" 
+              : "bg-white/10 text-white/60 border-white/10"
         )}>
-          {coursesUsed}/{limitLabel} {t('courses_plural')}
+          {coursesUsed}/{limitLabel}
         </span>
       </div>
       
-      {/* Progress Bar */}
-      <div className="space-y-1">
-        <div className="w-full bg-muted rounded-full h-1.5">
-          <div 
-            className={cn(
-              "h-1.5 rounded-full transition-all duration-300",
-              isAtLimit ? "bg-destructive" : isNearLimit ? "bg-warning" : "bg-primary"
-            )}
-            style={{ width: `${percentage}%` }}
-          />
+      {/* Progress Bar - only show if not unlimited */}
+      {!isUnlimited && (
+        <div className="space-y-1">
+          <div className="w-full bg-white/10 rounded-full h-1.5">
+            <div 
+              className={cn(
+                "h-1.5 rounded-full transition-all duration-300",
+                isAtLimit ? "bg-destructive" : isNearLimit ? "bg-orange-500" : "bg-primary"
+              )}
+              style={{ width: `${percentage}%` }}
+            />
+          </div>
+          {isNearLimit && !isAtLimit && (
+            <p className="text-[10px] text-orange-400 flex items-center gap-1">
+              <TrendingUp className="w-3 h-3" />
+              {t('nearLimit')}
+            </p>
+          )}
         </div>
-        {isNearLimit && !isAtLimit && (
-          <p className="text-[10px] text-warning flex items-center gap-1">
-            <TrendingUp className="w-3 h-3" />
-            {t('nearLimit')}
-          </p>
-        )}
-      </div>
+      )}
     </div>
   );
 }
