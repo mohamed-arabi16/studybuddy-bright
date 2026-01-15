@@ -15,7 +15,7 @@ export const HowItWorksSection = () => {
       number: "01",
       titleKey: 'step1Title',
       descKey: 'step1Desc',
-      color: "from-blue-500/15 to-blue-600/5",
+      hoverColor: "rgba(59, 130, 246, 0.12)",
       iconColor: "text-blue-400"
     },
     {
@@ -23,7 +23,7 @@ export const HowItWorksSection = () => {
       number: "02", 
       titleKey: 'step2Title',
       descKey: 'step2Desc',
-      color: "from-purple-500/15 to-purple-600/5",
+      hoverColor: "rgba(168, 85, 247, 0.12)",
       iconColor: "text-purple-400"
     },
     {
@@ -31,7 +31,7 @@ export const HowItWorksSection = () => {
       number: "03",
       titleKey: 'step3Title',
       descKey: 'step3Desc',
-      color: "from-green-500/15 to-green-600/5",
+      hoverColor: "rgba(34, 197, 94, 0.12)",
       iconColor: "text-green-400"
     },
     {
@@ -39,7 +39,7 @@ export const HowItWorksSection = () => {
       number: "04",
       titleKey: 'step4Title',
       descKey: 'step4Desc',
-      color: "from-cyan-500/15 to-cyan-600/5",
+      hoverColor: "rgba(6, 182, 212, 0.12)",
       iconColor: "text-cyan-400"
     }
   ];
@@ -144,8 +144,15 @@ export const HowItWorksSection = () => {
                 disableAnimation
                 className="p-6 relative h-full group border border-white/10"
               >
-                {/* Gradient background on hover */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${step.color} opacity-0 group-hover:opacity-70 transition-all duration-700 rounded-2xl backdrop-blur-sm`} />
+                {/* Premium radial gradient background on hover - feathered edges */}
+                <div 
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-500 rounded-2xl pointer-events-none"
+                  style={{
+                    background: `radial-gradient(circle at center, ${step.hoverColor} 0%, transparent 70%)`,
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                  }}
+                />
                 
                 {/* Step number with glow */}
                 <div className="relative text-right">
@@ -164,7 +171,10 @@ export const HowItWorksSection = () => {
                 {/* Icon with animated ring */}
                 <div className="relative mb-4 flex justify-end rtl:justify-start">
                   <motion.div 
-                    className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${step.color} backdrop-blur-md flex items-center justify-center ${step.iconColor}`}
+                    className={`w-14 h-14 rounded-2xl backdrop-blur-md flex items-center justify-center ${step.iconColor}`}
+                    style={{
+                      background: `radial-gradient(circle at center, ${step.hoverColor} 0%, transparent 100%)`,
+                    }}
                     whileHover={{ scale: 1.1, rotate: 5 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
@@ -172,7 +182,7 @@ export const HowItWorksSection = () => {
                   </motion.div>
                   {/* Pulse ring */}
                   <motion.div 
-                    className={`absolute inset-0 rounded-2xl border-2 border-primary/20 w-14 h-14 right-0 rtl:right-auto rtl:left-0`}
+                    className="absolute inset-0 rounded-2xl border-2 border-primary/20 w-14 h-14 right-0 rtl:right-auto rtl:left-0"
                     animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
                     transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
                   />

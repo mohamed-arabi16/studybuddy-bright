@@ -17,7 +17,7 @@ export const FeatureShowcase = () => {
       titleKey: 'feature1Title',
       descKey: 'feature1Desc',
       color: "from-blue-500 to-blue-600",
-      bgColor: "from-blue-500/20 to-blue-600/5",
+      hoverColor: "rgba(59, 130, 246, 0.12)",
       delay: 0
     },
     {
@@ -25,7 +25,7 @@ export const FeatureShowcase = () => {
       titleKey: 'feature2Title',
       descKey: 'feature2Desc',
       color: "from-purple-500 to-purple-600",
-      bgColor: "from-purple-500/20 to-purple-600/5",
+      hoverColor: "rgba(168, 85, 247, 0.12)",
       delay: 0.1
     },
     {
@@ -33,7 +33,7 @@ export const FeatureShowcase = () => {
       titleKey: 'feature3Title',
       descKey: 'feature3Desc',
       color: "from-green-500 to-green-600",
-      bgColor: "from-green-500/20 to-green-600/5",
+      hoverColor: "rgba(34, 197, 94, 0.12)",
       delay: 0.2
     },
     {
@@ -41,7 +41,7 @@ export const FeatureShowcase = () => {
       titleKey: 'feature5Title',
       descKey: 'feature5Desc',
       color: "from-cyan-500 to-cyan-600",
-      bgColor: "from-cyan-500/20 to-cyan-600/5",
+      hoverColor: "rgba(6, 182, 212, 0.12)",
       delay: 0.3
     }
   ];
@@ -115,20 +115,28 @@ export const FeatureShowcase = () => {
                 disableAnimation
                 className="p-8 h-full group relative overflow-hidden border border-white/10"
               >
-                {/* Gradient overlay on hover */}
-                <motion.div 
-                  className={`absolute inset-0 bg-gradient-to-br ${feature.bgColor} opacity-0 group-hover:opacity-60 transition-opacity duration-500 rounded-2xl`}
+                {/* Premium radial gradient overlay on hover - feathered edges */}
+                <div 
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl pointer-events-none"
+                  style={{
+                    background: `radial-gradient(circle at center, ${feature.hoverColor} 0%, transparent 70%)`,
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                  }}
                 />
 
-                {/* Decorative corner glow */}
+                {/* Decorative corner glow - subtle */}
                 <motion.div 
-                  className={`absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br ${feature.color} rounded-full blur-[80px] opacity-0 group-hover:opacity-30 transition-opacity duration-500`}
+                  className={`absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br ${feature.color} rounded-full blur-[100px] opacity-0 group-hover:opacity-15 transition-opacity duration-500`}
                 />
 
                 {/* Icon with animated background */}
                 <div className="relative mb-6 flex justify-end rtl:justify-start">
                   <motion.div 
-                    className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.bgColor} backdrop-blur-md flex items-center justify-center`}
+                    className="w-16 h-16 rounded-2xl backdrop-blur-md flex items-center justify-center"
+                    style={{
+                      background: `radial-gradient(circle at center, ${feature.hoverColor} 0%, transparent 100%)`,
+                    }}
                     whileHover={{ scale: 1.1, rotate: 5 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
