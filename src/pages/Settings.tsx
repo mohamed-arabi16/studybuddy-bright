@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { User, Clock, CreditCard, LogOut, Loader2, Phone, Building, GraduationCap, Trash2, Download, AlertTriangle, Key, Calendar } from 'lucide-react';
+import { User, Clock, CreditCard, LogOut, Loader2, Phone, Building, GraduationCap, Trash2, Download, AlertTriangle, Key, Calendar, Eye, EyeOff } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,7 +43,12 @@ export default function Settings() {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
-  const [resetLoading, setResetLoading] = useState(false);
+  
+  // Password change states
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -216,27 +221,53 @@ export default function Settings() {
     }
   };
 
-  const handlePasswordReset = async () => {
-    try {
-      setResetLoading(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(profile.email, {
-        redirectTo: `${window.location.origin}/auth?mode=reset`
-      });
-      
-      if (error) throw error;
-      
+  const handleChangePassword = async () => {
+    // Validate passwords
+    if (newPassword.length < 6) {
       toast({
-        title: t('passwordResetSent'),
-        description: t('checkEmailForReset'),
+        title: t('error'),
+        description: t('passwordTooShort'),
+        variant: 'destructive',
       });
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      toast({
+        title: t('error'),
+        description: t('passwordsDoNotMatch'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setPasswordSaving(true);
+      
+      // Supabase updateUser directly updates password for authenticated user
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: t('passwordUpdated'),
+        description: t('passwordUpdatedDesc'),
+      });
+
+      // Clear form
+      setNewPassword('');
+      setConfirmNewPassword('');
+      setShowNewPassword(false);
     } catch (error) {
       toast({
         title: t('error'),
-        description: error instanceof Error ? error.message : 'Unknown error',
+        description: error instanceof Error ? error.message : 'Failed to update password',
         variant: 'destructive',
       });
     } finally {
-      setResetLoading(false);
+      setPasswordSaving(false);
     }
   };
 
@@ -398,20 +429,58 @@ export default function Settings() {
               <CardDescription>{t('dangerZoneDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Password Reset */}
-              <div className="flex items-center justify-between p-4 border rounded-lg">
+              {/* Change Password Section */}
+              <div className="p-4 border rounded-lg space-y-4">
                 <div className="space-y-1">
-                  <p className="font-medium">{t('resetPasswordTitle')}</p>
-                  <p className="text-sm text-muted-foreground">{t('resetPasswordDesc')}</p>
+                  <p className="font-medium flex items-center gap-2">
+                    <Key className="w-4 h-4" />
+                    {t('changePassword')}
+                  </p>
+                  <p className="text-sm text-muted-foreground">{t('changePasswordDesc')}</p>
                 </div>
-                <Button variant="outline" onClick={handlePasswordReset} disabled={resetLoading}>
-                  {resetLoading ? (
-                    <Loader2 className="w-4 h-4 me-2 animate-spin" />
-                  ) : (
-                    <Key className="w-4 h-4 me-2" />
-                  )}
-                  {t('sendResetLink')}
-                </Button>
+                
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">{t('newPassword')}</Label>
+                    <div className="relative">
+                      <Input
+                        id="new-password"
+                        type={showNewPassword ? "text" : "password"}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="••••••••"
+                        dir="ltr"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(v => !v)}
+                        className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-new-password">{t('confirmPassword')}</Label>
+                    <Input
+                      id="confirm-new-password"
+                      type="password"
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      dir="ltr"
+                    />
+                  </div>
+                  
+                  <Button 
+                    onClick={handleChangePassword} 
+                    disabled={passwordSaving || !newPassword || !confirmNewPassword}
+                  >
+                    {passwordSaving && <Loader2 className="w-4 h-4 me-2 animate-spin" />}
+                    {t('updatePassword')}
+                  </Button>
+                </div>
               </div>
 
               {/* Export Data */}
