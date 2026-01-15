@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { consumeCredits, createInsufficientCreditsResponse } from "../_shared/credits.ts";
 
 // P0 Fix: Complete CORS headers with methods and max-age
 const corsHeaders = {
@@ -39,6 +40,12 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
+    // Create service role client for credit operations
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -76,6 +83,16 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // ============= P2: CONSUME CREDITS =============
+    const creditResult = await consumeCredits(supabaseAdmin, user.id, 'analyze_topic', undefined, courseId || undefined);
+
+    if (!creditResult.success) {
+      console.log(`Insufficient credits for user ${user.id}`, { balance: creditResult.balance, required: creditResult.required });
+      return createInsufficientCreditsResponse(creditResult);
+    }
+
+    console.log(`Credits consumed for analyze_topic`, { user_id: user.id, credits_charged: creditResult.credits_charged });
 
     // P1 Fix: Fetch course context for better scoring
     let courseContext = "";

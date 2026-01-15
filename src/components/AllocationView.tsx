@@ -5,9 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { PlanWarningBanner } from "@/components/PlanWarningBanner";
 import { generateAllocation } from "@/lib/allocationEngine";
 import { toast } from "sonner";
-import { Calendar, RefreshCw, Sparkles, Brain, Trash2, Loader2 } from "lucide-react";
+import { Calendar, RefreshCw, Sparkles, Brain, Trash2, Loader2, Zap } from "lucide-react";
 import { format } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useCredits } from "@/hooks/useCredits";
+import { useNavigate } from "react-router-dom";
 
 interface PlanResult {
   success: boolean;
@@ -33,7 +35,9 @@ export default function AllocationView({ course }: { course: any }) {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [hasTopics, setHasTopics] = useState(false);
   const [lastPlanResult, setLastPlanResult] = useState<PlanResult | null>(null);
-  const { t, dir } = useLanguage();
+  const { t, dir, language } = useLanguage();
+  const { getCost, canAfford, refresh: refreshCredits } = useCredits();
+  const navigate = useNavigate();
 
   const fetchAllocations = async () => {
     const { data } = await supabase
@@ -129,8 +133,18 @@ export default function AllocationView({ course }: { course: any }) {
       });
 
       if (response.error) {
-        if (response.error.message?.includes('402')) {
-          toast.error(t('aiCreditsExhausted'));
+        // P2: Handle insufficient credits (402) error
+        if (response.error.message?.includes('402') || response.error.message?.includes('INSUFFICIENT_CREDITS')) {
+          toast.error(language === 'ar' ? 'رصيد AI غير كافٍ' : 'Not enough AI credits', {
+            description: language === 'ar' 
+              ? 'رصيدك غير كافٍ لهذا الإجراء. قم بالترقية أو انتظر التجديد الشهري.'
+              : 'You don\'t have enough credits for this action. Upgrade or wait for monthly reset.',
+            action: {
+              label: language === 'ar' ? 'ترقية' : 'Upgrade',
+              onClick: () => navigate('/app/settings')
+            }
+          });
+          refreshCredits();
           return;
         }
         if (response.error.message?.includes('429')) {
@@ -139,6 +153,9 @@ export default function AllocationView({ course }: { course: any }) {
         }
         throw new Error(response.error.message);
       }
+
+      // Refresh credits after successful action
+      refreshCredits();
 
       const data = response.data as PlanResult;
       setLastPlanResult(data);
@@ -252,7 +269,7 @@ export default function AllocationView({ course }: { course: any }) {
             {/* AI Smart Schedule button - Available to ALL users */}
             <Button 
               onClick={handleSmartGenerate} 
-              disabled={loading || smartLoading || !hasTopics || !course.exam_date}
+              disabled={loading || smartLoading || !hasTopics || !course.exam_date || !canAfford('generate_plan')}
               className="gap-2"
             >
               {smartLoading ? (
@@ -262,11 +279,20 @@ export default function AllocationView({ course }: { course: any }) {
               )}
               <Sparkles className="h-4 w-4" />
               {t('aiSmartSchedule')}
+              <span className="flex items-center gap-0.5 text-xs opacity-70">
+                <Zap className="h-3 w-3" />
+                {getCost('generate_plan')}
+              </span>
             </Button>
           </div>
 
           {!hasTopics && <p className="text-sm text-destructive">{t('addTopicsFirst')}</p>}
           {!course.exam_date && <p className="text-sm text-destructive">{t('setExamDate')}</p>}
+          {!canAfford('generate_plan') && hasTopics && course.exam_date && (
+            <p className="text-sm text-warning">
+              {language === 'ar' ? 'رصيد AI غير كافٍ لهذا الإجراء' : 'Not enough AI credits for this action'}
+            </p>
+          )}
         </CardContent>
       </Card>
 

@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkRateLimit, createRateLimitResponse } from "../_shared/rate-limit.ts";
 import { calculateUrgencyScore } from "../_shared/urgency-constants.ts";
 import { validateAuthenticatedUser, isAuthError, createAuthErrorResponse } from "../_shared/auth-guard.ts";
+import { consumeCredits, createInsufficientCreditsResponse } from "../_shared/credits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -247,6 +248,16 @@ serve(async (req) => {
       console.log(`Rate limit exceeded for user ${user.id}`);
       return createRateLimitResponse(rateLimitResult);
     }
+
+    // ============= P2: CONSUME CREDITS =============
+    const creditResult = await consumeCredits(supabase, user.id, 'generate_plan');
+
+    if (!creditResult.success) {
+      console.log(`Insufficient credits for user ${user.id}`, { balance: creditResult.balance, required: creditResult.required });
+      return createInsufficientCreditsResponse(creditResult);
+    }
+
+    console.log(`Credits consumed for user ${user.id}`, { credits_charged: creditResult.credits_charged, new_balance: creditResult.new_balance });
 
     console.log(`Generating unified plan for user ${user.id}, mode: ${mode}`);
 

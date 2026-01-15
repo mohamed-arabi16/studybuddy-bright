@@ -765,6 +765,13 @@ const translations: Record<Language, Record<string, string>> = {
     'codeExpired': 'انتهت صلاحية الرمز. أعد الإرسال.',
     'proTrial': 'تجربة Pro',
     'trialEndsIn': 'تنتهي خلال {days} يوم',
+    
+    // Credit System
+    'aiCredits': 'رصيد AI',
+    'creditsRemaining': 'رصيد متبقي',
+    'insufficientCredits': 'رصيد AI غير كافٍ',
+    'insufficientCreditsDesc': 'رصيدك غير كافٍ لهذا الإجراء. قم بالترقية أو انتظر التجديد الشهري.',
+    'creditsReset': 'يتجدد في',
   },
   en: {
     // Layout
@@ -1521,6 +1528,13 @@ const translations: Record<Language, Record<string, string>> = {
     'codeExpired': 'Code expired. Please resend.',
     'proTrial': 'Pro Trial',
     'trialEndsIn': 'Ends in {days} days',
+    
+    // Credit System
+    'aiCredits': 'AI Credits',
+    'creditsRemaining': 'credits remaining',
+    'insufficientCredits': 'Not enough AI credits',
+    'insufficientCreditsDesc': 'You don\'t have enough credits for this action. Upgrade or wait for monthly reset.',
+    'creditsReset': 'Resets',
   }
 };
 

@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkRateLimit, createRateLimitResponse, RATE_LIMITS } from "../_shared/rate-limit.ts";
 import { validateAuthenticatedUser, isAuthError, createAuthErrorResponse } from "../_shared/auth-guard.ts";
+import { consumeCredits, updateTokenUsage, createInsufficientCreditsResponse } from "../_shared/credits.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -415,6 +416,21 @@ serve(async (req) => {
     jobId = job.id;
     log('Created AI job', { jobId });
 
+    // ============= P2: CONSUME CREDITS BEFORE AI CALL =============
+    const creditResult = await consumeCredits(supabase, user.id, 'extract_topics', jobId, courseId);
+
+    if (!creditResult.success) {
+      await supabase.from('ai_jobs').update({ 
+        status: 'failed', 
+        error_message: 'Insufficient credits' 
+      }).eq('id', jobId);
+
+      log('Insufficient credits', { userId: user.id, balance: creditResult.balance, required: creditResult.required });
+      return createInsufficientCreditsResponse(creditResult);
+    }
+
+    log('Credits consumed', { credits_charged: creditResult.credits_charged, new_balance: creditResult.new_balance });
+
     // ============= P2: HEAD + TAIL TRUNCATION =============
     const truncatedText = truncateText(text, 30000);
 
@@ -532,6 +548,15 @@ Extract at most ${maxTopicsToExtract} distinct study topics. Merge duplicates.`;
 
     const aiData = await response.json();
     const content = aiData.choices?.[0]?.message?.content;
+
+    // ============= P2: TRACK TOKEN USAGE =============
+    const aiUsage = aiData.usage;
+    if (aiUsage && jobId) {
+      await updateTokenUsage(supabase, jobId, {
+        prompt_tokens: aiUsage.prompt_tokens,
+        completion_tokens: aiUsage.completion_tokens,
+      }, undefined, aiData.model);
+    }
 
     if (!content) {
       throw new Error('Empty response from AI');
