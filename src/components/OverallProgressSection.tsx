@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { TrendingUp, BookOpen, Target, Clock } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { LiquidGlassCard } from '@/components/ui/LiquidGlassCard';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Course {
   id: string;
@@ -15,6 +16,8 @@ interface OverallProgressSectionProps {
 }
 
 export function OverallProgressSection({ courses }: OverallProgressSectionProps) {
+  const { t } = useLanguage();
+  
   const stats = useMemo(() => {
     const totalTopics = courses.reduce((sum, c) => sum + (c.topics?.length || 0), 0);
     const completedTopics = courses.reduce(
@@ -57,34 +60,34 @@ export function OverallProgressSection({ courses }: OverallProgressSectionProps)
       {/* Header */}
       <div className="flex items-center gap-2 mb-5">
         <TrendingUp className="w-4 h-4 text-primary" strokeWidth={1.5} />
-        <h2 className="font-medium">Overall Progress</h2>
+        <h2 className="font-medium">{t('overallProgress')}</h2>
       </div>
 
       {/* Main Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
         <div className="bg-muted/30 rounded-xl p-3 text-center">
           <div className="text-2xl font-bold text-primary">{Math.round(stats.overallProgress)}%</div>
-          <div className="text-xs text-muted-foreground">Complete</div>
+          <div className="text-xs text-muted-foreground">{t('complete')}</div>
         </div>
         <div className="bg-muted/30 rounded-xl p-3 text-center">
           <div className="text-2xl font-bold">{stats.completedTopics}</div>
-          <div className="text-xs text-muted-foreground">Done</div>
+          <div className="text-xs text-muted-foreground">{t('done')}</div>
         </div>
         <div className="bg-muted/30 rounded-xl p-3 text-center">
           <div className="text-2xl font-bold text-warning">{stats.inProgressTopics}</div>
-          <div className="text-xs text-muted-foreground">In Progress</div>
+          <div className="text-xs text-muted-foreground">{t('inProgress')}</div>
         </div>
         <div className="bg-muted/30 rounded-xl p-3 text-center">
           <div className="text-2xl font-bold text-muted-foreground">{stats.pendingTopics}</div>
-          <div className="text-xs text-muted-foreground">Pending</div>
+          <div className="text-xs text-muted-foreground">{t('pending')}</div>
         </div>
       </div>
 
       {/* Overall Progress Bar */}
       <div className="mb-5">
         <div className="flex items-center justify-between text-sm mb-2">
-          <span className="text-muted-foreground">Total Progress</span>
-          <span className="font-medium">{stats.completedTopics}/{stats.totalTopics} topics</span>
+          <span className="text-muted-foreground">{t('totalProgressLabel')}</span>
+          <span className="font-medium">{stats.completedTopics}/{stats.totalTopics} {t('topics')}</span>
         </div>
         <Progress value={stats.overallProgress} className="h-2" />
       </div>
@@ -94,7 +97,7 @@ export function OverallProgressSection({ courses }: OverallProgressSectionProps)
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
             <BookOpen className="w-3.5 h-3.5" />
-            By Course
+            {t('byCourse')}
           </h3>
           <div className="space-y-2">
             {courseProgress.map(course => (
