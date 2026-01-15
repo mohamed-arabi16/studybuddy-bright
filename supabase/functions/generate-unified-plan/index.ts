@@ -672,12 +672,12 @@ serve(async (req) => {
               hours: Math.round(hoursToSchedule * 100) / 100,
               order_index: dayItems.length,
               is_review: false,
-              reason_codes: explanation.reason_codes,
-              explanation_text: explanation.explanation_text,
-              prereq_topic_ids: explanation.prereq_topic_ids,
-              exam_proximity_days: explanation.exam_proximity_days,
-              load_balance_note: explanation.load_balance_note,
-            });
+            reason_codes: explanation.reason_codes,
+            explanation_text: explanation.explanation_text,
+            prereq_topic_ids: explanation.prereq_topic_ids,
+            exam_proximity_days: explanation.exam_proximity_days ?? undefined,
+            load_balance_note: explanation.load_balance_note ?? undefined,
+          });
 
             remainingHours -= hoursToSchedule;
             const newRemaining = topicRemaining - hoursToSchedule;
