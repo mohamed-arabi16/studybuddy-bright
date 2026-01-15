@@ -15,7 +15,7 @@ export const HowItWorksSection = () => {
       number: "01",
       titleKey: 'step1Title',
       descKey: 'step1Desc',
-      color: "from-blue-500/30 to-blue-600/10",
+      color: "from-blue-500/15 to-blue-600/5",
       iconColor: "text-blue-400"
     },
     {
@@ -23,7 +23,7 @@ export const HowItWorksSection = () => {
       number: "02", 
       titleKey: 'step2Title',
       descKey: 'step2Desc',
-      color: "from-purple-500/30 to-purple-600/10",
+      color: "from-purple-500/15 to-purple-600/5",
       iconColor: "text-purple-400"
     },
     {
@@ -31,7 +31,7 @@ export const HowItWorksSection = () => {
       number: "03",
       titleKey: 'step3Title',
       descKey: 'step3Desc',
-      color: "from-green-500/30 to-green-600/10",
+      color: "from-green-500/15 to-green-600/5",
       iconColor: "text-green-400"
     },
     {
@@ -39,8 +39,8 @@ export const HowItWorksSection = () => {
       number: "04",
       titleKey: 'step4Title',
       descKey: 'step4Desc',
-      color: "from-orange-500/30 to-orange-600/10",
-      iconColor: "text-orange-400"
+      color: "from-cyan-500/15 to-cyan-600/5",
+      iconColor: "text-cyan-400"
     }
   ];
 
@@ -145,7 +145,7 @@ export const HowItWorksSection = () => {
                 className="p-6 relative h-full group border border-white/10"
               >
                 {/* Gradient background on hover */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${step.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl`} />
+                <div className={`absolute inset-0 bg-gradient-to-br ${step.color} opacity-0 group-hover:opacity-70 transition-all duration-700 rounded-2xl backdrop-blur-sm`} />
                 
                 {/* Step number with glow */}
                 <div className="relative text-right">

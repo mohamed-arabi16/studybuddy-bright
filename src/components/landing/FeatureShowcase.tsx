@@ -40,8 +40,8 @@ export const FeatureShowcase = () => {
       icon: BarChart3,
       titleKey: 'feature5Title',
       descKey: 'feature5Desc',
-      color: "from-orange-500 to-orange-600",
-      bgColor: "from-orange-500/20 to-orange-600/5",
+      color: "from-cyan-500 to-cyan-600",
+      bgColor: "from-cyan-500/20 to-cyan-600/5",
       delay: 0.3
     }
   ];
@@ -117,7 +117,7 @@ export const FeatureShowcase = () => {
               >
                 {/* Gradient overlay on hover */}
                 <motion.div 
-                  className={`absolute inset-0 bg-gradient-to-br ${feature.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl`}
+                  className={`absolute inset-0 bg-gradient-to-br ${feature.bgColor} opacity-0 group-hover:opacity-60 transition-opacity duration-500 rounded-2xl`}
                 />
 
                 {/* Decorative corner glow */}
