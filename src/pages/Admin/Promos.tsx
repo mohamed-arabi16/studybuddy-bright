@@ -191,7 +191,7 @@ export default function AdminPromos() {
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead className="w-40 px-4 py-3 text-sm text-gray-400">{t('code')}</TableHead>
-              <TableHead className="w-64 px-4 py-3 text-sm text-gray-400">{language === 'ar' ? 'الوصف' : t('description')}</TableHead>
+              <TableHead className="w-64 px-4 py-3 text-sm text-gray-400">{t('description')}</TableHead>
               <TableHead className="w-24 px-4 py-3 text-sm text-gray-400">{t('trialDays')}</TableHead>
               <TableHead className="w-32 px-4 py-3 text-sm text-gray-400">{t('redemptions')}</TableHead>
               <TableHead className="w-28 px-4 py-3 text-sm text-gray-400">{t('expires')}</TableHead>

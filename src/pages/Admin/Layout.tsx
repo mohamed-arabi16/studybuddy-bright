@@ -59,17 +59,17 @@ export default function AdminLayout() {
     { href: "/admin/quotas", icon: Settings, label: t('quotas') },
     { href: "/admin/trials", icon: Shield, label: t('trials') },
     { href: "/admin/feedback", icon: MessageSquare, label: t('feedbackTitle') },
-    { href: "/admin/audit", icon: Shield, label: language === 'ar' ? 'سجل التدقيق' : 'Audit Log' },
+    { href: "/admin/audit", icon: Shield, label: t('auditLog') },
   ];
 
   const NavContent = () => (
     <>
       <div className="mb-8">
         <h1 className="text-xl font-bold text-foreground">
-          {language === 'ar' ? 'لوحة التحكم' : 'Super Admin'}
+          {t('superAdmin')}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {language === 'ar' ? 'الإدارة والتحكم' : 'Monetization & Control'}
+          {t('monetizationControl')}
         </p>
       </div>
       
@@ -86,7 +86,7 @@ export default function AdminLayout() {
       <Link to="/app/dashboard">
         <Button variant="outline" className="w-full justify-start mb-4 gap-2">
           <ArrowLeft className={`h-4 w-4 ${dir === 'rtl' ? 'rotate-180' : ''}`} />
-          {language === 'ar' ? 'العودة للتطبيق' : 'Back to App'}
+          {t('backToApp')}
         </Button>
       </Link>
 
@@ -122,7 +122,7 @@ export default function AdminLayout() {
         {/* Mobile Header */}
         <header className="md:hidden flex items-center justify-between p-4 bg-card border-b border-border">
           <h1 className="text-lg font-bold text-foreground">
-            {language === 'ar' ? 'لوحة التحكم' : 'Admin'}
+            {t('admin')}
           </h1>
           <div className="flex items-center gap-2">
             <button
