@@ -839,6 +839,7 @@ const translations: Record<Language, Record<string, string>> = {
     'notApplicable': 'غ/م',
     'lastUpdated': 'آخر تحديث',
     'plansConfigured': 'خطط مُعدّة',
+    'creditAnalytics': 'تحليلات الأرصدة',
   },
   en: {
     // Layout
@@ -1668,6 +1669,7 @@ const translations: Record<Language, Record<string, string>> = {
     'notApplicable': 'N/A',
     'lastUpdated': 'Last updated',
     'plansConfigured': 'plans configured',
+    'creditAnalytics': 'Credit Analytics',
   }
 };
 
