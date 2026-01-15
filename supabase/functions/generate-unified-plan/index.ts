@@ -37,6 +37,12 @@ interface ScheduledItem {
   hours: number;
   order_index: number;
   is_review?: boolean;
+  // Explanation fields for "Why this date?" tooltip
+  reason_codes?: string[];
+  explanation_text?: string;
+  prereq_topic_ids?: string[];
+  exam_proximity_days?: number;
+  load_balance_note?: string;
 }
 
 // ========================
@@ -141,6 +147,127 @@ function topologicalSort(topics: Topic[]): { sorted: Topic[]; hasCycles: boolean
   }
 
   return { sorted, hasCycles };
+}
+
+// ========================
+// EXPLANATION GENERATION FOR "WHY THIS DATE?" TOOLTIPS
+// Generates deterministic explanations for plan scheduling decisions
+// ========================
+
+interface ExplanationContext {
+  topic: Topic;
+  course: Course;
+  dateStr: string;
+  today: Date;
+  scheduledTopicIds: Set<string>;
+  courseTitleMap: Map<string, string>;
+  topicTitleMap: Map<string, string>;
+  isPriorityMode: boolean;
+  coverageRatio: number;
+  dailyStudyHours: number;
+  currentDayHours: number;
+}
+
+function generateExplanation(ctx: ExplanationContext): {
+  reason_codes: string[];
+  explanation_text: string;
+  prereq_topic_ids: string[];
+  exam_proximity_days: number | null;
+  load_balance_note: string | null;
+} {
+  const reasonCodes: string[] = [];
+  const explanationParts: string[] = [];
+  const prereqTopicIds: string[] = [];
+  let loadBalanceNote: string | null = null;
+  
+  // Calculate exam proximity
+  let examProximityDays: number | null = null;
+  if (ctx.course.exam_date) {
+    const examDate = new Date(ctx.course.exam_date);
+    const scheduleDate = new Date(ctx.dateStr);
+    examProximityDays = Math.ceil((examDate.getTime() - scheduleDate.getTime()) / (1000 * 60 * 60 * 24));
+  }
+  
+  // 1. Check prerequisite unlocking
+  const prereqs = ctx.topic.prerequisite_ids || [];
+  const satisfiedPrereqs = prereqs.filter(pId => ctx.scheduledTopicIds.has(pId));
+  
+  if (satisfiedPrereqs.length > 0) {
+    reasonCodes.push('prereq_unlocked');
+    prereqTopicIds.push(...satisfiedPrereqs);
+    
+    // Get the names of prerequisite topics
+    const prereqNames = satisfiedPrereqs
+      .map(pId => ctx.topicTitleMap.get(pId))
+      .filter(Boolean)
+      .slice(0, 2); // Show max 2 for readability
+    
+    if (prereqNames.length > 0) {
+      const prereqStr = prereqNames.join(', ');
+      explanationParts.push(`unlocked by completing ${prereqStr}`);
+    }
+  }
+  
+  // 2. Exam proximity reasoning
+  if (examProximityDays !== null) {
+    if (examProximityDays <= 7) {
+      reasonCodes.push('exam_imminent');
+      explanationParts.push(`exam in ${examProximityDays} day${examProximityDays !== 1 ? 's' : ''}`);
+    } else if (examProximityDays <= 14) {
+      reasonCodes.push('exam_approaching');
+      if (explanationParts.length === 0) {
+        explanationParts.push(`exam in ${examProximityDays} days`);
+      }
+    }
+  }
+  
+  // 3. Priority/importance based scheduling
+  if (ctx.topic.exam_importance >= 4) {
+    reasonCodes.push('high_importance');
+    if (explanationParts.length === 0) {
+      explanationParts.push('high exam importance');
+    }
+  }
+  
+  // 4. Difficulty-based scheduling
+  if (ctx.topic.difficulty_weight >= 4) {
+    reasonCodes.push('high_difficulty');
+    // Difficult topics scheduled when fresh
+  }
+  
+  // 5. Load balancing note
+  if (ctx.isPriorityMode) {
+    reasonCodes.push('time_compressed');
+    loadBalanceNote = `Time compressed to ${Math.round(ctx.coverageRatio * 100)}% due to limited study time`;
+  } else if (ctx.currentDayHours > ctx.dailyStudyHours * 0.8) {
+    loadBalanceNote = 'Scheduled to balance daily workload';
+  }
+  
+  // 6. Foundation topic (no prerequisites)
+  if (prereqs.length === 0 && satisfiedPrereqs.length === 0) {
+    reasonCodes.push('foundation_topic');
+    if (explanationParts.length === 0) {
+      explanationParts.push('foundational topic with no prerequisites');
+    }
+  }
+  
+  // Build final explanation text
+  let explanationText = '';
+  if (explanationParts.length > 0) {
+    explanationText = `Scheduled because: ${explanationParts.join('; ')}.`;
+  } else if (reasonCodes.includes('foundation_topic')) {
+    explanationText = 'Scheduled as a foundational topic.';
+  } else {
+    explanationText = 'Scheduled based on course priority and availability.';
+  }
+  
+  return {
+    reason_codes: reasonCodes,
+    explanation_text: explanationText,
+    prereq_topic_ids: prereqTopicIds,
+    exam_proximity_days: examProximityDays,
+    load_balance_note: loadBalanceNote,
+  };
 }
 
 // ========================
@@ -442,6 +569,16 @@ serve(async (req) => {
       });
     });
 
+    // Build lookup maps for explanation generation
+    const courseTitleMap = new Map<string, string>();
+    const topicTitleMap = new Map<string, string>();
+    sortedCourses.forEach(c => {
+      courseTitleMap.set(c.id, c.title);
+      c.topics.forEach(t => {
+        topicTitleMap.set(t.id, t.title);
+      });
+    });
+
     const schedule: ScheduledItem[] = [];
     const dailySchedule = new Map<string, { hours: number; items: ScheduledItem[] }>();
     
@@ -512,6 +649,22 @@ serve(async (req) => {
 
             if (hoursToSchedule <= 0) continue;
 
+            // Generate deterministic explanation for "Why this date?" tooltip
+            const currentDayHours = dailyStudyHours - remainingHours;
+            const explanation = generateExplanation({
+              topic,
+              course,
+              dateStr,
+              today,
+              scheduledTopicIds,
+              courseTitleMap,
+              topicTitleMap,
+              isPriorityMode,
+              coverageRatio,
+              dailyStudyHours,
+              currentDayHours,
+            });
+
             dayItems.push({
               date: dateStr,
               topic_id: topic.id,
@@ -519,6 +672,11 @@ serve(async (req) => {
               hours: Math.round(hoursToSchedule * 100) / 100,
               order_index: dayItems.length,
               is_review: false,
+              reason_codes: explanation.reason_codes,
+              explanation_text: explanation.explanation_text,
+              prereq_topic_ids: explanation.prereq_topic_ids,
+              exam_proximity_days: explanation.exam_proximity_days,
+              load_balance_note: explanation.load_balance_note,
             });
 
             remainingHours -= hoursToSchedule;
@@ -645,6 +803,11 @@ serve(async (req) => {
       order_index: number;
       is_completed: boolean;
       is_review: boolean;
+      reason_codes: string[];
+      explanation_text: string | null;
+      prereq_topic_ids: string[];
+      exam_proximity_days: number | null;
+      load_balance_note: string | null;
     }> = [];
 
     for (const item of schedule) {
@@ -660,6 +823,11 @@ serve(async (req) => {
         order_index: item.order_index,
         is_completed: false,
         is_review: item.is_review || false,
+        reason_codes: item.reason_codes || [],
+        explanation_text: item.explanation_text || null,
+        prereq_topic_ids: item.prereq_topic_ids || [],
+        exam_proximity_days: item.exam_proximity_days ?? null,
+        load_balance_note: item.load_balance_note || null,
       });
     }
 

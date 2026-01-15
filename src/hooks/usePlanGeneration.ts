@@ -16,6 +16,12 @@ interface StudyPlanItem {
   hours: number;
   order_index: number;
   is_completed: boolean;
+  // Explanation fields for "Why this date?" tooltip
+  reason_codes?: string[];
+  explanation_text?: string;
+  prereq_topic_ids?: string[];
+  exam_proximity_days?: number;
+  load_balance_note?: string;
   course?: {
     id: string;
     title: string;
@@ -79,6 +85,7 @@ export function usePlanGeneration() {
       if (!user) throw new Error('Not authenticated');
 
       // Fetch plan days with items, courses, and topics in a single query using Supabase joins
+      // Include explanation fields for "Why this date?" tooltips
       const { data: days, error: daysError } = await supabase
         .from('study_plan_days')
         .select(`
@@ -93,6 +100,11 @@ export function usePlanGeneration() {
             hours,
             order_index,
             is_completed,
+            reason_codes,
+            explanation_text,
+            prereq_topic_ids,
+            exam_proximity_days,
+            load_balance_note,
             courses (
               id,
               title,
@@ -130,6 +142,12 @@ export function usePlanGeneration() {
             hours: item.hours,
             order_index: item.order_index,
             is_completed: item.is_completed,
+            // Explanation fields for "Why this date?" tooltip
+            reason_codes: item.reason_codes || [],
+            explanation_text: item.explanation_text || null,
+            prereq_topic_ids: item.prereq_topic_ids || [],
+            exam_proximity_days: item.exam_proximity_days,
+            load_balance_note: item.load_balance_note || null,
             // Supabase returns the joined course/topic as singular objects despite plural table names
             course: item.courses || undefined,
             topic: item.topics || undefined,

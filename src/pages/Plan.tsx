@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { RescheduleCard } from '@/components/RescheduleCard';
 import { PlanSummaryCard } from '@/components/PlanSummaryCard';
 import { PlanWarningBanner } from '@/components/PlanWarningBanner';
+import { PlanItemExplanation } from '@/components/PlanItemExplanation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -396,9 +397,19 @@ export default function Plan() {
                               style={{ backgroundColor: item.course?.color || '#6366f1' }}
                             />
                             <div className="flex-1 min-w-0">
-                              <p className={`font-medium truncate ${item.is_completed ? 'line-through text-muted-foreground' : ''}`}>
-                                {item.topic?.title || t('generalStudy')}
-                              </p>
+                              <div className="flex items-center gap-1">
+                                <p className={`font-medium truncate ${item.is_completed ? 'line-through text-muted-foreground' : ''}`}>
+                                  {item.topic?.title || t('generalStudy')}
+                                </p>
+                                {/* "Why this date?" tooltip */}
+                                <PlanItemExplanation
+                                  explanationText={item.explanation_text}
+                                  reasonCodes={item.reason_codes}
+                                  examProximityDays={item.exam_proximity_days}
+                                  loadBalanceNote={item.load_balance_note}
+                                  prereqTopicIds={item.prereq_topic_ids}
+                                />
+                              </div>
                               <p className="text-xs text-muted-foreground truncate">
                                 {item.course?.title}
                               </p>

@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import TopicManager from "@/components/TopicManager";
 import AllocationView from "@/components/AllocationView";
 import { FileUploadZone } from "@/components/FileUploadZone";
+import { DependencyFlowVisual } from "@/components/DependencyFlowVisual";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -445,6 +446,8 @@ export default function CourseDetail() {
             <AlertDescription>{t('topicsTip')}</AlertDescription>
           </Alert>
           <TopicManager courseId={course.id} />
+          {/* Dependency Flow Visualization */}
+          <DependencyFlowVisual courseId={course.id} />
         </TabsContent>
 
         <TabsContent value="allocation">
