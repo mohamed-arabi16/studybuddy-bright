@@ -93,7 +93,7 @@ export function CreditIndicator({ compact = false, className }: CreditIndicatorP
 
         {/* Reset Date */}
         <p className="text-[10px] text-muted-foreground">
-          {language === 'ar' ? 'يتجدد في' : 'Resets'} {format(credits.resetDate, 'MMM d')}
+          {language === 'ar' ? 'يتجدد في' : 'Resets'} {format(credits.resetDate, language === 'ar' ? 'd MMM' : 'MMM d')}
         </p>
       </div>
 
