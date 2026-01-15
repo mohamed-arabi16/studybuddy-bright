@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type UserQuota = {
   user_id: string;
@@ -49,6 +50,7 @@ export default function AdminQuotas() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [selectedUser, setSelectedUser] = useState<UserQuota | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   
@@ -165,12 +167,12 @@ export default function AdminQuotas() {
 
       if (error) throw error;
 
-      toast({ title: "Success", description: "Quotas and credits updated for user" });
+      toast({ title: t('successTitle'), description: t('quotasAndCreditsUpdated') });
       setShowDialog(false);
       fetchQuotas();
 
     } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+      toast({ title: t('error'), description: e.message, variant: "destructive" });
     }
   }
 
@@ -181,9 +183,9 @@ export default function AdminQuotas() {
       .eq('user_id', userId);
 
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t('error'), description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Success", description: "Override removed" });
+      toast({ title: t('successTitle'), description: t('overrideRemoved') });
       fetchQuotas();
     }
   }
@@ -209,14 +211,14 @@ export default function AdminQuotas() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Quotas & AI Credits</h1>
-        <Badge variant="outline">{users.filter(u => u.has_override).length} active overrides</Badge>
+        <h1 className="text-3xl font-bold tracking-tight">{t('quotasAndCredits')}</h1>
+        <Badge variant="outline">{users.filter(u => u.has_override).length} {t('activeOverrides')}</Badge>
       </div>
       
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search user..."
+          placeholder={t('searchUser')}
           className="pl-9"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -227,12 +229,12 @@ export default function AdminQuotas() {
         <Table className="min-w-[900px]">
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead className="w-64 px-4 py-3 text-sm text-gray-400">User</TableHead>
-              <TableHead className="w-24 px-4 py-3 text-sm text-gray-400">Plan</TableHead>
-              <TableHead className="w-40 px-4 py-3 text-sm text-gray-400" title="Balance / Monthly Allowance">AI Credits (Used)</TableHead>
-              <TableHead className="w-52 px-4 py-3 text-sm text-gray-400">Limits</TableHead>
-              <TableHead className="w-32 px-4 py-3 text-sm text-gray-400">Override</TableHead>
-              <TableHead className="w-44 px-4 py-3 text-right text-sm text-gray-400">Actions</TableHead>
+              <TableHead className="w-64 px-4 py-3 text-sm text-gray-400">{t('user')}</TableHead>
+              <TableHead className="w-24 px-4 py-3 text-sm text-gray-400">{t('plans')}</TableHead>
+              <TableHead className="w-40 px-4 py-3 text-sm text-gray-400" title="Balance / Monthly Allowance">{t('aiCreditsUsed')}</TableHead>
+              <TableHead className="w-52 px-4 py-3 text-sm text-gray-400">{t('limits')}</TableHead>
+              <TableHead className="w-32 px-4 py-3 text-sm text-gray-400">{t('overrides')}</TableHead>
+              <TableHead className="w-44 px-4 py-3 text-right text-sm text-gray-400">{t('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -250,7 +252,7 @@ export default function AdminQuotas() {
             ) : filteredUsers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
-                  No users found.
+                  {t('noUsersFound')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -274,16 +276,16 @@ export default function AdminQuotas() {
                   </TableCell>
                   <TableCell className="px-4 py-4">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
-                      <span className="whitespace-nowrap">{formatLimit(user.plan_limits?.courses)} courses</span>
+                      <span className="whitespace-nowrap">{formatLimit(user.plan_limits?.courses)} {t('courses')}</span>
                       <span>•</span>
-                      <span className="whitespace-nowrap">{formatLimit(user.plan_limits?.topics_per_course)} topics</span>
+                      <span className="whitespace-nowrap">{formatLimit(user.plan_limits?.topics_per_course)} {t('topics')}</span>
                     </div>
                   </TableCell>
                   <TableCell className="px-4 py-4">
                     {user.has_override ? (
                       <Badge variant="default" className="flex items-center gap-1 whitespace-nowrap w-fit">
                         <Crown className="h-3 w-3" />
-                        Active
+                        {t('active')}
                       </Badge>
                     ) : (
                       <span className="text-muted-foreground">—</span>
@@ -293,12 +295,12 @@ export default function AdminQuotas() {
                     <div className="flex items-center justify-end gap-2">
                       <Button variant="outline" size="sm" onClick={() => openEdit(user)}>
                         <Pencil className="h-4 w-4 mr-2" />
-                        Edit
+                        {t('edit')}
                       </Button>
                       {user.has_override && (
                         <Button variant="ghost" size="sm" onClick={() => clearOverride(user.user_id)}>
                           <RotateCcw className="h-4 w-4 mr-2" />
-                          Reset
+                          {t('resetOverride')}
                         </Button>
                       )}
                     </div>
@@ -313,9 +315,9 @@ export default function AdminQuotas() {
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
-            <DialogTitle>Edit Quotas & Credits</DialogTitle>
+            <DialogTitle>{t('editQuotasAndCredits')}</DialogTitle>
             <DialogDescription>
-              Set custom limits for <strong>{selectedUser?.email}</strong>
+              {t('setCustomLimitsFor')} <strong>{selectedUser?.email}</strong>
             </DialogDescription>
           </DialogHeader>
           
@@ -325,45 +327,45 @@ export default function AdminQuotas() {
               <div>
                 <h4 className="font-medium flex items-center gap-2">
                   <Coins className="h-4 w-4 text-amber-500" />
-                  AI Usage Credits
+                  {t('aiUsageCredits')}
                 </h4>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Credits are consumed by AI actions: Extract Topics (30), Generate Plan (15), Analyze Topic (5)
+                  {t('creditsConsumedBy')}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Current Balance</Label>
+                  <Label>{t('currentBalance')}</Label>
                   <Input
                     type="number"
                     value={creditBalance}
                     onChange={(e) => setCreditBalance(parseInt(e.target.value) || 0)}
                     min={0}
                   />
-                  <p className="text-xs text-muted-foreground">Credits available now</p>
+                  <p className="text-xs text-muted-foreground">{t('creditsAvailableNow')}</p>
                 </div>
                 <div className="space-y-2">
-                  <Label>Monthly Allowance</Label>
+                  <Label>{t('monthlyAllowance')}</Label>
                   <Input
                     type="number"
                     value={creditAllowance}
                     onChange={(e) => setCreditAllowance(parseInt(e.target.value) || 0)}
                     min={0}
                   />
-                  <p className="text-xs text-muted-foreground">Resets to this each month</p>
+                  <p className="text-xs text-muted-foreground">{t('resetsToThisEachMonth')}</p>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground border-t pt-3 mt-2">
-                💡 Default: Free = 50 credits/month, Pro = 1500 credits/month
+                {t('defaultCreditsInfo')}
               </p>
             </div>
 
             {/* Course Limits Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <Label>Courses Limit</Label>
+                <Label>{t('coursesLimit')}</Label>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Unlimited</span>
+                  <span className="text-sm text-muted-foreground">{t('unlimited')}</span>
                   <Switch
                     checked={unlimitedCourses}
                     onCheckedChange={setUnlimitedCourses}
@@ -382,9 +384,9 @@ export default function AdminQuotas() {
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <Label>Topics per Course</Label>
+                <Label>{t('topicsPerCourseLimit')}</Label>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Unlimited</span>
+                  <span className="text-sm text-muted-foreground">{t('unlimited')}</span>
                   <Switch
                     checked={unlimitedTopics}
                     onCheckedChange={setUnlimitedTopics}
@@ -404,10 +406,10 @@ export default function AdminQuotas() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDialog(false)}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button onClick={saveOverride}>
-              Save Override
+              {t('saveOverride')}
             </Button>
           </DialogFooter>
         </DialogContent>

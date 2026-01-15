@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type TrialUser = {
   user_id: string;
@@ -38,6 +39,7 @@ export default function AdminTrials() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [showGrantDialog, setShowGrantDialog] = useState(false);
   const [grantSearch, setGrantSearch] = useState("");
   const [selectedGrantUser, setSelectedGrantUser] = useState<string | null>(null);
@@ -143,10 +145,10 @@ export default function AdminTrials() {
 
       if (error) throw error;
 
-      toast({ title: "Success", description: `Trial extended by ${days} days` });
+      toast({ title: t('successTitle'), description: t('trialExtendedBy').replace('{days}', days.toString()) });
       fetchTrials();
     } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+      toast({ title: t('error'), description: e.message, variant: "destructive" });
     }
   }
 
@@ -157,9 +159,9 @@ export default function AdminTrials() {
       .eq('user_id', userId);
 
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t('error'), description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Success", description: "Trial ended." });
+      toast({ title: t('successTitle'), description: t('trialEnded') });
       fetchTrials();
     }
   }
@@ -169,7 +171,7 @@ export default function AdminTrials() {
 
     try {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (!currentUser) throw new Error("Not authenticated");
+      if (!currentUser) throw new Error(t('notAuthenticated'));
 
       // Create or update subscription
       const trialEnd = new Date();
@@ -188,12 +190,12 @@ export default function AdminTrials() {
 
       if (subError) throw subError;
 
-      toast({ title: "Success", description: `Trial granted for ${grantDays} days` });
+      toast({ title: t('successTitle'), description: t('trialGranted').replace('{days}', grantDays.toString()) });
       setShowGrantDialog(false);
       setSelectedGrantUser(null);
       fetchTrials();
     } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+      toast({ title: t('error'), description: e.message, variant: "destructive" });
     }
   }
 
@@ -205,17 +207,17 @@ export default function AdminTrials() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Active Trials</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t('activeTrials')}</h1>
         <Button onClick={() => setShowGrantDialog(true)}>
           <CalendarPlus className="h-4 w-4 mr-2" />
-          Grant Trial
+          {t('grantTrial')}
         </Button>
       </div>
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search user..."
+          placeholder={t('searchUser')}
           className="pl-9"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -226,11 +228,11 @@ export default function AdminTrials() {
         <Table className="min-w-[850px]">
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead className="w-60 px-4 py-3">User</TableHead>
-              <TableHead className="w-36 px-4 py-3">Original End Date</TableHead>
-              <TableHead className="w-32 px-4 py-3">Extensions</TableHead>
-              <TableHead className="w-32 px-4 py-3">Days Remaining</TableHead>
-              <TableHead className="w-60 px-4 py-3 text-right">Actions</TableHead>
+              <TableHead className="w-60 px-4 py-3">{t('user')}</TableHead>
+              <TableHead className="w-36 px-4 py-3">{t('originalEndDate')}</TableHead>
+              <TableHead className="w-32 px-4 py-3">{t('extensions')}</TableHead>
+              <TableHead className="w-32 px-4 py-3">{t('daysRemaining')}</TableHead>
+              <TableHead className="w-60 px-4 py-3 text-right">{t('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -248,7 +250,7 @@ export default function AdminTrials() {
               <TableRow>
                 <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
                   <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  No active trials found.
+                  {t('noActiveTrials')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -266,7 +268,7 @@ export default function AdminTrials() {
                     {user.trial_extension_days > 0 ? (
                       <Badge variant="secondary" className="flex items-center gap-1 w-fit whitespace-nowrap">
                         <Plus className="h-3 w-3" />
-                        {user.trial_extension_days} days
+                        {user.trial_extension_days} {t('daysLabel')}
                       </Badge>
                     ) : (
                       <span className="text-muted-foreground">—</span>
@@ -278,20 +280,20 @@ export default function AdminTrials() {
                       className="flex items-center gap-1 w-fit whitespace-nowrap"
                     >
                       <Clock className="h-3 w-3" />
-                      {user.days_remaining} days
+                      {user.days_remaining} {t('daysLabel')}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
                       <Button size="sm" variant="outline" onClick={() => extendTrial(user.user_id, 7)}>
-                        +7 Days
+                        {t('plus7Days')}
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => extendTrial(user.user_id, 30)}>
-                        +30 Days
+                        {t('plus30Days')}
                       </Button>
                       <Button size="sm" variant="destructive" onClick={() => endTrialNow(user.user_id)}>
                         <XCircle className="h-4 w-4 mr-1" />
-                        End
+                        {t('endTrial')}
                       </Button>
                     </div>
                   </TableCell>
@@ -305,17 +307,17 @@ export default function AdminTrials() {
       <Dialog open={showGrantDialog} onOpenChange={setShowGrantDialog}>
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
-            <DialogTitle>Grant Trial</DialogTitle>
+            <DialogTitle>{t('grantTrial')}</DialogTitle>
             <DialogDescription>
-              Start a trial for a user who doesn't have one
+              {t('startTrialForUser')}
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Search User</Label>
+              <Label>{t('searchUser')}</Label>
               <Input
-                placeholder="Search by email..."
+                placeholder={t('searchByEmail')}
                 value={grantSearch}
                 onChange={(e) => setGrantSearch(e.target.value)}
               />
@@ -336,14 +338,14 @@ export default function AdminTrials() {
                 ))}
                 {grantFilteredUsers.length === 0 && (
                   <div className="px-3 py-2 text-muted-foreground text-sm">
-                    No users found (or all have trials)
+                    {t('noUsersFoundOrAllHaveTrials')}
                   </div>
                 )}
               </div>
             )}
 
             <div className="space-y-2">
-              <Label>Trial Duration (days)</Label>
+              <Label>{t('trialDuration')}</Label>
               <Input
                 type="number"
                 value={grantDays}
@@ -356,10 +358,10 @@ export default function AdminTrials() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowGrantDialog(false)}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button onClick={grantTrial} disabled={!selectedGrantUser}>
-              Grant Trial
+              {t('grantTrial')}
             </Button>
           </DialogFooter>
         </DialogContent>

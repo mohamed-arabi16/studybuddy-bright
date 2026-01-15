@@ -147,7 +147,7 @@ export default function AdminPlans() {
       {plans.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
-            No plans configured. Plans will be created automatically when the app is set up.
+            {t('noPlansConfigured')}
           </CardContent>
         </Card>
       ) : (
@@ -206,9 +206,9 @@ export default function AdminPlans() {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>{t('editCourse')} - {editingPlan?.name}</DialogTitle>
+            <DialogTitle>{t('editPlan')} - {editingPlan?.name}</DialogTitle>
             <DialogDescription>
-              {t('editCourseDesc')}
+              {t('editPlanDesc')}
             </DialogDescription>
           </DialogHeader>
           

@@ -12,12 +12,12 @@ interface LanguageContextType {
 const translations: Record<Language, Record<string, string>> = {
   ar: {
     // Layout
-    'loading': 'جاري تحميل تجربتك...',
-    'dashboard': 'لوحة التحكم',
-    'courses': 'الدورات',
+    'loading': 'جاري التحميل...',
+    'dashboard': 'الرئيسية',
+    'courses': 'المواد',
     'plan': 'الخطة',
     'settings': 'الإعدادات',
-    'admin': 'مركز التحكم',
+    'admin': 'لوحة الإدارة',
     'signOut': 'تسجيل الخروج',
     'signIn': 'تسجيل الدخول',
     'openMenu': 'فتح القائمة',
@@ -153,7 +153,7 @@ const translations: Record<Language, Record<string, string>> = {
     'files': 'الملفات',
     'topics': 'المواضيع',
     'allocation': 'التوزيع',
-    'uploadCourseMaterials': 'رفع مواد الدورة',
+    'uploadCourseMaterials': 'رفع ملفات المادة',
     'uploadedFiles': 'الملفات المرفوعة',
     'dropFilesHere': 'اسحب ملفات PDF هنا أو انقر للرفع',
     'maxFileSize': 'الحد الأقصى لحجم الملف',
@@ -162,7 +162,7 @@ const translations: Record<Language, Record<string, string>> = {
     'ready': 'جاهز',
     'failed': 'فشل',
     'pending': 'قيد الانتظار',
-    'manualInputNeeded': 'يحتاج إدخال يدوي',
+    'manualInputNeeded': 'يتطلب إدخالاً يدوياً',
     'retry': 'إعادة المحاولة',
     'extractTopics': 'استخراج المواضيع',
     'textExtracted': 'تم استخراج النص!',
@@ -176,8 +176,8 @@ const translations: Record<Language, Record<string, string>> = {
     'addContent': 'إضافة محتوى',
     'pasteForAI': 'الصق المنهج أو قائمة المواضيع هنا للاستخراج بالذكاء الاصطناعي',
     'pasteSyllabusHere': 'الصق نص المنهج هنا...',
-    'extractWithAI': 'استخراج المواضيع بالذكاء الاصطناعي',
-    'extractingWithAI': 'جاري الاستخراج بالذكاء الاصطناعي...',
+    'extractWithAI': 'استخراج بالذكاء الاصطناعي',
+    'extractingWithAI': 'جاري الاستخراج...',
     'progressOverview': 'نظرة عامة على التقدم',
     'trackCompletion': 'تتبع إكمال المواضيع',
     'topicsCompleted': 'مواضيع مكتملة',
@@ -230,30 +230,30 @@ const translations: Record<Language, Record<string, string>> = {
     'daysStudySessions': 'أيام، جلسات دراسية!',
     'scheduleWarnings': 'تم إنشاء الجدول مع تحذيرات',
     'topicsCoverage': 'تم جدولة المواضيع',
-    'aiCreditsExhausted': 'نفدت رصيد AI. يرجى إضافة المزيد.',
-    'rateLimitExceeded': 'تم تجاوز الحد. حاول لاحقاً.',
-    'smartPlanFailed': 'فشل في إنشاء الخطة الذكية',
-    'planNotCreated': 'لم يتم إنشاء الخطة لأنه لم يتم إنشاء جدول صالح.',
-    'extractionInProgress': 'استخراج المواضيع قيد التنفيذ بالفعل',
+    'aiCreditsExhausted': 'نفد الرصيد. يرجى الترقية للمزيد.',
+    'rateLimitExceeded': 'تم تجاوز الحد المسموح. حاول لاحقاً.',
+    'smartPlanFailed': 'فشل إنشاء الخطة الذكية',
+    'planNotCreated': 'تعذر إنشاء الخطة - لا يوجد جدول صالح.',
+    'extractionInProgress': 'جاري استخراج المواضيع بالفعل',
     'coursesExcluded': 'تم استبعاد بعض المواد - لا توجد أيام متاحة قبل الامتحان',
-    'confirmDeletePlan': 'هل أنت متأكد من حذف خطة الدراسة؟ لا يمكن التراجع عن هذا.',
-    'planDeleted': 'تم حذف خطة الدراسة بنجاح',
+    'confirmDeletePlan': 'هل تريد حذف خطة الدراسة؟ لا يمكن التراجع عن هذا.',
+    'planDeleted': 'تم حذف الخطة بنجاح',
     'deletePlan': 'حذف الخطة',
-    'deletePlanFailed': 'فشل في حذف الخطة',
+    'deletePlanFailed': 'فشل حذف الخطة',
     'priorityPlanCreated': 'تم إنشاء خطة الأولويات',
-    'priorityTopicsScheduled': 'مواضيع ذات أولوية عالية مجدولة',
+    'priorityTopicsScheduled': 'تمت جدولة المواضيع الأهم',
     'priorityModeActive': 'وضع الأولويات نشط',
-    'priorityModeDesc': 'الوقت غير كافٍ لجميع المواضيع. تم جدولة المواضيع ذات الأولوية العالية. راجع علامة المواضيع للمواضيع المتبقية.',
-    'viewRemainingTopics': 'عرض المواضيع المتبقية في علامة المواضيع',
-    'fallbackSchedulerUsed': 'تم استخدام جدولة احتياطية',
+    'priorityModeDesc': 'الوقت غير كافٍ لكل المواضيع. تمت جدولة المواضيع الأهم فقط. راجع تبويب المواضيع للباقي.',
+    'viewRemainingTopics': 'عرض المواضيع المتبقية في تبويب المواضيع',
+    'fallbackSchedulerUsed': 'تم استخدام جدولة بديلة',
     
     // Tips
     'filesTip': 'ارفع ملفات المنهج (PDF) لاستخراج المواضيع تلقائياً',
-    'topicsTip': 'أضف المواضيع يدوياً أو استخرجها من الملفات المرفوعة',
-    'allocationTip': 'شاهد كيف توزع المواضيع على الأيام المتبقية حتى الامتحان',
+    'topicsTip': 'أضف المواضيع يدوياً أو استخرجها من الملفات',
+    'allocationTip': 'شاهد توزيع المواضيع على الأيام حتى الامتحان',
     
     // Exam
-    'exam': 'امتحان',
+    'exam': 'الامتحان',
     'daysLeft': 'يوم',
     'examPassed': 'انتهى الامتحان',
     
@@ -484,8 +484,8 @@ const translations: Record<Language, Record<string, string>> = {
     'considerSuggestions': 'ضع في اعتبارك: زيادة ساعات الدراسة اليومية، إضافة المزيد من أيام الدراسة، أو تأجيل الامتحان إذا أمكن.',
 
     // UsageIndicator
-    'freeTrial': 'تجربة مجانية',
-    'nearLimit': 'قاربت على الحد الأقصى',
+    'freeTrial': 'فترة تجريبية',
+    'nearLimit': 'اقتربت من الحد',
     'usage': 'الاستخدام',
     
     // Credit System (Phase 2)
@@ -495,38 +495,38 @@ const translations: Record<Language, Record<string, string>> = {
     'noCreditsLeft': 'نفد الرصيد',
     'creditsPerMonth': 'رصيد/شهر',
     'insufficientCredits': 'رصيد غير كافٍ',
-    'upgradeForMore': 'قم بالترقية للحصول على المزيد من الرصيد',
-    'creditCost': 'يستخدم {n} رصيد',
+    'upgradeForMore': 'قم بالترقية للمزيد من الرصيد',
+    'creditCost': 'يستهلك {n} رصيد',
     'trial': 'تجربة',
 
     // Courses List
     'noCoursesTitle': 'لا توجد مواد بعد',
-    'noCoursesDesc': 'أضف مادتك الأولى للبدء في تنظيم دراستك. يمكنك رفع ملف المنهج أو إضافة المواضيع يدوياً.',
+    'noCoursesDesc': 'أضف مادتك الأولى لتبدأ بتنظيم دراستك. يمكنك رفع ملف المنهج أو إضافة المواضيع يدوياً.',
     'todayExclamation': 'اليوم!',
     'noExamDate': 'لم يُحدد تاريخ الامتحان',
-    'completedTopicsCount': '{completed} من {total} موضوع مكتمل',
+    'completedTopicsCount': '{completed} من {total} مكتمل',
 
     // Exam Countdown Card
-    'nextExam': 'التالي',
+    'nextExam': 'القادم',
     'urgent': 'عاجل',
     'examCompleted': 'انتهى الامتحان',
     'daysShort': 'يوم',
     'hoursShort': 'س',
     'minutesShort': 'د',
     'secondsShort': 'ث',
-    'topicsNeededPerDay': '~{count} مواضيع/يوم مطلوبة',
+    'topicsNeededPerDay': '~{count} موضوع/يوم',
     'percentComplete': '{percent}% مكتمل',
 
     // Plan Page
     'studyPlan': 'خطة الدراسة',
-    'customScheduleDesc': 'جدولك الدراسي اليومي المخصص',
+    'customScheduleDesc': 'جدولك الدراسي اليومي',
     'planCreated': 'تم إنشاء الخطة!',
-    'planCreatedDesc': 'تم إنشاء {days} يوم مع {items} موضوع دراسي',
-    'planFailed': 'فشل في إنشاء الخطة',
-    'tryAgain': 'حاول مرة أخرى',
-    'weekReplanned': 'تم إعادة تخطيط الأسبوع!',
-    'missedItemsDistributed': 'تم توزيع {count} موضوع متأخر على الأيام القادمة',
-    'replanFailed': 'فشل في إعادة التخطيط',
+    'planCreatedDesc': 'تم إنشاء {days} يوم مع {items} موضوع',
+    'planFailed': 'فشل إنشاء الخطة',
+    'tryAgain': 'حاول مجدداً',
+    'weekReplanned': 'تم إعادة التخطيط!',
+    'missedItemsDistributed': 'تم توزيع {count} موضوع على الأيام القادمة',
+    'replanFailed': 'فشل إعادة التخطيط',
     'recreatePlan': 'إعادة إنشاء الخطة',
     'daysUntilExam': 'أيام حتى الامتحان',
     'dailyHours': 'ساعات يومية',
@@ -839,7 +839,77 @@ const translations: Record<Language, Record<string, string>> = {
     'notApplicable': 'غ/م',
     'lastUpdated': 'آخر تحديث',
     'plansConfigured': 'خطط مُعدّة',
-    'creditAnalytics': 'تحليلات الأرصدة',
+    
+    // Admin Trials Page
+    'searchUser': 'البحث عن مستخدم...',
+    'originalEndDate': 'تاريخ الانتهاء الأصلي',
+    'extensions': 'التمديدات',
+    'daysRemaining': 'الأيام المتبقية',
+    'plus7Days': '+٧ أيام',
+    'plus30Days': '+٣٠ يوم',
+    'endTrial': 'إنهاء',
+    'grantTrial': 'منح فترة تجريبية',
+    'trialGranted': 'تم منح الفترة التجريبية لمدة {days} يوم',
+    'trialDuration': 'مدة الفترة التجريبية (أيام)',
+    'startTrialForUser': 'بدء فترة تجريبية لمستخدم ليس لديه واحدة',
+    'noActiveTrials': 'لا توجد فترات تجريبية نشطة.',
+    'noUsersFoundOrAllHaveTrials': 'لم يتم العثور على مستخدمين (أو جميعهم لديهم فترات تجريبية)',
+    'trialEnded': 'تم إنهاء الفترة التجريبية.',
+    'trialExtendedBy': 'تم تمديد الفترة التجريبية بـ {days} يوم',
+    
+    // Admin Quotas Page
+    'quotasAndCredits': 'الحصص ورصيد الذكاء الاصطناعي',
+    'activeOverrides': 'تجاوزات نشطة',
+    'aiCreditsUsed': 'رصيد الذكاء الاصطناعي (المستخدم)',
+    'editQuotasAndCredits': 'تعديل الحصص والرصيد',
+    'setCustomLimitsFor': 'تعيين حدود مخصصة لـ',
+    'aiUsageCredits': 'رصيد استخدام الذكاء الاصطناعي',
+    'creditsConsumedBy': 'يُستهلك الرصيد بواسطة: استخراج المواضيع (30)، إنشاء الخطة (15)، تحليل الموضوع (5)',
+    'currentBalance': 'الرصيد الحالي',
+    'creditsAvailableNow': 'الرصيد المتاح حالياً',
+    'monthlyAllowance': 'الحصة الشهرية',
+    'resetsToThisEachMonth': 'يتجدد إلى هذا كل شهر',
+    'defaultCreditsInfo': '💡 افتراضي: مجاني = 50 رصيد/شهر، المميز = 1500 رصيد/شهر',
+    'coursesLimit': 'حد المواد',
+    'topicsPerCourseLimit': 'المواضيع لكل مادة',
+    'saveOverride': 'حفظ التجاوز',
+    'quotasAndCreditsUpdated': 'تم تحديث الحصص والرصيد للمستخدم',
+    'edit': 'تعديل',
+    'resetOverride': 'إعادة تعيين',
+    
+    // Admin Feedback Page
+    'userFeedback': 'تعليقات المستخدمين',
+    'feedbackSubmissions': 'تعليق مُقدَّم',
+    'all': 'الكل',
+    'noFeedbackYet': 'لا توجد تعليقات بعد',
+    'new': 'جديد',
+    'reviewed': 'تمت المراجعة',
+    'resolved': 'تم الحل',
+    'markReviewed': 'وضع علامة كمُراجَع',
+    'markResolved': 'وضع علامة كمحلول',
+    'feedbackDetails': 'تفاصيل التعليق',
+    'from': 'من',
+    'message': 'الرسالة',
+    'adminNotes': 'ملاحظات المسؤول',
+    'addInternalNotes': 'أضف ملاحظات داخلية عن هذا التعليق...',
+    'saveNotes': 'حفظ الملاحظات',
+    'noRating': 'بدون تقييم',
+    'confirmDeleteFeedback': 'هل أنت متأكد من حذف هذا التعليق؟',
+    'bug': 'خطأ برمجي',
+    'feature': 'ميزة جديدة',
+    'improvement': 'تحسين',
+    'other': 'أخرى',
+    
+    // Admin Plans Page
+    'noPlansConfigured': 'لم يتم إعداد أي خطط. سيتم إنشاء الخطط تلقائياً عند إعداد التطبيق.',
+    'editPlan': 'تعديل الخطة',
+    'editPlanDesc': 'تحديث تفاصيل الخطة والأسعار والحدود',
+    
+    // Overall Progress Section
+    'overallProgress': 'التقدم الإجمالي',
+    'complete': 'مكتمل',
+    'totalProgressLabel': 'إجمالي التقدم',
+    'byCourse': 'حسب المادة',
   },
   en: {
     // Layout
@@ -1669,7 +1739,77 @@ const translations: Record<Language, Record<string, string>> = {
     'notApplicable': 'N/A',
     'lastUpdated': 'Last updated',
     'plansConfigured': 'plans configured',
-    'creditAnalytics': 'Credit Analytics',
+    
+    // Admin Trials Page
+    'searchUser': 'Search user...',
+    'originalEndDate': 'Original End Date',
+    'extensions': 'Extensions',
+    'daysRemaining': 'Days Remaining',
+    'plus7Days': '+7 Days',
+    'plus30Days': '+30 Days',
+    'endTrial': 'End',
+    'grantTrial': 'Grant Trial',
+    'trialGranted': 'Trial granted for {days} days',
+    'trialDuration': 'Trial Duration (days)',
+    'startTrialForUser': 'Start a trial for a user who doesn\'t have one',
+    'noActiveTrials': 'No active trials found.',
+    'noUsersFoundOrAllHaveTrials': 'No users found (or all have trials)',
+    'trialEnded': 'Trial ended.',
+    'trialExtendedBy': 'Trial extended by {days} days',
+    
+    // Admin Quotas Page
+    'quotasAndCredits': 'Quotas & AI Credits',
+    'activeOverrides': 'active overrides',
+    'aiCreditsUsed': 'AI Credits (Used)',
+    'editQuotasAndCredits': 'Edit Quotas & Credits',
+    'setCustomLimitsFor': 'Set custom limits for',
+    'aiUsageCredits': 'AI Usage Credits',
+    'creditsConsumedBy': 'Credits are consumed by AI actions: Extract Topics (30), Generate Plan (15), Analyze Topic (5)',
+    'currentBalance': 'Current Balance',
+    'creditsAvailableNow': 'Credits available now',
+    'monthlyAllowance': 'Monthly Allowance',
+    'resetsToThisEachMonth': 'Resets to this each month',
+    'defaultCreditsInfo': '💡 Default: Free = 50 credits/month, Pro = 1500 credits/month',
+    'coursesLimit': 'Courses Limit',
+    'topicsPerCourseLimit': 'Topics per Course',
+    'saveOverride': 'Save Override',
+    'quotasAndCreditsUpdated': 'Quotas and credits updated for user',
+    'edit': 'Edit',
+    'resetOverride': 'Reset',
+    
+    // Admin Feedback Page
+    'userFeedback': 'User Feedback',
+    'feedbackSubmissions': 'feedback submissions',
+    'all': 'All',
+    'noFeedbackYet': 'No feedback yet',
+    'new': 'New',
+    'reviewed': 'Reviewed',
+    'resolved': 'Resolved',
+    'markReviewed': 'Mark Reviewed',
+    'markResolved': 'Mark Resolved',
+    'feedbackDetails': 'Feedback Details',
+    'from': 'From',
+    'message': 'Message',
+    'adminNotes': 'Admin Notes',
+    'addInternalNotes': 'Add internal notes about this feedback...',
+    'saveNotes': 'Save Notes',
+    'noRating': 'No rating',
+    'confirmDeleteFeedback': 'Are you sure you want to delete this feedback?',
+    'bug': 'Bug',
+    'feature': 'Feature',
+    'improvement': 'Improvement',
+    'other': 'Other',
+    
+    // Admin Plans Page
+    'noPlansConfigured': 'No plans configured. Plans will be created automatically when the app is set up.',
+    'editPlan': 'Edit Plan',
+    'editPlanDesc': 'Update plan details, pricing, and limits',
+    
+    // Overall Progress Section
+    'overallProgress': 'Overall Progress',
+    'complete': 'Complete',
+    'totalProgressLabel': 'Total Progress',
+    'byCourse': 'By Course',
   }
 };
 

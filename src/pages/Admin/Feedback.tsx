@@ -21,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Star, MessageSquare, Trash2, Eye, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Feedback {
   id: string;
@@ -40,6 +41,7 @@ export default function AdminFeedback() {
   const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const { t } = useLanguage();
 
   const fetchFeedbacks = async () => {
     setLoading(true);
@@ -56,7 +58,7 @@ export default function AdminFeedback() {
     
     if (error) {
       console.error('Error fetching feedback:', error);
-      toast.error('Failed to load feedback');
+      toast.error(t('error'));
     } else {
       setFeedbacks(data || []);
     }
@@ -74,9 +76,9 @@ export default function AdminFeedback() {
       .eq('id', id);
 
     if (error) {
-      toast.error('Failed to update status');
+      toast.error(t('error'));
     } else {
-      toast.success('Status updated');
+      toast.success(t('statusUpdated'));
       fetchFeedbacks();
     }
   };
@@ -90,16 +92,16 @@ export default function AdminFeedback() {
       .eq('id', selectedFeedback.id);
 
     if (error) {
-      toast.error('Failed to save notes');
+      toast.error(t('error'));
     } else {
-      toast.success('Notes saved');
+      toast.success(t('notesSaved'));
       setSelectedFeedback(null);
       fetchFeedbacks();
     }
   };
 
   const deleteFeedback = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this feedback?')) return;
+    if (!confirm(t('confirmDeleteFeedback'))) return;
     
     const { error } = await supabase
       .from('feedback')
@@ -107,9 +109,9 @@ export default function AdminFeedback() {
       .eq('id', id);
 
     if (error) {
-      toast.error('Failed to delete feedback');
+      toast.error(t('error'));
     } else {
-      toast.success('Feedback deleted');
+      toast.success(t('feedbackDeleted'));
       fetchFeedbacks();
     }
   };
@@ -132,8 +134,26 @@ export default function AdminFeedback() {
     }
   };
 
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'bug': return t('bug');
+      case 'feature': return t('feature');
+      case 'improvement': return t('improvement');
+      default: return t('other');
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'new': return t('new');
+      case 'reviewed': return t('reviewed');
+      case 'resolved': return t('resolved');
+      default: return t('other');
+    }
+  };
+
   const renderStars = (rating: number | null) => {
-    if (!rating) return <span className="text-muted-foreground text-sm">No rating</span>;
+    if (!rating) return <span className="text-muted-foreground text-sm">{t('noRating')}</span>;
     return (
       <div className="flex gap-0.5">
         {[1, 2, 3, 4, 5].map((star) => (
@@ -151,9 +171,9 @@ export default function AdminFeedback() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">User Feedback</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t('userFeedback')}</h1>
           <p className="text-muted-foreground">
-            {feedbacks.length} feedback submissions
+            {feedbacks.length} {t('feedbackSubmissions')}
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -162,10 +182,10 @@ export default function AdminFeedback() {
               <SelectValue placeholder="Filter" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="new">New</SelectItem>
-              <SelectItem value="reviewed">Reviewed</SelectItem>
-              <SelectItem value="resolved">Resolved</SelectItem>
+              <SelectItem value="all">{t('all')}</SelectItem>
+              <SelectItem value="new">{t('new')}</SelectItem>
+              <SelectItem value="reviewed">{t('reviewed')}</SelectItem>
+              <SelectItem value="resolved">{t('resolved')}</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline" size="icon" onClick={fetchFeedbacks}>
@@ -191,7 +211,7 @@ export default function AdminFeedback() {
         <Card>
           <CardContent className="py-12 text-center">
             <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No feedback yet</p>
+            <p className="text-muted-foreground">{t('noFeedbackYet')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -203,15 +223,15 @@ export default function AdminFeedback() {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge variant={getTypeBadgeVariant(feedback.feedback_type)}>
-                        {feedback.feedback_type}
+                        {getTypeLabel(feedback.feedback_type)}
                       </Badge>
                       <Badge variant={getStatusBadgeVariant(feedback.status)}>
-                        {feedback.status}
+                        {getStatusLabel(feedback.status)}
                       </Badge>
                       {renderStars(feedback.rating)}
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {feedback.email || 'Unknown user'} • {format(new Date(feedback.created_at), 'PPp')}
+                      {feedback.email || t('unknownUser')} • {format(new Date(feedback.created_at), 'PPp')}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -240,7 +260,7 @@ export default function AdminFeedback() {
                 <p className="text-sm whitespace-pre-wrap">{feedback.message}</p>
                 {feedback.admin_notes && (
                   <div className="mt-3 pt-3 border-t border-border">
-                    <p className="text-xs text-muted-foreground mb-1">Admin Notes:</p>
+                    <p className="text-xs text-muted-foreground mb-1">{t('adminNotes')}:</p>
                     <p className="text-sm text-muted-foreground">{feedback.admin_notes}</p>
                   </div>
                 )}
@@ -251,7 +271,7 @@ export default function AdminFeedback() {
                     onClick={() => updateStatus(feedback.id, 'reviewed')}
                     disabled={feedback.status === 'reviewed'}
                   >
-                    Mark Reviewed
+                    {t('markReviewed')}
                   </Button>
                   <Button
                     size="sm"
@@ -259,7 +279,7 @@ export default function AdminFeedback() {
                     onClick={() => updateStatus(feedback.id, 'resolved')}
                     disabled={feedback.status === 'resolved'}
                   >
-                    Mark Resolved
+                    {t('markResolved')}
                   </Button>
                 </div>
               </CardContent>
@@ -271,29 +291,29 @@ export default function AdminFeedback() {
       <Dialog open={!!selectedFeedback} onOpenChange={(open) => !open && setSelectedFeedback(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Feedback Details</DialogTitle>
+            <DialogTitle>{t('feedbackDetails')}</DialogTitle>
           </DialogHeader>
           {selectedFeedback && (
             <div className="space-y-4">
               <div>
-                <p className="text-sm font-medium mb-1">From</p>
-                <p className="text-muted-foreground">{selectedFeedback.email || 'Unknown'}</p>
+                <p className="text-sm font-medium mb-1">{t('from')}</p>
+                <p className="text-muted-foreground">{selectedFeedback.email || t('unknownUser')}</p>
               </div>
               <div>
-                <p className="text-sm font-medium mb-1">Message</p>
+                <p className="text-sm font-medium mb-1">{t('message')}</p>
                 <p className="text-muted-foreground whitespace-pre-wrap">{selectedFeedback.message}</p>
               </div>
               <div>
-                <p className="text-sm font-medium mb-2">Admin Notes</p>
+                <p className="text-sm font-medium mb-2">{t('adminNotes')}</p>
                 <Textarea
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
-                  placeholder="Add internal notes about this feedback..."
+                  placeholder={t('addInternalNotes')}
                   rows={3}
                 />
               </div>
               <Button onClick={saveNotes} className="w-full">
-                Save Notes
+                {t('saveNotes')}
               </Button>
             </div>
           )}
