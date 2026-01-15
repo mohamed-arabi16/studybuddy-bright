@@ -78,14 +78,32 @@ export function usePlanGeneration() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Fetch plan days with items
+      // Fetch plan days with items, courses, and topics in a single query using Supabase joins
       const { data: days, error: daysError } = await supabase
         .from('study_plan_days')
         .select(`
           id,
           date,
           total_hours,
-          is_day_off
+          is_day_off,
+          study_plan_items (
+            id,
+            course_id,
+            topic_id,
+            hours,
+            order_index,
+            is_completed,
+            courses (
+              id,
+              title,
+              color
+            ),
+            topics (
+              id,
+              title,
+              estimated_hours
+            )
+          )
         `)
         .eq('user_id', user.id)
         .gte('date', new Date().toISOString().split('T')[0])
@@ -99,57 +117,29 @@ export function usePlanGeneration() {
         return;
       }
 
-      // Fetch items for each day
-      const daysWithItems: StudyPlanDay[] = [];
-      
-      for (const day of days) {
-        const { data: items, error: itemsError } = await supabase
-          .from('study_plan_items')
-          .select(`
-            id,
-            course_id,
-            topic_id,
-            hours,
-            order_index,
-            is_completed
-          `)
-          .eq('plan_day_id', day.id)
-          .order('order_index', { ascending: true });
+      // Transform the nested data structure
+      const daysWithItems: StudyPlanDay[] = days.map(day => {
+        const items = (day.study_plan_items || [])
+          .sort((a, b) => a.order_index - b.order_index)
+          .map(item => ({
+            id: item.id,
+            course_id: item.course_id,
+            topic_id: item.topic_id,
+            hours: item.hours,
+            order_index: item.order_index,
+            is_completed: item.is_completed,
+            course: item.courses || undefined,
+            topic: item.topics || undefined,
+          }));
 
-        if (itemsError) continue;
-
-        // Fetch course and topic info for each item
-        const enrichedItems: StudyPlanItem[] = [];
-        
-        for (const item of items || []) {
-          const { data: course } = await supabase
-            .from('courses')
-            .select('id, title, color')
-            .eq('id', item.course_id)
-            .single();
-
-          let topic = null;
-          if (item.topic_id) {
-            const { data: topicData } = await supabase
-              .from('topics')
-              .select('id, title, estimated_hours')
-              .eq('id', item.topic_id)
-              .single();
-            topic = topicData;
-          }
-
-          enrichedItems.push({
-            ...item,
-            course: course || undefined,
-            topic: topic || undefined,
-          });
-        }
-
-        daysWithItems.push({
-          ...day,
-          items: enrichedItems,
-        });
-      }
+        return {
+          id: day.id,
+          date: day.date,
+          total_hours: day.total_hours,
+          is_day_off: day.is_day_off,
+          items,
+        };
+      });
 
       setPlanDays(daysWithItems);
 
@@ -172,10 +162,18 @@ export function usePlanGeneration() {
       const weekAgo = new Date(today);
       weekAgo.setDate(today.getDate() - 7);
 
-      // Fetch past days with their items
+      // Fetch past days with their items in a single query using Supabase joins
       const { data: pastDays } = await supabase
         .from('study_plan_days')
-        .select('id, date, is_day_off')
+        .select(`
+          id,
+          date,
+          is_day_off,
+          study_plan_items (
+            id,
+            is_completed
+          )
+        `)
         .eq('user_id', user.id)
         .gte('date', weekAgo.toISOString().split('T')[0])
         .lt('date', today.toISOString().split('T')[0])
@@ -191,12 +189,8 @@ export function usePlanGeneration() {
       let totalMissed = 0;
 
       for (const day of pastDays) {
-        const { data: items } = await supabase
-          .from('study_plan_items')
-          .select('id, is_completed')
-          .eq('plan_day_id', day.id);
-
-        if (items && items.length > 0) {
+        const items = day.study_plan_items || [];
+        if (items.length > 0) {
           const incompleteCount = items.filter(i => !i.is_completed).length;
           if (incompleteCount > 0) {
             missed.push({

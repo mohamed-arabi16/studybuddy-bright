@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { LiquidGlassCard } from '@/components/ui/LiquidGlassCard';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { TimeLeft, getTimeLeft } from '@/lib/timeUtils';
+import { useCountdown } from '@/hooks/useCountdown';
 
 interface ExamCountdownCardProps {
   course: {
@@ -20,17 +19,8 @@ interface ExamCountdownCardProps {
 
 export function ExamCountdownCard({ course, isFirst = false }: ExamCountdownCardProps) {
   const { t, language } = useLanguage();
-  const [timeLeft, setTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0, total: 0 });
-
-  useEffect(() => {
-    if (!course.exam_date) return;
-
-    const calculateTimeLeft = () => getTimeLeft(new Date(course.exam_date!));
-
-    setTimeLeft(calculateTimeLeft());
-    const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 1000);
-    return () => clearInterval(timer);
-  }, [course.exam_date]);
+  // Use shared countdown hook instead of individual timer per component
+  const timeLeft = useCountdown(course.exam_date);
 
   if (!course.exam_date) return null;
 

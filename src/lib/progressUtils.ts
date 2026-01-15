@@ -17,17 +17,24 @@ export interface SubjectProgressMap {
   automata: SubjectProgress;
 }
 
+// Pre-compute all tasks once at module load to avoid repeated flatMap operations
+const allTasks = schedule.flatMap(day => [
+  ...day.osTasks,
+  ...day.circuitsTasks,
+  ...day.automataTasks,
+]);
+
+// Create a Set of valid task IDs for O(1) lookup
+const validTaskIds = new Set(allTasks.map(task => task.id));
+
 /**
  * Calculate progress for each subject based on completed tasks
  * @param completedTasks - Array of completed task IDs
  * @returns Object containing progress for each subject
  */
 export function calculateSubjectProgress(completedTasks: string[]): SubjectProgressMap {
-  const allTasks = schedule.flatMap(day => [
-    ...day.osTasks,
-    ...day.circuitsTasks,
-    ...day.automataTasks,
-  ]);
+  // Convert to Set for O(1) lookup instead of O(n) Array.includes()
+  const completedSet = new Set(completedTasks);
   
   const subjectProgress: SubjectProgressMap = {
     os: { total: 0, completed: 0 },
@@ -37,7 +44,7 @@ export function calculateSubjectProgress(completedTasks: string[]): SubjectProgr
 
   allTasks.forEach(task => {
     subjectProgress[task.subject].total++;
-    if (completedTasks.includes(task.id)) {
+    if (completedSet.has(task.id)) {
       subjectProgress[task.subject].completed++;
     }
   });
@@ -55,16 +62,17 @@ export function calculateOverallProgress(completedTasks: string[]): {
   totalCompleted: number;
   overallPercentage: number;
 } {
-  const allTasks = schedule.flatMap(day => [
-    ...day.osTasks,
-    ...day.circuitsTasks,
-    ...day.automataTasks,
-  ]);
+  // Convert to Set for O(1) lookup instead of O(n) Array.includes()
+  const completedSet = new Set(completedTasks);
 
   const totalTasks = allTasks.length;
-  const totalCompleted = completedTasks.filter(id => 
-    allTasks.some(task => task.id === id)
-  ).length;
+  // Count completed tasks that are valid (exist in our task list) - O(n) instead of O(n²)
+  let totalCompleted = 0;
+  for (const id of completedTasks) {
+    if (validTaskIds.has(id)) {
+      totalCompleted++;
+    }
+  }
   const overallPercentage = totalTasks > 0 ? Math.round((totalCompleted / totalTasks) * 100) : 0;
 
   return { totalTasks, totalCompleted, overallPercentage };
