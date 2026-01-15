@@ -174,6 +174,7 @@ export function useSubscription() {
       let planName = 'Free';
       let subStatus = 'trialing';
       let isPro = false;
+      let subscriptionEnd: string | null = null;
 
       if (subData?.plans) {
         const planLimits = subData.plans.limits as PlanLimits;
@@ -181,6 +182,30 @@ export function useSubscription() {
         planName = subData.plans.name;
         subStatus = subData.status;
         isPro = planName.toLowerCase() === 'pro';
+        subscriptionEnd = subData.trial_end || subData.current_period_end || null;
+      } else if (subData) {
+        // Check if user has a promo redemption (for cases where plan_id might be null)
+        const { data: promoRedemption } = await supabase
+          .from('promo_redemptions')
+          .select('trial_days_granted, redeemed_at')
+          .eq('user_id', user.id)
+          .order('redeemed_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (promoRedemption && subData.status === 'trialing' && subData.trial_end) {
+          const trialEnd = new Date(subData.trial_end);
+          const now = new Date();
+          
+          if (trialEnd > now) {
+            // User has an active promo trial - treat as Pro
+            planName = 'Pro';
+            subStatus = 'trialing';
+            limits = PRO_LIMITS;
+            isPro = true;
+            subscriptionEnd = subData.trial_end;
+          }
+        }
       }
 
       setStatus({
@@ -195,7 +220,7 @@ export function useSubscription() {
         isLoading: false,
         isTrial: subStatus === 'trialing',
         isPro,
-        subscriptionEnd: subData?.current_period_end || null,
+        subscriptionEnd,
         billingCycle: null,
       });
 
