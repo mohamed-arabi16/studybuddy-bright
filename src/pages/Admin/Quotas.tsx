@@ -229,7 +229,7 @@ export default function AdminQuotas() {
             <TableRow className="bg-muted/50">
               <TableHead className="w-64 px-4 py-3 text-sm text-gray-400">User</TableHead>
               <TableHead className="w-24 px-4 py-3 text-sm text-gray-400">Plan</TableHead>
-              <TableHead className="w-40 px-4 py-3 text-sm text-gray-400">AI Credits</TableHead>
+              <TableHead className="w-40 px-4 py-3 text-sm text-gray-400" title="Balance / Monthly Allowance">AI Credits (Used)</TableHead>
               <TableHead className="w-52 px-4 py-3 text-sm text-gray-400">Limits</TableHead>
               <TableHead className="w-32 px-4 py-3 text-sm text-gray-400">Override</TableHead>
               <TableHead className="w-44 px-4 py-3 text-right text-sm text-gray-400">Actions</TableHead>
@@ -322,19 +322,25 @@ export default function AdminQuotas() {
           <div className="space-y-6 py-4">
             {/* AI Credits Section */}
             <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
-              <h4 className="font-medium flex items-center gap-2">
-                <Coins className="h-4 w-4 text-amber-500" />
-                AI Credits
-              </h4>
+              <div>
+                <h4 className="font-medium flex items-center gap-2">
+                  <Coins className="h-4 w-4 text-amber-500" />
+                  AI Usage Credits
+                </h4>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Credits are consumed by AI actions: Extract Topics (30), Generate Plan (15), Analyze Topic (5)
+                </p>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Credit Balance</Label>
+                  <Label>Current Balance</Label>
                   <Input
                     type="number"
                     value={creditBalance}
                     onChange={(e) => setCreditBalance(parseInt(e.target.value) || 0)}
                     min={0}
                   />
+                  <p className="text-xs text-muted-foreground">Credits available now</p>
                 </div>
                 <div className="space-y-2">
                   <Label>Monthly Allowance</Label>
@@ -344,8 +350,12 @@ export default function AdminQuotas() {
                     onChange={(e) => setCreditAllowance(parseInt(e.target.value) || 0)}
                     min={0}
                   />
+                  <p className="text-xs text-muted-foreground">Resets to this each month</p>
                 </div>
               </div>
+              <p className="text-xs text-muted-foreground border-t pt-3 mt-2">
+                💡 Default: Free = 50 credits/month, Pro = 1500 credits/month
+              </p>
             </div>
 
             {/* Course Limits Section */}
