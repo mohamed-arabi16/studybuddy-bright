@@ -49,6 +49,7 @@ interface TopConsumer {
 }
 
 const COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'];
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 export default function AdminCredits() {
   const { t, dir, language } = useLanguage();
@@ -57,8 +58,10 @@ export default function AdminCredits() {
   const [topConsumers, setTopConsumers] = useState<TopConsumer[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = async () => {
+    setError(null);
     try {
       // Fetch credit analytics from view
       const { data: analyticsData, error: analyticsError } = await supabase
@@ -67,6 +70,7 @@ export default function AdminCredits() {
 
       if (analyticsError) {
         console.error('Error fetching analytics:', analyticsError);
+        setError(isRtl ? 'فشل في تحميل بيانات التحليلات' : 'Failed to load analytics data');
       } else {
         setAnalytics(analyticsData || []);
       }
@@ -75,10 +79,13 @@ export default function AdminCredits() {
       const { data: consumersData, error: consumersError } = await supabase
         .from('credit_usage_events')
         .select('user_id, credits_charged')
-        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+        .gte('created_at', new Date(Date.now() - THIRTY_DAYS_MS).toISOString());
 
       if (consumersError) {
         console.error('Error fetching consumers:', consumersError);
+        if (!error) {
+          setError(isRtl ? 'فشل في تحميل بيانات المستهلكين' : 'Failed to load consumer data');
+        }
       } else if (consumersData) {
         // Aggregate by user
         const userCredits: Record<string, { total_credits: number; total_events: number }> = {};
@@ -185,6 +192,15 @@ export default function AdminCredits() {
           {isRtl ? 'تحديث' : 'Refresh'}
         </Button>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <Card className="border-destructive">
+          <CardContent className="pt-6">
+            <p className="text-destructive">{error}</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -337,8 +353,8 @@ export default function AdminCredits() {
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {pieChartData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    {pieChartData.map((item) => (
+                      <Cell key={`cell-${item.name}`} fill={COLORS[pieChartData.indexOf(item) % COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip 
