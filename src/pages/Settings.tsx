@@ -196,8 +196,10 @@ export default function Settings() {
         return;
       }
 
-      // Call delete account edge function
-      const { error } = await supabase.functions.invoke('delete-account');
+      // Call delete account edge function with password
+      const { error } = await supabase.functions.invoke('delete-account', {
+        body: { password: deletePassword }
+      });
       
       if (error) throw error;
 

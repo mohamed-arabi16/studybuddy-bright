@@ -159,6 +159,39 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action_type: string
+          actor_id: string
+          actor_role: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          request_id: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          actor_id: string
+          actor_role?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          request_id?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          actor_id?: string
+          actor_role?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          request_id?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       course_files: {
         Row: {
           course_id: string
@@ -903,6 +936,33 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_events: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          event_type: string
+          id: string
+          payload: Json | null
+          processed_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          event_type: string
+          id?: string
+          payload?: Json | null
+          processed_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          event_type?: string
+          id?: string
+          payload?: Json | null
+          processed_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -915,6 +975,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_user_enabled: { Args: { _user_id: string }; Returns: boolean }
       redeem_promo_code: { Args: { p_code: string }; Returns: Json }
     }
     Enums: {

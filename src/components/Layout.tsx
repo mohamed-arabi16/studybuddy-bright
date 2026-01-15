@@ -39,9 +39,11 @@ export default function Layout() {
           .eq("user_id", userId)
           .maybeSingle();
 
+        // P0: Zombie Session Fix - immediately block disabled users
         if (profileData?.is_disabled) {
+          console.log("[Layout] User is disabled, signing out");
           await supabase.auth.signOut();
-          navigate("/auth");
+          navigate("/auth", { state: { accountDisabled: true } });
           setStatus("guest");
           return;
         }
@@ -67,6 +69,9 @@ export default function Layout() {
       }
     };
 
+    // P0: Periodic disabled check (every 60 seconds)
+    let disabledCheckInterval: NodeJS.Timeout | null = null;
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -78,9 +83,20 @@ export default function Layout() {
           setTimeout(() => {
             checkUserStatus(session.user.id);
           }, 0);
+          
+          // P0: Start periodic disabled check
+          if (!disabledCheckInterval) {
+            disabledCheckInterval = setInterval(() => {
+              checkUserStatus(session.user.id);
+            }, 60000); // Check every 60 seconds
+          }
         } else {
           setIsAdmin(false);
           setStatus("guest");
+          if (disabledCheckInterval) {
+            clearInterval(disabledCheckInterval);
+            disabledCheckInterval = null;
+          }
         }
       }
     );
@@ -95,7 +111,12 @@ export default function Layout() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (disabledCheckInterval) {
+        clearInterval(disabledCheckInterval);
+      }
+    };
   }, [navigate]);
 
   const handleSignOut = async () => {
