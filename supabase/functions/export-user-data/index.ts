@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { validateAuthenticatedUser, isAuthError, createAuthErrorResponse } from '../_shared/auth-guard.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,19 +27,14 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Get user from auth header
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
-    
-    if (userError || !userData.user) {
-      throw new Error("User not authenticated");
+    // P0 Security: Validate auth + disabled check
+    const authResult = await validateAuthenticatedUser(req, { supabaseAdmin });
+    if (isAuthError(authResult)) {
+      return createAuthErrorResponse(authResult);
     }
 
-    const userId = userData.user.id;
-    const userEmail = userData.user.email;
+    const userId = authResult.userId;
+    const userEmail = authResult.user.email;
     logStep("User authenticated", { userId });
 
     // Fetch all user data
