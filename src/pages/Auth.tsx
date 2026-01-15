@@ -19,6 +19,7 @@ export default function Auth() {
 
   const [mode, setMode] = useState<AuthMode>("signIn");
   const [loading, setLoading] = useState(false);
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -83,16 +84,24 @@ export default function Auth() {
       return hash.includes("type=recovery") || url.searchParams.get("type") === "recovery";
     };
 
+    // Check URL on initial load
+    if (detectRecovery()) {
+      setIsRecoveryMode(true);
+      setMode("updatePassword");
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       // Keep callback synchronous
-      const isRecovery = event === "PASSWORD_RECOVERY" || detectRecovery();
-
-      if (isRecovery) {
+      if (event === "PASSWORD_RECOVERY") {
+        setIsRecoveryMode(true);
         setMode("updatePassword");
         return;
       }
 
-      if (session?.user) {
+      // Don't redirect if we're in recovery mode
+      if (isRecoveryMode) return;
+
+      if (session?.user && mode !== "updatePassword") {
         navigate("/app/dashboard", { replace: true });
       }
     });
@@ -100,16 +109,19 @@ export default function Auth() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       const isRecovery = detectRecovery();
       if (isRecovery) {
+        setIsRecoveryMode(true);
         setMode("updatePassword");
         return;
       }
+      // Don't redirect if we're in recovery mode
+      if (isRecoveryMode) return;
       if (session?.user) {
         navigate("/app/dashboard", { replace: true });
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, isRecoveryMode, mode]);
 
   const resetSensitiveFields = () => {
     setPassword("");
@@ -207,6 +219,7 @@ export default function Auth() {
     if (error) throw error;
 
     toast.success(t("passwordUpdated"));
+    setIsRecoveryMode(false); // Clear recovery mode
     resetSensitiveFields();
     navigate("/app/dashboard", { replace: true });
   };

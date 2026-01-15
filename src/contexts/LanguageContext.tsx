@@ -572,11 +572,14 @@ const translations: Record<Language, Record<string, string>> = {
     'termsOfService': 'شروط الخدمة',
     'privacyPolicy': 'سياسة الخصوصية',
 
-    // Password Reset & File Management
+    // Password Reset & Change
     'resetPasswordTitle': 'إعادة تعيين كلمة المرور',
     'resetPasswordDesc': 'إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني',
     'passwordResetSent': 'تم إرسال رابط إعادة التعيين',
     'checkEmailForReset': 'تحقق من بريدك الإلكتروني للحصول على رابط إعادة التعيين',
+    'changePassword': 'تغيير كلمة المرور',
+    'changePasswordDesc': 'تعيين كلمة مرور جديدة لحسابك',
+    'passwordUpdatedDesc': 'تم تغيير كلمة المرور بنجاح',
     'confirmDeleteFile': 'تأكيد حذف الملف',
     'deleteFileWarning': 'هل أنت متأكد من حذف هذا الملف؟',
     'fileDeleted': 'تم حذف الملف بنجاح',
@@ -1325,11 +1328,14 @@ const translations: Record<Language, Record<string, string>> = {
     'termsOfService': 'Terms of Service',
     'privacyPolicy': 'Privacy Policy',
 
-    // Password Reset & File Management
+    // Password Reset & Change
     'resetPasswordTitle': 'Reset Password',
     'resetPasswordDesc': 'Send a password reset link to your email',
     'passwordResetSent': 'Password Reset Email Sent',
     'checkEmailForReset': 'Check your email for the password reset link',
+    'changePassword': 'Change Password',
+    'changePasswordDesc': 'Set a new password for your account',
+    'passwordUpdatedDesc': 'Your password has been changed successfully',
     'confirmDeleteFile': 'Confirm Delete File',
     'deleteFileWarning': 'Are you sure you want to delete this file?',
     'fileDeleted': 'File deleted successfully',
