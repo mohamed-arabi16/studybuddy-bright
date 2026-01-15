@@ -352,16 +352,16 @@ export default function AdminUsers() {
                     <Badge variant={user.role === 'admin' ? 'default' : 'outline'} className="whitespace-nowrap">
                       {user.role === 'admin' ? (
                         <span className="flex items-center gap-1">
-                          <Shield className="h-3 w-3" /> {language === 'ar' ? 'أدمن' : 'Admin'}
+                          <Shield className="h-3 w-3" /> {t('adminRole')}
                         </span>
-                      ) : (language === 'ar' ? 'مستخدم' : 'User')}
+                      ) : t('userRole')}
                     </Badge>
                   </TableCell>
                   <TableCell className="px-4 py-4">
                     <div className="flex items-center gap-2">
                       {user.plan_name === 'Free' || !user.plan_name ? (
                         <Badge variant="secondary" className="whitespace-nowrap text-gray-400">
-                          {language === 'ar' ? 'غ/م' : 'N/A'}
+                          {t('notApplicable')}
                         </Badge>
                       ) : (
                         <Badge variant={user.has_override ? 'default' : 'secondary'} className="whitespace-nowrap">

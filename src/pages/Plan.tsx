@@ -151,7 +151,7 @@ export default function Plan() {
           </div>
         </div>
         <h3 className="text-lg font-semibold mb-2">
-          {language === 'ar' ? 'جاري إنشاء خطتك الذكية...' : 'Creating your smart plan...'}
+          {t('creatingSmartPlan')}
         </h3>
         <p className="text-muted-foreground text-sm max-w-md">
           {language === 'ar' 

@@ -96,7 +96,7 @@ export function PlanSummaryCard({ metrics, totalPlanDays }: PlanSummaryCardProps
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-primary" />
             <h3 className="font-semibold">
-              {language === 'ar' ? 'ملخص الخطة' : 'Plan Summary'}
+              {t('planSummary')}
             </h3>
           </div>
           <Badge 
@@ -116,7 +116,7 @@ export function PlanSummaryCard({ metrics, totalPlanDays }: PlanSummaryCardProps
               {metrics.studyDaysCreated}
             </div>
             <div className="text-xs text-muted-foreground">
-              {language === 'ar' ? 'يوم دراسة' : 'Study Days'}
+              {t('studyDays')}
             </div>
           </div>
 
@@ -127,7 +127,7 @@ export function PlanSummaryCard({ metrics, totalPlanDays }: PlanSummaryCardProps
               {metrics.totalRequiredHours.toFixed(0)}
             </div>
             <div className="text-xs text-muted-foreground">
-              {language === 'ar' ? 'إجمالي الساعات' : 'Total Hours'}
+              {t('totalHours')}
             </div>
           </div>
 
@@ -138,7 +138,7 @@ export function PlanSummaryCard({ metrics, totalPlanDays }: PlanSummaryCardProps
               {metrics.topicsScheduled}/{metrics.topicsTotal}
             </div>
             <div className="text-xs text-muted-foreground">
-              {language === 'ar' ? 'المواضيع' : 'Topics'}
+              {t('topics')}
             </div>
           </div>
 
@@ -148,7 +148,7 @@ export function PlanSummaryCard({ metrics, totalPlanDays }: PlanSummaryCardProps
               {metrics.avgHoursPerStudyDay}h
             </div>
             <div className="text-xs text-muted-foreground">
-              {language === 'ar' ? 'معدل يومي' : 'Daily Avg'}
+              {t('dailyAvg')}
             </div>
           </div>
         </div>
@@ -158,7 +158,7 @@ export function PlanSummaryCard({ metrics, totalPlanDays }: PlanSummaryCardProps
           <div className="space-y-2">
             <div className="flex justify-between items-center text-sm">
               <span className="text-muted-foreground">
-                {language === 'ar' ? 'نسبة التغطية' : 'Coverage Ratio'}
+                {t('coverageRatioLabel')}
               </span>
               <span className={`font-medium ${coveragePercent < 70 ? 'text-amber-600' : 'text-green-600'}`}>
                 {coveragePercent}%
@@ -183,7 +183,7 @@ export function PlanSummaryCard({ metrics, totalPlanDays }: PlanSummaryCardProps
           <div className="space-y-2">
             <div className="flex justify-between items-center text-sm">
               <span className="text-muted-foreground">
-                {language === 'ar' ? 'المواضيع المجدولة' : 'Topics Scheduled'}
+                {t('topicsScheduledLabel')}
               </span>
               <span className={`font-medium ${topicsPercent < 80 ? 'text-amber-600' : 'text-green-600'}`}>
                 {topicsPercent}%
@@ -202,7 +202,7 @@ export function PlanSummaryCard({ metrics, totalPlanDays }: PlanSummaryCardProps
             <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
               <Target className="w-4 h-4" />
               <span>
-                {language === 'ar' ? 'تاريخ الإتمام المتوقع' : 'Est. Completion'}
+                {t('estCompletion')}
               </span>
             </div>
             <span className="font-medium text-green-700 dark:text-green-400">

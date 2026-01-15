@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, Crown, Infinity, Pencil, X } from "lucide-react";
+import { Check, Crown, Infinity, Pencil } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,7 @@ export default function AdminPlans() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
 
@@ -114,7 +116,7 @@ export default function AdminPlans() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">Plans</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t('plans')}</h1>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2].map(i => (
             <Card key={i}>
@@ -136,9 +138,9 @@ export default function AdminPlans() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Plans</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t('plans')}</h1>
         <Badge variant="outline" className="text-muted-foreground">
-          {plans.length} plans configured
+          {plans.length} {t('plansConfigured')}
         </Badge>
       </div>
 
@@ -163,26 +165,26 @@ export default function AdminPlans() {
                   </Button>
                 </div>
                 <CardDescription>
-                  {plan.price_monthly === 0 ? 'Free forever' : `$${plan.price_monthly}/month`}
+                  {plan.price_monthly === 0 ? t('freeForever') : `$${plan.price_monthly}${t('perMonth')}`}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-3xl font-bold">
-                  {plan.price_monthly === 0 ? 'Free' : `$${plan.price_monthly}`}
+                  {plan.price_monthly === 0 ? t('freePlan') : `$${plan.price_monthly}`}
                   {plan.price_monthly > 0 && <span className="text-sm font-normal text-muted-foreground">/mo</span>}
                 </div>
                 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Courses</span>
+                    <span className="text-muted-foreground">{t('courses')}</span>
                     <span className="font-medium">{formatLimit(plan.limits.courses)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Topics/Course</span>
+                    <span className="text-muted-foreground">{t('topicsPerCourse')}</span>
                     <span className="font-medium">{formatLimit(plan.limits.topics_per_course)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">AI Extractions</span>
+                    <span className="text-muted-foreground">{t('aiUsage')}</span>
                     <span className="font-medium">{formatLimit(plan.limits.ai_extractions)}/mo</span>
                   </div>
                 </div>
@@ -204,9 +206,9 @@ export default function AdminPlans() {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Edit {editingPlan?.name} Plan</DialogTitle>
+            <DialogTitle>{t('editCourse')} - {editingPlan?.name}</DialogTitle>
             <DialogDescription>
-              Update plan settings and limits
+              {t('editCourseDesc')}
             </DialogDescription>
           </DialogHeader>
           
@@ -214,14 +216,14 @@ export default function AdminPlans() {
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Plan Name</Label>
+                  <Label>{t('planName')}</Label>
                   <Input
                     value={editingPlan.name}
                     onChange={(e) => setEditingPlan({ ...editingPlan, name: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Monthly Price ($)</Label>
+                  <Label>{t('pricing')} ($)</Label>
                   <Input
                     type="number"
                     value={editingPlan.price_monthly}
@@ -231,7 +233,7 @@ export default function AdminPlans() {
               </div>
 
               <div className="space-y-2">
-                <Label>Yearly Price ($)</Label>
+                <Label>{t('annual')} ($)</Label>
                 <Input
                   type="number"
                   value={editingPlan.price_yearly}
@@ -240,10 +242,10 @@ export default function AdminPlans() {
               </div>
 
               <div className="border rounded-lg p-4 space-y-4">
-                <Label className="text-base">Limits (-1 = unlimited)</Label>
+                <Label className="text-base">{t('limits')} (-1 = {t('unlimited')})</Label>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Courses</Label>
+                    <Label className="text-xs text-muted-foreground">{t('courses')}</Label>
                     <Input
                       type="number"
                       value={editingPlan.limits.courses}
@@ -254,7 +256,7 @@ export default function AdminPlans() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Topics/Course</Label>
+                    <Label className="text-xs text-muted-foreground">{t('topicsPerCourse')}</Label>
                     <Input
                       type="number"
                       value={editingPlan.limits.topics_per_course}
@@ -265,7 +267,7 @@ export default function AdminPlans() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">AI Extractions</Label>
+                    <Label className="text-xs text-muted-foreground">{t('aiUsage')}</Label>
                     <Input
                       type="number"
                       value={editingPlan.limits.ai_extractions}
@@ -282,10 +284,10 @@ export default function AdminPlans() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button onClick={handleSave}>
-              Save Changes
+              {t('saveChanges')}
             </Button>
           </DialogFooter>
         </DialogContent>
