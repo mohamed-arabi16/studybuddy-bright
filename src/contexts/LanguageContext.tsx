@@ -707,6 +707,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Admin Feedback
     'feedback': 'التعليقات',
+    'feedbackTitle': 'التعليقات',
     'statusUpdated': 'تم تحديث الحالة',
     'notesSaved': 'تم حفظ الملاحظات',
     'feedbackDeleted': 'تم حذف التعليق',
@@ -776,6 +777,40 @@ const translations: Record<Language, Record<string, string>> = {
     'codeExpired': 'انتهت صلاحية الرمز. أعد الإرسال.',
     'proTrial': 'تجربة Pro',
     'trialEndsIn': 'تنتهي خلال {days} يوم',
+    
+    // Missing keys - Contact and Pricing
+    'contactForPricing': 'تواصل معنا للتسعير',
+    'contactUs': 'تواصل معنا',
+    'weWillContactYou': 'سنتواصل معك قريباً',
+    
+    // Navigation
+    'backToHome': 'العودة للرئيسية',
+    
+    // Descriptions and Labels
+    'description': 'الوصف',
+    
+    // Topic Analysis
+    'topicAnalyzedWithDefaults': 'تم تحليل الموضوع بقيم تقديرية',
+    
+    // Terms of Service page
+    'termsAcceptance': 'قبول الشروط',
+    'termsUserResponsibilities': 'مسؤوليات المستخدم',
+    'termsIntellectualProperty': 'الملكية الفكرية',
+    'termsLimitations': 'حدود المسؤولية',
+    'termsSubscription': 'الاشتراك والدفع',
+    'termsTermination': 'الإنهاء',
+    'termsChanges': 'التغييرات على الشروط',
+    'termsContact': 'التواصل معنا',
+    
+    // Privacy Policy page
+    'privacyIntro': 'مقدمة',
+    'privacyDataCollection': 'جمع البيانات',
+    'privacyDataUsage': 'استخدام البيانات',
+    'privacyThirdParties': 'مشاركة البيانات مع الأطراف الثالثة',
+    'privacyDataRetention': 'الاحتفاظ بالبيانات',
+    'privacyUserRights': 'حقوقك',
+    'privacySecurity': 'الأمان',
+    'privacyContact': 'التواصل معنا',
   },
   en: {
     // Layout
@@ -1543,6 +1578,40 @@ const translations: Record<Language, Record<string, string>> = {
     'codeExpired': 'Code expired. Please resend.',
     'proTrial': 'Pro Trial',
     'trialEndsIn': 'Ends in {days} days',
+    
+    // Missing keys - Contact and Pricing
+    'contactForPricing': 'Contact us for pricing',
+    'contactUs': 'Contact Us',
+    'weWillContactYou': 'We will contact you soon',
+    
+    // Navigation
+    'backToHome': 'Back to Home',
+    
+    // Descriptions and Labels
+    'description': 'Description',
+    
+    // Topic Analysis
+    'topicAnalyzedWithDefaults': 'Topic analyzed with estimated values',
+    
+    // Terms of Service page
+    'termsAcceptance': 'Acceptance of Terms',
+    'termsUserResponsibilities': 'User Responsibilities',
+    'termsIntellectualProperty': 'Intellectual Property',
+    'termsLimitations': 'Limitations of Liability',
+    'termsSubscription': 'Subscription and Payment',
+    'termsTermination': 'Termination',
+    'termsChanges': 'Changes to Terms',
+    'termsContact': 'Contact Us',
+    
+    // Privacy Policy page
+    'privacyIntro': 'Introduction',
+    'privacyDataCollection': 'Data Collection',
+    'privacyDataUsage': 'Data Usage',
+    'privacyThirdParties': 'Third-Party Sharing',
+    'privacyDataRetention': 'Data Retention',
+    'privacyUserRights': 'Your Rights',
+    'privacySecurity': 'Security',
+    'privacyContact': 'Contact Us',
   }
 };
 
