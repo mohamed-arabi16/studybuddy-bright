@@ -140,7 +140,7 @@ export default function AdminPlans() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tight">{t('plans')}</h1>
         <Badge variant="outline" className="text-muted-foreground">
-          {plans.length} {t('plans').toLowerCase()}
+          {plans.length} {t('plansConfigured')}
         </Badge>
       </div>
 

@@ -838,6 +838,7 @@ const translations: Record<Language, Record<string, string>> = {
     'userRole': 'مستخدم',
     'notApplicable': 'غ/م',
     'lastUpdated': 'آخر تحديث',
+    'plansConfigured': 'خطط مُعدّة',
   },
   en: {
     // Layout
@@ -1666,6 +1667,7 @@ const translations: Record<Language, Record<string, string>> = {
     'userRole': 'User',
     'notApplicable': 'N/A',
     'lastUpdated': 'Last updated',
+    'plansConfigured': 'plans configured',
   }
 };
 
