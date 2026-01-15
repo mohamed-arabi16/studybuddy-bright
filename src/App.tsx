@@ -26,6 +26,7 @@ import AdminQuotas from "./pages/Admin/Quotas";
 import AdminTrials from "./pages/Admin/Trials";
 import AdminFeedback from "./pages/Admin/Feedback";
 import AdminAuditLog from "./pages/Admin/AuditLog";
+import AdminCredits from "./pages/Admin/Credits";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,7 @@ const App = () => (
                <Route path="trials" element={<AdminTrials />} />
                <Route path="feedback" element={<AdminFeedback />} />
                <Route path="audit" element={<AdminAuditLog />} />
+               <Route path="credits" element={<AdminCredits />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

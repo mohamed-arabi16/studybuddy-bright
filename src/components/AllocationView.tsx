@@ -262,6 +262,7 @@ export default function AllocationView({ course }: { course: any }) {
               )}
               <Sparkles className="h-4 w-4" />
               {t('aiSmartSchedule')}
+              <span className="text-xs opacity-75">({t('creditCost').replace('{n}', '15')})</span>
             </Button>
           </div>
 
