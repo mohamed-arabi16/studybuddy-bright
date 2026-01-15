@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { PricingCard } from '@/components/PricingCard';
+import { PromoCodeRedemption } from '@/components/PromoCodeRedemption';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { CalendarSyncCard } from '@/components/CalendarSyncCard';
@@ -584,6 +585,11 @@ export default function Settings() {
                     </div>
                   </CardHeader>
                 </Card>
+              )}
+
+              {/* Promo code redemption - show for non-Pro users */}
+              {!isPro && (
+                <PromoCodeRedemption onSuccess={refreshSubscription} />
               )}
 
               {/* Pricing cards */}

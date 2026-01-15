@@ -1,90 +1,184 @@
 import { 
-  LayoutDashboard, Calendar, Timer, BarChart3
+  LayoutDashboard, Calendar, Timer, BarChart3, Sparkles, Zap
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LiquidGlassCard } from "@/components/ui/LiquidGlassCard";
-import { motion } from "framer-motion";
+import { motion, useInView } from "framer-motion";
+import { useRef } from "react";
 
 export const FeatureShowcase = () => {
   const { t, dir } = useLanguage();
+  const sectionRef = useRef(null);
+  const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
 
-  // Reduced to 4 core features
   const features = [
     {
       icon: LayoutDashboard,
       titleKey: 'feature1Title',
       descKey: 'feature1Desc',
-      color: "bg-blue-500/20"
+      color: "from-blue-500 to-blue-600",
+      bgColor: "from-blue-500/20 to-blue-600/5",
+      delay: 0
     },
     {
       icon: Calendar,
       titleKey: 'feature2Title',
       descKey: 'feature2Desc',
-      color: "bg-purple-500/20"
+      color: "from-purple-500 to-purple-600",
+      bgColor: "from-purple-500/20 to-purple-600/5",
+      delay: 0.1
     },
     {
       icon: Timer,
       titleKey: 'feature3Title',
       descKey: 'feature3Desc',
-      color: "bg-green-500/20"
+      color: "from-green-500 to-green-600",
+      bgColor: "from-green-500/20 to-green-600/5",
+      delay: 0.2
     },
     {
       icon: BarChart3,
       titleKey: 'feature5Title',
       descKey: 'feature5Desc',
-      color: "bg-orange-500/20"
+      color: "from-orange-500 to-orange-600",
+      bgColor: "from-orange-500/20 to-orange-600/5",
+      delay: 0.3
     }
   ];
 
   return (
-    <section className="py-24 relative overflow-hidden" dir={dir}>
-      {/* Ambient Background Glows */}
+    <section ref={sectionRef} className="py-32 relative overflow-hidden" dir={dir}>
+      {/* Animated Background Elements */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/3 right-[-10%] w-[400px] h-[400px] bg-purple-600/8 rounded-full blur-[100px]" />
-        <div className="absolute bottom-1/3 left-[-10%] w-[400px] h-[400px] bg-blue-600/8 rounded-full blur-[100px]" />
+        <motion.div 
+          className="absolute top-1/3 right-[-15%] w-[600px] h-[600px] bg-purple-600/8 rounded-full blur-[150px]"
+          animate={{ 
+            x: [0, 50, 0],
+            scale: [1, 1.1, 1],
+          }}
+          transition={{ duration: 15, repeat: Infinity }}
+        />
+        <motion.div 
+          className="absolute bottom-1/3 left-[-15%] w-[600px] h-[600px] bg-blue-600/8 rounded-full blur-[150px]"
+          animate={{ 
+            x: [0, -50, 0],
+            scale: [1.1, 1, 1.1],
+          }}
+          transition={{ duration: 15, repeat: Infinity }}
+        />
       </div>
 
       <div className="container px-4 relative z-10">
         {/* Section Header */}
         <motion.div 
-          className="text-center mb-16"
-          initial={{ opacity: 0, y: -20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+          className="text-center mb-20"
+          initial={{ opacity: 0, y: -30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: -30 }}
+          transition={{ duration: 0.6 }}
         >
-          <h2 className="text-3xl sm:text-4xl font-semibold mb-4">
-            {t('featuresTitle')} <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">{t('featuresTitleHighlight')}</span>
+          <motion.div 
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full liquid-glass-subtle text-sm font-medium mb-6"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Zap className="w-4 h-4 text-primary" />
+            <span className="text-muted-foreground">{t('featuresTitle')}</span>
+          </motion.div>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6">
+            {t('featuresTitle')} <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">{t('featuresTitleHighlight')}</span>
           </h2>
-          <p className="text-gray-400 max-w-xl mx-auto">
+          <p className="text-gray-400 max-w-2xl mx-auto text-lg">
             {t('featuresSubtitle')}
           </p>
         </motion.div>
 
-        {/* Features Grid - 2x2 */}
-        <div className="grid sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+        {/* Features Grid - 2x2 with enhanced cards */}
+        <div className="grid sm:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {features.map((feature, index) => (
-            <LiquidGlassCard
+            <motion.div
               key={feature.titleKey}
-              hover
-              delay={index * 0.15}
-              className="p-6"
+              initial={{ opacity: 0, y: 40, scale: 0.95 }}
+              animate={isInView ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 40, scale: 0.95 }}
+              transition={{ 
+                duration: 0.5, 
+                delay: feature.delay + 0.3,
+                type: "spring",
+                stiffness: 100,
+              }}
             >
-              {/* Icon - Colored background */}
-              <div className={`w-12 h-12 rounded-2xl ${feature.color} backdrop-blur-md flex items-center justify-center text-primary mb-4`}>
-                <feature.icon className="w-6 h-6" strokeWidth={1.5} />
-              </div>
+              <LiquidGlassCard
+                hover
+                disableAnimation
+                className="p-8 h-full group relative overflow-hidden"
+              >
+                {/* Gradient overlay on hover */}
+                <motion.div 
+                  className={`absolute inset-0 bg-gradient-to-br ${feature.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+                />
 
-              {/* Content */}
-              <h3 className="text-lg font-bold mb-2 text-white/90">
-                {t(feature.titleKey)}
-              </h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                {t(feature.descKey)}
-              </p>
-            </LiquidGlassCard>
+                {/* Decorative corner glow */}
+                <motion.div 
+                  className={`absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br ${feature.color} rounded-full blur-[80px] opacity-0 group-hover:opacity-30 transition-opacity duration-500`}
+                />
+
+                {/* Icon with animated background */}
+                <div className="relative mb-6">
+                  <motion.div 
+                    className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.bgColor} backdrop-blur-md flex items-center justify-center`}
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  >
+                    <feature.icon className="w-8 h-8 text-primary" strokeWidth={1.5} />
+                  </motion.div>
+                  
+                  {/* Animated ring */}
+                  <motion.div 
+                    className="absolute inset-0 rounded-2xl border border-primary/30"
+                    animate={{ 
+                      scale: [1, 1.15, 1],
+                      opacity: [0.3, 0, 0.3],
+                    }}
+                    transition={{ duration: 2.5, repeat: Infinity, delay: index * 0.3 }}
+                  />
+                </div>
+
+                {/* Content */}
+                <h3 className="text-xl font-bold mb-3 text-white/90 relative">
+                  {t(feature.titleKey)}
+                </h3>
+                <p className="text-gray-400 leading-relaxed relative">
+                  {t(feature.descKey)}
+                </p>
+
+                {/* Bottom line accent */}
+                <motion.div 
+                  className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${feature.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+                  initial={{ scaleX: 0 }}
+                  whileHover={{ scaleX: 1 }}
+                  transition={{ duration: 0.3 }}
+                />
+              </LiquidGlassCard>
+            </motion.div>
           ))}
         </div>
+
+        {/* Bottom CTA */}
+        <motion.div 
+          className="text-center mt-16"
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ delay: 0.8 }}
+        >
+          <motion.div 
+            className="inline-flex items-center gap-2 text-primary text-sm font-medium"
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>{t('heroBadge')}</span>
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   );

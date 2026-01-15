@@ -14,6 +14,7 @@ import {
   Menu,
   ArrowLeft,
   Languages,
+  Gift,
 } from "lucide-react";
 
 export default function AdminLayout() {
@@ -54,6 +55,7 @@ export default function AdminLayout() {
     { href: "/admin", icon: LayoutDashboard, label: t('adminOverview') },
     { href: "/admin/users", icon: Users, label: t('users') },
     { href: "/admin/plans", icon: CreditCard, label: t('plans') },
+    { href: "/admin/promos", icon: Gift, label: t('promoCodes') },
     { href: "/admin/quotas", icon: Settings, label: t('quotas') },
     { href: "/admin/trials", icon: Shield, label: t('trials') },
     { href: "/admin/feedback", icon: MessageSquare, label: t('feedbackTitle') },
