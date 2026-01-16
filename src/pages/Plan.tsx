@@ -17,6 +17,7 @@ import { RescheduleCard } from '@/components/RescheduleCard';
 import { PlanSummaryCard } from '@/components/PlanSummaryCard';
 import { PlanWarningBanner } from '@/components/PlanWarningBanner';
 import { PlanItemExplanation } from '@/components/PlanItemExplanation';
+import { NextUnlockCard } from '@/components/NextUnlockCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -257,6 +258,11 @@ export default function Plan() {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Next Unlock Card - shows topics that will be unlocked by completing today's prerequisites */}
+      {planDays.length > 0 && (
+        <NextUnlockCard planDays={planDays} />
       )}
 
       {/* Empty State with Contextual Guidance */}

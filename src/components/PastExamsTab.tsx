@@ -57,10 +57,11 @@ export function PastExamsTab({ courseId, files }: PastExamsTabProps) {
 
   // Check if a file has already been analyzed
   const isFileAnalyzed = (fileId: string): boolean => {
-    return pastExams.some(exam => 
-      // @ts-ignore - file_id may exist
-      exam.file_id === fileId && exam.analysis_status === 'completed'
-    );
+    return pastExams.some(exam => {
+      // Access file_id safely using optional chaining on extended exam type
+      const examWithFileId = exam as PastExam & { file_id?: string };
+      return examWithFileId.file_id === fileId && exam.analysis_status === 'completed';
+    });
   };
 
   const handleAnalyzeExam = async (file: CourseFile) => {

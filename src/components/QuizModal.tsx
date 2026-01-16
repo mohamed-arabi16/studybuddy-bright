@@ -108,11 +108,13 @@ export function QuizModal({
       });
 
       if (response.error) {
-        // Check for insufficient credits error
-        if (response.error.message.includes('INSUFFICIENT_CREDITS') || response.error.context?.status === 402) {
+        // Check for insufficient credits error - handle various error structures
+        const errorMessage = response.error?.message || '';
+        const errorStatus = (response.error as any)?.context?.status || (response.error as any)?.status;
+        if (errorMessage.includes('INSUFFICIENT_CREDITS') || errorStatus === 402) {
           throw new Error(language === 'ar' ? 'رصيد غير كافٍ' : 'Insufficient credits');
         }
-        throw new Error(response.error.message);
+        throw new Error(errorMessage || 'Quiz generation failed');
       }
 
       const data = response.data;

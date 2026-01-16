@@ -161,6 +161,14 @@ serve(async (req) => {
 
       if (saveError) {
         console.error("[generate-quiz] Error saving quiz:", saveError);
+        // Return error if save failed - quiz ID is required for attempt tracking
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Failed to save quiz to database",
+          }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
 
       return new Response(
@@ -168,7 +176,7 @@ serve(async (req) => {
           success: true,
           cache_hit: false,
           quiz: {
-            id: savedQuiz?.id || crypto.randomUUID(),
+            id: savedQuiz.id,
             topic_id,
             topic_title: topic.title,
             difficulty,
@@ -276,6 +284,14 @@ serve(async (req) => {
 
     if (saveError) {
       console.error("[generate-quiz] Error saving quiz to cache:", saveError);
+      // Return error if save failed - quiz ID is required for attempt tracking
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Failed to save quiz to database",
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     return new Response(
@@ -283,7 +299,7 @@ serve(async (req) => {
         success: true,
         cache_hit: false,
         quiz: {
-          id: savedQuiz?.id || crypto.randomUUID(),
+          id: savedQuiz.id,
           topic_id,
           topic_title: topic.title,
           difficulty,

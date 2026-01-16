@@ -31,6 +31,8 @@ const DEFAULT_COSTS: Record<string, number> = {
   generate_plan: 15,
   analyze_topic: 5,
   chat_with_tutor: 2,
+  generate_quiz: 8,
+  analyze_past_exam: 40,
 };
 
 // Default allowances from credit_plans table (fallback values)

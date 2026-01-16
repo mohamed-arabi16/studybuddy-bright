@@ -60,59 +60,36 @@ export function useYieldMetrics(courseId?: string): UseYieldMetricsReturn {
         return;
       }
 
-      // Call the edge function
-      const response = await supabase.functions.invoke('get-yield-summary', {
-        body: null,
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
+      // Try direct DB query first (more reliable than edge function for simple reads)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: metrics } = await supabase
+        .from('topic_yield_metrics')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('course_id', courseId)
+        .order('normalized_yield', { ascending: false });
+
+      const { data: exams } = await supabase
+        .from('past_exams')
+        .select('id, title, exam_date, analysis_status, created_at')
+        .eq('user_id', user.id)
+        .eq('course_id', courseId)
+        .order('created_at', { ascending: false });
+
+      setYieldMetrics(metrics || []);
+      setPastExams(exams || []);
+      
+      const completedExams = (exams || []).filter(e => e.analysis_status === 'completed').length;
+      const highYield = (metrics || []).filter(m => m.normalized_yield >= 0.7).length;
+      
+      setSummary({
+        exams_analyzed: completedExams,
+        topics_with_yield_data: (metrics || []).length,
+        high_yield_topics: highYield,
+        weak_high_yield_count: 0,
       });
-
-      // Check if it's a GET request with query params
-      const { data, error: fnError } = await supabase.functions.invoke('get-yield-summary', {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      // Fall back to direct DB query if function doesn't exist
-      if (fnError || !data?.success) {
-        // Direct DB query as fallback
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const { data: metrics } = await supabase
-          .from('topic_yield_metrics')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('course_id', courseId)
-          .order('normalized_yield', { ascending: false });
-
-        const { data: exams } = await supabase
-          .from('past_exams')
-          .select('id, title, exam_date, analysis_status, created_at')
-          .eq('user_id', user.id)
-          .eq('course_id', courseId)
-          .order('created_at', { ascending: false });
-
-        setYieldMetrics(metrics || []);
-        setPastExams(exams || []);
-        
-        const completedExams = (exams || []).filter(e => e.analysis_status === 'completed').length;
-        const highYield = (metrics || []).filter(m => m.normalized_yield >= 0.7).length;
-        
-        setSummary({
-          exams_analyzed: completedExams,
-          topics_with_yield_data: (metrics || []).length,
-          high_yield_topics: highYield,
-          weak_high_yield_count: 0,
-        });
-      } else {
-        setYieldMetrics(data.yield_metrics || []);
-        setPastExams(data.past_exams || []);
-        setSummary(data.summary || null);
-      }
 
     } catch (err) {
       console.error('[useYieldMetrics] Error fetching yield data:', err);
