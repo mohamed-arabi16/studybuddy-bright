@@ -194,31 +194,35 @@ export default function AddTopicDialog({
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-2">
               <Label>{t('difficultyLabel')} {difficultyWeight}</Label>
               <span className="text-xs text-muted-foreground">{t('difficultyHelp')}</span>
             </div>
-            <Slider
-              value={[difficultyWeight]}
-              onValueChange={(v) => setDifficultyWeight(v[0])}
-              min={1}
-              max={5}
-              step={1}
-            />
+            <div dir="ltr">
+              <Slider
+                value={[difficultyWeight]}
+                onValueChange={(v) => setDifficultyWeight(v[0])}
+                min={1}
+                max={5}
+                step={1}
+              />
+            </div>
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-2">
               <Label>{t('importanceLabel')} {examImportance}</Label>
               <span className="text-xs text-muted-foreground">{t('importanceHelp')}</span>
             </div>
-            <Slider
-              value={[examImportance]}
-              onValueChange={(v) => setExamImportance(v[0])}
-              min={1}
-              max={5}
-              step={1}
-            />
+            <div dir="ltr">
+              <Slider
+                value={[examImportance]}
+                onValueChange={(v) => setExamImportance(v[0])}
+                min={1}
+                max={5}
+                step={1}
+              />
+            </div>
           </div>
 
           <div className={`flex items-center ${dir === 'rtl' ? 'space-x-reverse' : ''} space-x-2 border rounded-lg p-3 bg-muted/50`}>
