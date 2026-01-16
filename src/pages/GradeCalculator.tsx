@@ -88,8 +88,11 @@ const DEFAULT_GRADE_BOUNDARIES: GradeBoundary[] = [
   { letter: 'F', minScore: 0, maxScore: 59.99 },
 ];
 
+// Tolerance for weight sum comparison
+const WEIGHT_TOLERANCE = 0.01;
+
 // Utility function to generate unique IDs
-const generateId = () => Math.random().toString(36).substring(2, 9);
+const generateId = () => crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
 export default function GradeCalculator() {
   const { t, dir } = useLanguage();
@@ -244,6 +247,11 @@ export default function GradeCalculator() {
     setConstraints(prev => prev.filter(c => c.id !== id));
   }, []);
 
+  // Update a constraint
+  const updateConstraint = useCallback((id: string, updates: Partial<ConstraintRule>) => {
+    setConstraints(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+  }, []);
+
   // Aggregate items based on rule
   const aggregateItems = (items: ComponentItem[], rule: GradeComponent['aggregationRule'], dropCount?: number, bestOf?: number): number => {
     const validItems = items.filter(i => i.rawScore !== null);
@@ -263,9 +271,13 @@ export default function GradeCalculator() {
       }
       
       case 'drop_lowest': {
-        if (normalizedScores.length <= (dropCount || 1)) return normalizedScores.reduce((sum, s) => sum + s, 0) / normalizedScores.length;
+        const dropN = dropCount || 1;
+        // If we would drop all or more items, return the highest score only
+        if (normalizedScores.length <= dropN) {
+          return Math.max(...normalizedScores);
+        }
         const sortedDrop = [...normalizedScores].sort((a, b) => a - b);
-        const afterDrop = sortedDrop.slice(dropCount || 1);
+        const afterDrop = sortedDrop.slice(dropN);
         return afterDrop.reduce((sum, s) => sum + s, 0) / afterDrop.length;
       }
       
@@ -338,7 +350,7 @@ export default function GradeCalculator() {
     
     // Check weights sum to 100
     const totalWeight = components.reduce((sum, c) => sum + c.weight, 0);
-    if (Math.abs(totalWeight - 100) > 0.01) {
+    if (Math.abs(totalWeight - 100) > WEIGHT_TOLERANCE) {
       warnings.push(t('weightsNotSum100') || `Weights sum to ${totalWeight.toFixed(1)}%, not 100%`);
     }
 
@@ -619,9 +631,14 @@ export default function GradeCalculator() {
                           <Input
                             type="number"
                             value={component.aggregationRule === 'drop_lowest' ? component.dropCount || 1 : component.bestOf || 1}
-                            onChange={(e) => updateComponent(component.id, {
-                              [component.aggregationRule === 'drop_lowest' ? 'dropCount' : 'bestOf']: parseInt(e.target.value) || 1
-                            })}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 1;
+                              if (component.aggregationRule === 'drop_lowest') {
+                                updateComponent(component.id, { dropCount: value });
+                              } else {
+                                updateComponent(component.id, { bestOf: value });
+                              }
+                            }}
                             className="h-8"
                             min={1}
                           />
@@ -866,9 +883,7 @@ export default function GradeCalculator() {
                           <div key={constraint.id} className="flex items-center gap-2 p-3 rounded-lg border">
                             <Select
                               value={constraint.type}
-                              onValueChange={(v) => setConstraints(prev => prev.map(c => 
-                                c.id === constraint.id ? { ...c, type: v as ConstraintRule['type'] } : c
-                              ))}
+                              onValueChange={(v) => updateConstraint(constraint.id, { type: v as ConstraintRule['type'] })}
                             >
                               <SelectTrigger className="w-36 h-8">
                                 <SelectValue />
@@ -883,9 +898,7 @@ export default function GradeCalculator() {
                             {constraint.type === 'min_component' && (
                               <Select
                                 value={constraint.componentId || ''}
-                                onValueChange={(v) => setConstraints(prev => prev.map(c => 
-                                  c.id === constraint.id ? { ...c, componentId: v } : c
-                                ))}
+                                onValueChange={(v) => updateConstraint(constraint.id, { componentId: v })}
                               >
                                 <SelectTrigger className="w-32 h-8">
                                   <SelectValue placeholder={t('selectComponent')} />
@@ -905,9 +918,7 @@ export default function GradeCalculator() {
                               <Input
                                 type="number"
                                 value={constraint.threshold || 0}
-                                onChange={(e) => setConstraints(prev => prev.map(c => 
-                                  c.id === constraint.id ? { ...c, threshold: parseFloat(e.target.value) || 0 } : c
-                                ))}
+                                onChange={(e) => updateConstraint(constraint.id, { threshold: parseFloat(e.target.value) || 0 })}
                                 className="w-20 h-8"
                                 step={constraint.type === 'cap_work' ? 0.1 : 1}
                               />
