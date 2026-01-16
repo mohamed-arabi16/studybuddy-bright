@@ -294,24 +294,26 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="profile" className="gap-2">
-            <User className="w-4 h-4" />
-            {t('profile')}
-          </TabsTrigger>
-          <TabsTrigger value="study" className="gap-2">
-            <Clock className="w-4 h-4" />
-            {t('studyPreferences')}
-          </TabsTrigger>
-          <TabsTrigger value="calendar" className="gap-2">
-            <Calendar className="w-4 h-4" />
-            {t('calendarSync')}
-          </TabsTrigger>
-          <TabsTrigger value="subscription" className="gap-2">
-            <CreditCard className="w-4 h-4" />
-            {t('subscription')}
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+          <TabsList className="inline-flex w-auto min-w-full sm:min-w-0">
+            <TabsTrigger value="profile" className="gap-2 whitespace-nowrap">
+              <User className="w-4 h-4" />
+              {t('profile')}
+            </TabsTrigger>
+            <TabsTrigger value="study" className="gap-2 whitespace-nowrap">
+              <Clock className="w-4 h-4" />
+              {t('studyPreferences')}
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="gap-2 whitespace-nowrap">
+              <Calendar className="w-4 h-4" />
+              {t('calendarSync')}
+            </TabsTrigger>
+            <TabsTrigger value="subscription" className="gap-2 whitespace-nowrap">
+              <CreditCard className="w-4 h-4" />
+              {t('subscription')}
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="profile" className="space-y-4">
           <Card>

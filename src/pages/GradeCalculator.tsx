@@ -1031,20 +1031,22 @@ export default function GradeCalculator() {
                 >
                   <LiquidGlassCard className="p-4" disableAnimation>
                     <CollapsibleTrigger asChild>
-                      <div className="flex items-center justify-between cursor-pointer">
-                        <div className="flex items-center gap-3">
-                          <Badge variant={component.group === 'exam' ? 'destructive' : 'secondary'}>
+                      <div className="flex flex-col gap-3 cursor-pointer sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant={component.group === 'exam' ? 'destructive' : 'secondary'} className="shrink-0">
                             {component.group === 'exam' ? t('exam') : t('work')}
                           </Badge>
                           <Input
                             value={component.name}
                             onChange={(e) => updateComponent(component.id, { name: e.target.value })}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-32 sm:w-48 h-8"
+                            className="min-w-[120px] max-w-[200px] h-8 flex-1"
+                            dir="auto"
                           />
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 shrink-0">
                             <Input
                               type="number"
+                              dir="ltr"
                               value={component.weight}
                               onChange={(e) => updateComponent(component.id, { weight: parseFloat(e.target.value) || 0 })}
                               onClick={(e) => e.stopPropagation()}
@@ -1056,7 +1058,7 @@ export default function GradeCalculator() {
                             <InfoTooltip content={t('componentWeightInfo')} />
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 self-end sm:self-auto">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1091,7 +1093,7 @@ export default function GradeCalculator() {
                             type="number"
                             value={component.scaleMax}
                             onChange={(e) => updateComponent(component.id, { scaleMax: parseFloat(e.target.value) || 100 })}
-                            className="h-8"
+                            className="h-8 w-full"
                           />
                         </div>
                         <div>
@@ -1103,7 +1105,7 @@ export default function GradeCalculator() {
                             value={component.aggregationRule}
                             onValueChange={(v) => updateComponent(component.id, { aggregationRule: v as GradeComponent['aggregationRule'] })}
                           >
-                            <SelectTrigger className="h-8">
+                            <SelectTrigger className="h-8 w-full">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1121,7 +1123,7 @@ export default function GradeCalculator() {
                             value={component.group}
                             onValueChange={(v) => updateComponent(component.id, { group: v as 'exam' | 'work' })}
                           >
-                            <SelectTrigger className="h-8">
+                            <SelectTrigger className="h-8 w-full">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1187,21 +1189,24 @@ export default function GradeCalculator() {
                                   value={item.name}
                                   onChange={(e) => updateItem(component.id, item.id, { name: e.target.value })}
                                   placeholder={t('itemName')}
-                                  className="min-h-[44px] sm:h-7 flex-1"
+                                  className="min-h-[44px] sm:h-7 flex-1 min-w-0"
+                                  dir="auto"
                                 />
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   <TooltipProvider>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <Input
-                                          type="number"
+                                          type="text"
+                                          inputMode="numeric"
+                                          pattern="[0-9]*"
                                           dir="ltr"
                                           value={item.rawScore ?? ''}
                                           onChange={(e) => updateItem(component.id, item.id, { 
                                             rawScore: e.target.value === '' ? null : parseFloat(e.target.value) 
                                           })}
                                           placeholder={isOptionalScore ? t('optional') : t('actualGrade')}
-                                          className="min-h-[44px] sm:h-7 w-20 text-start"
+                                          className="min-h-[44px] sm:h-7 w-24 min-w-[80px] text-start"
                                         />
                                       </TooltipTrigger>
                                       <TooltipContent>
@@ -1211,21 +1216,25 @@ export default function GradeCalculator() {
                                   </TooltipProvider>
                                   <span className="text-sm text-muted-foreground">/</span>
                                   <Input
-                                    type="number"
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
                                     dir="ltr"
                                     value={item.maxScore}
                                     onChange={(e) => updateItem(component.id, item.id, { maxScore: parseFloat(e.target.value) || 100 })}
-                                    className="min-h-[44px] sm:h-7 w-16 text-start"
+                                    className="min-h-[44px] sm:h-7 w-20 min-w-[64px] text-start"
                                   />
                                   {component.aggregationRule === 'weighted' && (
                                     <>
                                       <span className="text-sm text-muted-foreground">×</span>
                                       <Input
-                                        type="number"
+                                        type="text"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
                                         dir="ltr"
                                         value={item.weight ?? 1}
                                         onChange={(e) => updateItem(component.id, item.id, { weight: parseFloat(e.target.value) || 1 })}
-                                        className="min-h-[44px] sm:h-7 w-16 text-start"
+                                        className="min-h-[44px] sm:h-7 w-20 min-w-[64px] text-start"
                                         placeholder="Weight"
                                       />
                                     </>
@@ -1234,7 +1243,7 @@ export default function GradeCalculator() {
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => removeItemFromComponent(component.id, item.id)}
-                                    className="min-h-[44px] min-w-[44px] sm:h-7 sm:w-7 text-destructive hover:text-destructive"
+                                    className="min-h-[44px] min-w-[44px] sm:h-7 sm:w-7 text-destructive hover:text-destructive shrink-0"
                                   >
                                     <Trash2 className="w-4 h-4 sm:w-3 sm:h-3" />
                                   </Button>
@@ -1275,17 +1284,19 @@ export default function GradeCalculator() {
                   {/* Passing Threshold & Rounding */}
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <Label>{t('passingThreshold')}</Label>
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <Label>{t('passingThreshold')}</Label>
+                        <span className="text-sm font-medium">{passingThreshold}%</span>
+                      </div>
+                      <div dir="ltr">
                         <Slider
                           value={[passingThreshold]}
                           onValueChange={(v) => setPassingThreshold(v[0])}
                           min={0}
                           max={100}
                           step={1}
-                          className="flex-1"
+                          className="w-full"
                         />
-                        <span className="text-sm font-medium w-12">{passingThreshold}%</span>
                       </div>
                     </div>
                     <div>
@@ -1320,74 +1331,79 @@ export default function GradeCalculator() {
                     ) : (
                       <div className="space-y-2">
                         {curves.map((curve) => (
-                          <div key={curve.id} className="flex items-center gap-2 p-3 rounded-lg border">
-                            <Select
-                              value={curve.targetType}
-                              onValueChange={(v) => updateCurve(curve.id, { targetType: v as 'component' | 'overall', targetId: undefined })}
-                            >
-                              <SelectTrigger className="w-28 h-8">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="component">{t('component')}</SelectItem>
-                                <SelectItem value="overall">{t('overall')}</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            
-                            {curve.targetType === 'component' && (
+                          <div key={curve.id} className="flex flex-col gap-3 p-3 rounded-lg border sm:flex-row sm:flex-wrap sm:items-center">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <Select
-                                value={curve.targetId || ''}
-                                onValueChange={(v) => updateCurve(curve.id, { targetId: v })}
+                                value={curve.targetType}
+                                onValueChange={(v) => updateCurve(curve.id, { targetType: v as 'component' | 'overall', targetId: undefined })}
                               >
-                                <SelectTrigger className="w-32 h-8">
-                                  <SelectValue placeholder={t('selectComponent')} />
+                                <SelectTrigger className="w-28 h-8">
+                                  <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {components.map((c) => (
-                                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                                  ))}
+                                  <SelectItem value="component">{t('component')}</SelectItem>
+                                  <SelectItem value="overall">{t('overall')}</SelectItem>
                                 </SelectContent>
                               </Select>
-                            )}
-                            
-                            <Select
-                              value={curve.adjustmentType}
-                              onValueChange={(v) => updateCurve(curve.id, { adjustmentType: v as 'add' | 'multiply' | 'set' })}
-                            >
-                              <SelectTrigger className="w-24 h-8">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="add">+ {t('add')}</SelectItem>
-                                <SelectItem value="multiply">× {t('multiply')}</SelectItem>
-                                <SelectItem value="set">= {t('set')}</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            
-                            <Input
-                              type="number"
-                              value={curve.value}
-                              onChange={(e) => updateCurve(curve.id, { value: parseFloat(e.target.value) || 0 })}
-                              className="w-20 h-8"
-                              step={curve.adjustmentType === 'multiply' ? 0.1 : 1}
-                            />
-                            
-                            <div className="flex items-center gap-1">
-                              <Switch
-                                checked={curve.clamp}
-                                onCheckedChange={(c) => updateCurve(curve.id, { clamp: c })}
+                              
+                              {curve.targetType === 'component' && (
+                                <Select
+                                  value={curve.targetId || ''}
+                                  onValueChange={(v) => updateCurve(curve.id, { targetId: v })}
+                                >
+                                  <SelectTrigger className="w-32 h-8">
+                                    <SelectValue placeholder={t('selectComponent')} />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {components.map((c) => (
+                                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                              
+                              <Select
+                                value={curve.adjustmentType}
+                                onValueChange={(v) => updateCurve(curve.id, { adjustmentType: v as 'add' | 'multiply' | 'set' })}
+                              >
+                                <SelectTrigger className="w-24 h-8">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="add">+ {t('add')}</SelectItem>
+                                  <SelectItem value="multiply">× {t('multiply')}</SelectItem>
+                                  <SelectItem value="set">= {t('set')}</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              
+                              <Input
+                                type="number"
+                                dir="ltr"
+                                value={curve.value}
+                                onChange={(e) => updateCurve(curve.id, { value: parseFloat(e.target.value) || 0 })}
+                                className="w-20 h-8"
+                                step={curve.adjustmentType === 'multiply' ? 0.1 : 1}
                               />
-                              <span className="text-xs text-muted-foreground">{t('clamp')}</span>
                             </div>
                             
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeCurve(curve.id)}
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <div className="flex items-center gap-2 sm:ms-auto">
+                              <div className="flex items-center gap-1">
+                                <Switch
+                                  checked={curve.clamp}
+                                  onCheckedChange={(c) => updateCurve(curve.id, { clamp: c })}
+                                />
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">{t('clamp')}</span>
+                              </div>
+                              
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeCurve(curve.id)}
+                                className="h-8 w-8 shrink-0 text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1548,17 +1564,19 @@ export default function GradeCalculator() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>{t('targetGrade')}</Label>
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center justify-between mb-2">
+                  <Label>{t('targetGrade')}</Label>
+                  <span className="text-sm font-medium">{targetGrade}%</span>
+                </div>
+                <div dir="ltr">
                   <Slider
                     value={[targetGrade]}
                     onValueChange={(v) => setTargetGrade(v[0])}
                     min={0}
                     max={100}
                     step={1}
-                    className="flex-1"
+                    className="w-full"
                   />
-                  <span className="text-sm font-medium w-12">{targetGrade}%</span>
                 </div>
               </div>
               

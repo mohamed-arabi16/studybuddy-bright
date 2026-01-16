@@ -320,32 +320,34 @@ export default function CourseDetail() {
       </div>
 
       <Tabs defaultValue="files" className="space-y-4">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="files" className="gap-2">
-            <Upload className="w-4 h-4" />
-            {t('files')}
-          </TabsTrigger>
-          <TabsTrigger value="topics" className="gap-2">
-            <List className="w-4 h-4" />
-            {t('topics')}
-          </TabsTrigger>
-          <TabsTrigger value="grades" className="gap-2">
-            <Calculator className="w-4 h-4" />
-            {t('grades')}
-          </TabsTrigger>
-          <TabsTrigger value="mastery" className="gap-2">
-            <Brain className="w-4 h-4" />
-            {t('mastery') || 'Mastery'}
-          </TabsTrigger>
-          <TabsTrigger value="past-exams" className="gap-2">
-            <BarChart3 className="w-4 h-4" />
-            {t('pastExams') || 'Past Exams'}
-          </TabsTrigger>
-          <TabsTrigger value="allocation" className="gap-2">
-            <Calendar className="w-4 h-4" />
-            {t('allocation')}
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+          <TabsList className="inline-flex w-auto min-w-full sm:min-w-0">
+            <TabsTrigger value="files" className="gap-2 whitespace-nowrap">
+              <Upload className="w-4 h-4" />
+              {t('files')}
+            </TabsTrigger>
+            <TabsTrigger value="topics" className="gap-2 whitespace-nowrap">
+              <List className="w-4 h-4" />
+              {t('topics')}
+            </TabsTrigger>
+            <TabsTrigger value="grades" className="gap-2 whitespace-nowrap">
+              <Calculator className="w-4 h-4" />
+              {t('grades')}
+            </TabsTrigger>
+            <TabsTrigger value="mastery" className="gap-2 whitespace-nowrap">
+              <Brain className="w-4 h-4" />
+              {t('mastery') || 'Mastery'}
+            </TabsTrigger>
+            <TabsTrigger value="past-exams" className="gap-2 whitespace-nowrap">
+              <BarChart3 className="w-4 h-4" />
+              {t('pastExams') || 'Past Exams'}
+            </TabsTrigger>
+            <TabsTrigger value="allocation" className="gap-2 whitespace-nowrap">
+              <Calendar className="w-4 h-4" />
+              {t('allocation')}
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="files" className="space-y-4">
           <Alert>
@@ -410,13 +412,13 @@ export default function CourseDetail() {
                     return (
                       <div 
                         key={file.id}
-                        className="flex items-center justify-between p-3 rounded-lg border"
+                        className="flex flex-col gap-3 p-3 rounded-lg border sm:flex-row sm:items-center sm:justify-between"
                       >
-                        <div className="flex items-center gap-3">
-                          <FileText className="w-5 h-5 text-primary" />
-                          <div>
-                            <p className="font-medium">{file.file_name}</p>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <FileText className="w-5 h-5 text-primary shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium truncate">{file.file_name}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                               <span>{(file.file_size / 1024 / 1024).toFixed(1)} MB</span>
                               <Badge variant={statusInfo.variant} className="text-xs gap-1">
                                 {statusInfo.icon}
@@ -430,7 +432,7 @@ export default function CourseDetail() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap sm:shrink-0">
                           {/* Retry button for retryable statuses */}
                           {canRetry && (
                             <Button
@@ -440,7 +442,7 @@ export default function CourseDetail() {
                               className="gap-1"
                             >
                               <RefreshCw className="w-4 h-4" />
-                              {t('retry')}
+                              <span className="hidden sm:inline">{t('retry')}</span>
                             </Button>
                           )}
                           {/* Extract Topics button - show when extracted */}
@@ -452,15 +454,15 @@ export default function CourseDetail() {
                                 extractingFileId !== null ||  // Any file is extracting
                                 files.some(f => ['pending', 'extracting', 'probing', 'ocr_in_progress'].includes(f.extraction_status))
                               }
-                              className="gap-2"
+                              className="gap-2 w-full sm:w-auto"
                             >
                               {extractingFileId === file.id ? (  // Only show spinner on THIS file
                                 <Loader2 className="w-4 h-4 animate-spin" />
                               ) : (
                                 <Sparkles className="w-4 h-4" />
                               )}
-                              {t('extractTopics')}
-                              <span className="text-xs opacity-75">({t('creditCost').replace('{n}', '30')})</span>
+                              <span className="truncate">{t('extractTopics')}</span>
+                              <span className="text-xs opacity-75 hidden md:inline">({t('creditCost').replace('{n}', '30')})</span>
                             </Button>
                           )}
                           {/* Delete button */}
@@ -468,7 +470,7 @@ export default function CourseDetail() {
                             size="sm"
                             variant="ghost"
                             onClick={() => setFileToDelete(file)}
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
