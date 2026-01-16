@@ -152,7 +152,6 @@ const translations: Record<Language, Record<string, string>> = {
     // Course Detail - Files Tab
     'files': 'الملفات',
     'topics': 'المواضيع',
-    'studyPlan': 'خطة الدراسة',
     'uploadCourseMaterials': 'رفع ملفات المادة',
     'uploadedFiles': 'الملفات المرفوعة',
     'dropFilesHere': 'اسحب ملفات PDF هنا أو انقر للرفع',
@@ -1216,7 +1215,6 @@ const translations: Record<Language, Record<string, string>> = {
     // Course Detail - Files Tab
     'files': 'Files',
     'topics': 'Topics',
-    'studyPlan': 'Study Plan',
     'uploadCourseMaterials': 'Upload Course Materials',
     'uploadedFiles': 'Uploaded Files',
     'dropFilesHere': 'Drop PDF files here or click to upload',
