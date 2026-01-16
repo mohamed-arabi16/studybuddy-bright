@@ -877,9 +877,9 @@ export default function GradeCalculator() {
     <div className="space-y-4 md:space-y-6" dir={dir}>
       {/* Start Dialog - Shows when user enters the page */}
       <Dialog open={showStartDialog} onOpenChange={setShowStartDialog}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg" dir={dir}>
           <DialogHeader>
-            <div className="flex items-center gap-3 mb-2">
+            <div className={`flex items-center gap-3 mb-2 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <Calculator className="w-5 h-5 text-primary" />
               </div>
@@ -895,7 +895,7 @@ export default function GradeCalculator() {
             {startOption !== 'existing' ? (
               <button
                 onClick={() => handleStartOptionSelect('existing')}
-                className="w-full p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-muted/50 transition-all text-left flex items-start gap-3"
+                className={`w-full p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-muted/50 transition-all text-${dir === 'rtl' ? 'right' : 'left'} flex items-start gap-3 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}
               >
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                   <BookOpen className="w-5 h-5 text-primary" />
@@ -907,7 +907,7 @@ export default function GradeCalculator() {
               </button>
             ) : (
               <div className="p-4 rounded-lg border border-primary/50 bg-muted/50 space-y-3">
-                <div className="flex items-center gap-2">
+                <div className={`flex items-center gap-2 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
                   <BookOpen className="w-5 h-5 text-primary" />
                   <h3 className="font-medium">{t('selectCourse')}</h3>
                 </div>
@@ -942,7 +942,7 @@ export default function GradeCalculator() {
                   setShowStartDialog(false);
                   navigate('/app/courses');
                 }}
-                className="w-full p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-muted/50 transition-all text-left flex items-start gap-3"
+                className={`w-full p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-muted/50 transition-all text-${dir === 'rtl' ? 'right' : 'left'} flex items-start gap-3 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}
               >
                 <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center flex-shrink-0">
                   <Plus className="w-5 h-5 text-green-600" />
@@ -958,7 +958,7 @@ export default function GradeCalculator() {
             {startOption !== 'existing' && (
               <button
                 onClick={() => handleStartOptionSelect('none')}
-                className="w-full p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-muted/50 transition-all text-left flex items-start gap-3"
+                className={`w-full p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-muted/50 transition-all text-${dir === 'rtl' ? 'right' : 'left'} flex items-start gap-3 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}
               >
                 <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                   <Link2Off className="w-5 h-5 text-muted-foreground" />
@@ -985,9 +985,9 @@ export default function GradeCalculator() {
 
       {/* Pro Upgrade Suggestion Dialog */}
       <Dialog open={showProSuggestion} onOpenChange={setShowProSuggestion}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" dir={dir}>
           <DialogHeader>
-            <div className="flex items-center gap-3 mb-2">
+            <div className={`flex items-center gap-3 mb-2 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
                 <Sparkles className="w-6 h-6 text-primary" />
               </div>
@@ -999,7 +999,7 @@ export default function GradeCalculator() {
           </DialogHeader>
           
           <div className="space-y-3 py-4">
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+            <div className={`flex items-start gap-3 p-3 rounded-lg bg-muted/50 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                 <BookOpen className="w-4 h-4 text-primary" />
               </div>
@@ -1008,7 +1008,7 @@ export default function GradeCalculator() {
                 <p className="text-xs text-muted-foreground">{t('saveGradesDesc')}</p>
               </div>
             </div>
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+            <div className={`flex items-start gap-3 p-3 rounded-lg bg-muted/50 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                 <TrendingUp className="w-4 h-4 text-primary" />
               </div>

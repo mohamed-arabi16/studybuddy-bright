@@ -36,7 +36,7 @@ export function FreeUserUpgradeDialog({ open, onOpenChange, onContinue }: FreeUs
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md" dir={dir}>
         <DialogHeader className="text-start">
-          <div className="flex items-center gap-3 mb-2">
+          <div className={`flex items-center gap-3 mb-2 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
             <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center">
               <AlertTriangle className="w-6 h-6 text-amber-600" />
             </div>
@@ -49,7 +49,7 @@ export function FreeUserUpgradeDialog({ open, onOpenChange, onContinue }: FreeUs
         
         <div className="space-y-3 py-4">
           {benefits.map((benefit, i) => (
-            <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+            <div key={i} className={`flex items-start gap-3 p-3 rounded-lg bg-muted/50 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                 <benefit.icon className="w-4 h-4 text-primary" />
               </div>

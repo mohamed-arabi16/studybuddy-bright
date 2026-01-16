@@ -152,7 +152,6 @@ const translations: Record<Language, Record<string, string>> = {
     // Course Detail - Files Tab
     'files': 'الملفات',
     'topics': 'المواضيع',
-    'allocation': 'التوزيع',
     'uploadCourseMaterials': 'رفع ملفات المادة',
     'uploadedFiles': 'الملفات المرفوعة',
     'dropFilesHere': 'اسحب ملفات PDF هنا أو انقر للرفع',
@@ -250,7 +249,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Tips
     'filesTip': 'ارفع ملفات المنهج (PDF) لاستخراج المواضيع تلقائياً',
     'topicsTip': 'أضف المواضيع يدوياً أو استخرجها من الملفات',
-    'allocationTip': 'شاهد توزيع المواضيع على الأيام حتى الامتحان',
+    'studyPlanTip': 'أنشئ خطة دراسية متوازنة من الآن حتى موعد الاختبار',
     
     // Exam
     'exam': 'الامتحان',
@@ -1216,7 +1215,6 @@ const translations: Record<Language, Record<string, string>> = {
     // Course Detail - Files Tab
     'files': 'Files',
     'topics': 'Topics',
-    'allocation': 'Allocation',
     'uploadCourseMaterials': 'Upload Course Materials',
     'uploadedFiles': 'Uploaded Files',
     'dropFilesHere': 'Drop PDF files here or click to upload',
@@ -1314,7 +1312,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Tips
     'filesTip': 'Upload syllabus files (PDF) to extract topics automatically',
     'topicsTip': 'Add topics manually or extract them from uploaded files',
-    'allocationTip': 'See how topics are distributed across remaining days until exam',
+    'studyPlanTip': 'Create a balanced study plan from now until your exam date',
     
     // Exam
     'exam': 'Exam',

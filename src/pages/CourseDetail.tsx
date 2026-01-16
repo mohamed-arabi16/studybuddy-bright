@@ -368,9 +368,9 @@ export default function CourseDetail() {
               <BarChart3 className="w-4 h-4" />
               {t('pastExams') || 'Past Exams'}
             </TabsTrigger>
-            <TabsTrigger value="allocation" className="gap-2 whitespace-nowrap">
+            <TabsTrigger value="study-plan" className="gap-2 whitespace-nowrap">
               <Calendar className="w-4 h-4" />
-              {t('allocation')}
+              {t('studyPlan')}
             </TabsTrigger>
           </TabsList>
         </div>
@@ -614,10 +614,10 @@ export default function CourseDetail() {
           <PastExamsTab courseId={course.id} files={files} />
         </TabsContent>
 
-        <TabsContent value="allocation">
+        <TabsContent value="study-plan">
           <Alert className="mb-4">
             <Info className="h-4 w-4" />
-            <AlertDescription>{t('allocationTip')}</AlertDescription>
+            <AlertDescription>{t('studyPlanTip')}</AlertDescription>
           </Alert>
           <AllocationView course={course} />
         </TabsContent>
