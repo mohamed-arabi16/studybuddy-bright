@@ -8,13 +8,15 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Loader2, ArrowLeft, Calendar, Upload, FileText, List, 
   Sparkles, RefreshCw, AlertCircle, CheckCircle, Info,
-  Pencil, Trash2, MoreVertical
+  Pencil, Trash2, MoreVertical, Brain, BarChart3
 } from "lucide-react";
 import { format } from "date-fns";
 import TopicManager from "@/components/TopicManager";
 import AllocationView from "@/components/AllocationView";
 import { FileUploadZone } from "@/components/FileUploadZone";
 import { DependencyFlowVisual } from "@/components/DependencyFlowVisual";
+import { TopicMasteryDisplay } from "@/components/TopicMasteryDisplay";
+import { PastExamsTab } from "@/components/PastExamsTab";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -69,6 +71,14 @@ export default function CourseDetail() {
   const [topicCount, setTopicCount] = useState(0);
   const [fileToDelete, setFileToDelete] = useState<CourseFile | null>(null);
   const [deletingFile, setDeletingFile] = useState(false);
+  const [topics, setTopics] = useState<Array<{
+    id: string;
+    title: string;
+    status: string;
+    prerequisite_ids: string[] | null;
+    difficulty_weight: number | null;
+    exam_importance: number | null;
+  }>>([]);
 
   const fetchCourse = async () => {
     if (!id) return;
@@ -91,12 +101,14 @@ export default function CourseDetail() {
 
       setFiles(filesData || []);
       
-      // Fetch topic count for delete warning
-      const { count } = await supabase
+      // Fetch topics for mastery display and count
+      const { data: topicsData, count } = await supabase
         .from("topics")
-        .select("id", { count: 'exact', head: true })
-        .eq("course_id", id);
+        .select("id, title, status, prerequisite_ids, difficulty_weight, exam_importance", { count: 'exact' })
+        .eq("course_id", id)
+        .order("order_index", { ascending: true });
       
+      setTopics(topicsData || []);
       setTopicCount(count || 0);
     } catch (error) {
       console.error("Error fetching course:", error);
@@ -300,6 +312,14 @@ export default function CourseDetail() {
             <List className="w-4 h-4" />
             {t('topics')}
           </TabsTrigger>
+          <TabsTrigger value="mastery" className="gap-2">
+            <Brain className="w-4 h-4" />
+            {t('mastery') || 'Mastery'}
+          </TabsTrigger>
+          <TabsTrigger value="past-exams" className="gap-2">
+            <BarChart3 className="w-4 h-4" />
+            {t('pastExams') || 'Past Exams'}
+          </TabsTrigger>
           <TabsTrigger value="allocation" className="gap-2">
             <Calendar className="w-4 h-4" />
             {t('allocation')}
@@ -449,6 +469,22 @@ export default function CourseDetail() {
           <TopicManager courseId={course.id} />
           {/* Dependency Flow Visualization */}
           <DependencyFlowVisual courseId={course.id} />
+        </TabsContent>
+
+        <TabsContent value="mastery" className="space-y-4">
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              {t('masteryTip') || 'Track your mastery level for each topic through quizzes. Focus on weak prerequisites to unlock more advanced topics.'}
+            </AlertDescription>
+          </Alert>
+          <TopicMasteryDisplay courseId={course.id} topics={topics} />
+          {/* Dependency Flow for context */}
+          <DependencyFlowVisual courseId={course.id} />
+        </TabsContent>
+
+        <TabsContent value="past-exams" className="space-y-4">
+          <PastExamsTab courseId={course.id} files={files} />
         </TabsContent>
 
         <TabsContent value="allocation">

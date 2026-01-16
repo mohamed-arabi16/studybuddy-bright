@@ -22,6 +22,10 @@ interface StudyPlanItem {
   prereq_topic_ids?: string[];
   exam_proximity_days?: number;
   load_balance_note?: string;
+  // New mastery/yield fields
+  yield_weight?: number;
+  mastery_snapshot?: number;
+  scheduling_factors?: Record<string, unknown>;
   course?: {
     id: string;
     title: string;
@@ -105,6 +109,9 @@ export function usePlanGeneration() {
             prereq_topic_ids,
             exam_proximity_days,
             load_balance_note,
+            yield_weight,
+            mastery_snapshot,
+            scheduling_factors,
             courses (
               id,
               title,
@@ -148,6 +155,10 @@ export function usePlanGeneration() {
             prereq_topic_ids: item.prereq_topic_ids || [],
             exam_proximity_days: item.exam_proximity_days,
             load_balance_note: item.load_balance_note || null,
+            // Mastery/yield fields
+            yield_weight: item.yield_weight,
+            mastery_snapshot: item.mastery_snapshot,
+            scheduling_factors: item.scheduling_factors || undefined,
             // Supabase returns the joined course/topic as singular objects despite plural table names
             course: item.courses || undefined,
             topic: item.topics || undefined,

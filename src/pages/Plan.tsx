@@ -17,6 +17,7 @@ import { RescheduleCard } from '@/components/RescheduleCard';
 import { PlanSummaryCard } from '@/components/PlanSummaryCard';
 import { PlanWarningBanner } from '@/components/PlanWarningBanner';
 import { PlanItemExplanation } from '@/components/PlanItemExplanation';
+import { NextUnlockCard } from '@/components/NextUnlockCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -259,6 +260,11 @@ export default function Plan() {
         </div>
       )}
 
+      {/* Next Unlock Card - shows topics that will be unlocked by completing today's prerequisites */}
+      {planDays.length > 0 && (
+        <NextUnlockCard planDays={planDays} />
+      )}
+
       {/* Empty State with Contextual Guidance */}
       {planDays.length === 0 && !isGenerating && (
         <Card className="border-dashed">
@@ -408,6 +414,8 @@ export default function Plan() {
                                   examProximityDays={item.exam_proximity_days}
                                   loadBalanceNote={item.load_balance_note}
                                   prereqTopicIds={item.prereq_topic_ids}
+                                  yieldWeight={item.yield_weight}
+                                  masterySnapshot={item.mastery_snapshot}
                                 />
                               </div>
                               <p className="text-xs text-muted-foreground truncate">

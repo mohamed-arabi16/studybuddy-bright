@@ -462,6 +462,89 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_questions: {
+        Row: {
+          id: string
+          past_exam_id: string
+          question_text: string
+          question_number: string | null
+          question_type: string | null
+          marks: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          past_exam_id: string
+          question_text: string
+          question_number?: string | null
+          question_type?: string | null
+          marks?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          past_exam_id?: string
+          question_text?: string
+          question_number?: string | null
+          question_type?: string | null
+          marks?: number | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_questions_past_exam_id_fkey"
+            columns: ["past_exam_id"]
+            isOneToOne: false
+            referencedRelation: "past_exams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_topic_map: {
+        Row: {
+          id: string
+          past_exam_id: string
+          topic_id: string
+          weight: number
+          evidence: Json | null
+          question_ids: string[] | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          past_exam_id: string
+          topic_id: string
+          weight?: number
+          evidence?: Json | null
+          question_ids?: string[] | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          past_exam_id?: string
+          topic_id?: string
+          weight?: number
+          evidence?: Json | null
+          question_ids?: string[] | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_topic_map_past_exam_id_fkey"
+            columns: ["past_exam_id"]
+            isOneToOne: false
+            referencedRelation: "past_exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_topic_map_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       google_calendar_connections: {
         Row: {
           access_token: string
@@ -545,6 +628,70 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      past_exams: {
+        Row: {
+          id: string
+          user_id: string
+          course_id: string
+          title: string
+          exam_date: string | null
+          file_id: string | null
+          extracted_text: string | null
+          analysis_status: string
+          analysis_result: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          course_id: string
+          title: string
+          exam_date?: string | null
+          file_id?: string | null
+          extracted_text?: string | null
+          analysis_status?: string
+          analysis_result?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          course_id?: string
+          title?: string
+          exam_date?: string | null
+          file_id?: string | null
+          extracted_text?: string | null
+          analysis_status?: string
+          analysis_result?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "past_exams_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "auth.users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "past_exams_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "past_exams_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "course_files"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pomodoro_sessions: {
         Row: {
@@ -718,6 +865,111 @@ export type Database = {
           },
         ]
       }
+      quiz_attempts: {
+        Row: {
+          id: string
+          user_id: string
+          topic_id: string
+          quiz_bank_id: string | null
+          score: number
+          time_spent_sec: number
+          answers: Json | null
+          questions_answered: number
+          correct_answers: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          topic_id: string
+          quiz_bank_id?: string | null
+          score: number
+          time_spent_sec?: number
+          answers?: Json | null
+          questions_answered?: number
+          correct_answers?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          topic_id?: string
+          quiz_bank_id?: string | null
+          score?: number
+          time_spent_sec?: number
+          answers?: Json | null
+          questions_answered?: number
+          correct_answers?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_attempts_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_attempts_quiz_bank_id_fkey"
+            columns: ["quiz_bank_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_bank"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_bank: {
+        Row: {
+          id: string
+          course_id: string
+          topic_id: string
+          difficulty: string
+          version: number
+          questions: Json
+          question_count: number
+          created_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          course_id: string
+          topic_id: string
+          difficulty: string
+          version?: number
+          questions: Json
+          question_count?: number
+          created_by: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          course_id?: string
+          topic_id?: string
+          difficulty?: string
+          version?: number
+          questions?: Json
+          question_count?: number
+          created_by?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_bank_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_bank_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       study_plan_days: {
         Row: {
           created_at: string
@@ -763,13 +1015,16 @@ export type Database = {
           is_completed: boolean
           is_review: boolean | null
           load_balance_note: string | null
+          mastery_snapshot: number | null
           order_index: number
           plan_day_id: string
           prereq_topic_ids: string[] | null
           reason_codes: string[] | null
+          scheduling_factors: Json | null
           topic_extraction_run_id: string | null
           topic_id: string | null
           user_id: string
+          yield_weight: number | null
         }
         Insert: {
           completed_at?: string | null
@@ -782,13 +1037,16 @@ export type Database = {
           is_completed?: boolean
           is_review?: boolean | null
           load_balance_note?: string | null
+          mastery_snapshot?: number | null
           order_index?: number
           plan_day_id: string
           prereq_topic_ids?: string[] | null
           reason_codes?: string[] | null
+          scheduling_factors?: Json | null
           topic_extraction_run_id?: string | null
           topic_id?: string | null
           user_id: string
+          yield_weight?: number | null
         }
         Update: {
           completed_at?: string | null
@@ -801,13 +1059,16 @@ export type Database = {
           is_completed?: boolean
           is_review?: boolean | null
           load_balance_note?: string | null
+          mastery_snapshot?: number | null
           order_index?: number
           plan_day_id?: string
           prereq_topic_ids?: string[] | null
           reason_codes?: string[] | null
+          scheduling_factors?: Json | null
           topic_extraction_run_id?: string | null
           topic_id?: string | null
           user_id?: string
+          yield_weight?: number | null
         }
         Relationships: [
           {
@@ -1012,6 +1273,98 @@ export type Database = {
           },
         ]
       }
+      topic_mastery: {
+        Row: {
+          user_id: string
+          topic_id: string
+          mastery_score: number
+          confidence: number
+          last_assessed_at: string | null
+          quiz_attempts_count: number
+          total_time_spent_sec: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          topic_id: string
+          mastery_score?: number
+          confidence?: number
+          last_assessed_at?: string | null
+          quiz_attempts_count?: number
+          total_time_spent_sec?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          topic_id?: string
+          mastery_score?: number
+          confidence?: number
+          last_assessed_at?: string | null
+          quiz_attempts_count?: number
+          total_time_spent_sec?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_mastery_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      topic_yield_metrics: {
+        Row: {
+          user_id: string
+          course_id: string
+          topic_id: string
+          frequency_count: number
+          normalized_yield: number
+          total_weight: number
+          exam_count: number
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          course_id: string
+          topic_id: string
+          frequency_count?: number
+          normalized_yield?: number
+          total_weight?: number
+          exam_count?: number
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          course_id?: string
+          topic_id?: string
+          frequency_count?: number
+          normalized_yield?: number
+          total_weight?: number
+          exam_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_yield_metrics_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_yield_metrics_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       usage_analytics: {
         Row: {
           account_created_at: string | null
@@ -1209,6 +1562,22 @@ export type Database = {
           p_tokens_out: number
         }
         Returns: undefined
+      }
+      update_mastery_from_quiz: {
+        Args: {
+          p_user_id: string
+          p_topic_id: string
+          p_quiz_score: number
+          p_time_spent_sec?: number
+        }
+        Returns: Json
+      }
+      refresh_topic_yield_metrics: {
+        Args: {
+          p_user_id: string
+          p_course_id: string
+        }
+        Returns: number
       }
     }
     Enums: {
