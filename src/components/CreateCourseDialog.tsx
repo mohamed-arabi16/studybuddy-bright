@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, BookOpen } from "lucide-react";
@@ -19,7 +19,13 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { UpgradeCard } from "@/components/UpgradeCard";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-export function CreateCourseDialog({ onCourseCreated }: { onCourseCreated?: () => void }) {
+interface CreateCourseDialogProps {
+  onCourseCreated?: () => void;
+  autoOpen?: boolean;
+  onAutoOpenComplete?: () => void;
+}
+
+export function CreateCourseDialog({ onCourseCreated, autoOpen, onAutoOpenComplete }: CreateCourseDialogProps) {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -27,6 +33,14 @@ export function CreateCourseDialog({ onCourseCreated }: { onCourseCreated?: () =
   const [title, setTitle] = useState("");
   const [examDate, setExamDate] = useState("");
   const navigate = useNavigate();
+
+  // Handle auto-open when coming from grade calculator
+  useEffect(() => {
+    if (autoOpen) {
+      setOpen(true);
+      onAutoOpenComplete?.();
+    }
+  }, [autoOpen, onAutoOpenComplete]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +67,15 @@ export function CreateCourseDialog({ onCourseCreated }: { onCourseCreated?: () =
       setTitle("");
       setExamDate("");
       if (onCourseCreated) onCourseCreated();
-      if (data) navigate(`/app/courses/${data.id}`);
+      
+      // Check if we should return to grade calculator
+      const returnToGradeCalc = sessionStorage.getItem('returnToGradeCalc');
+      if (returnToGradeCalc && data) {
+        sessionStorage.removeItem('returnToGradeCalc');
+        navigate(`/app/grade-calculator?courseId=${data.id}`);
+      } else if (data) {
+        navigate(`/app/courses/${data.id}`);
+      }
 
     } catch (error: any) {
       toast.error(error.message);
@@ -70,14 +92,14 @@ export function CreateCourseDialog({ onCourseCreated }: { onCourseCreated?: () =
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button disabled={subLoading}>
-          <Plus className="ml-2 h-4 w-4" />
+          <Plus className="ms-2 h-4 w-4" />
           {t('addCourse')}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         {canCreate ? (
           <>
-            <DialogHeader>
+            <DialogHeader className="text-start">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                   <BookOpen className="w-5 h-5 text-primary" />
@@ -100,7 +122,6 @@ export function CreateCourseDialog({ onCourseCreated }: { onCourseCreated?: () =
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     required
-                    className="text-right"
                     dir="auto"
                   />
                 </div>
@@ -111,6 +132,7 @@ export function CreateCourseDialog({ onCourseCreated }: { onCourseCreated?: () =
                     type="date"
                     value={examDate}
                     onChange={(e) => setExamDate(e.target.value)}
+                    dir="ltr"
                   />
                   <p className="text-xs text-muted-foreground">
                     {t('examDateHelp')}
@@ -125,7 +147,7 @@ export function CreateCourseDialog({ onCourseCreated }: { onCourseCreated?: () =
                 </div>
               )}
               
-              <DialogFooter>
+              <DialogFooter className="gap-2 sm:gap-0">
                 <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
                   {t('cancel')}
                 </Button>

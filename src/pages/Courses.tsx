@@ -4,7 +4,7 @@ import { CreateCourseDialog } from "@/components/CreateCourseDialog";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { BookOpen, Calendar, CheckCircle2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CourseCardSkeletonGrid } from "@/components/ui/course-card-skeleton";
@@ -25,6 +25,15 @@ export default function Courses() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [autoOpenCreate, setAutoOpenCreate] = useState(false);
+
+  // Check if we need to auto-open the create dialog (coming from grade calculator)
+  useEffect(() => {
+    if (searchParams.get('create') === 'true') {
+      setAutoOpenCreate(true);
+    }
+  }, [searchParams]);
 
   const fetchCourses = async () => {
     try {
@@ -74,7 +83,11 @@ export default function Courses() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tight">{t('courses')}</h1>
-        <CreateCourseDialog onCourseCreated={fetchCourses} />
+        <CreateCourseDialog 
+          onCourseCreated={fetchCourses} 
+          autoOpen={autoOpenCreate}
+          onAutoOpenComplete={() => setAutoOpenCreate(false)}
+        />
       </div>
 
       {courses.length === 0 ? (
@@ -86,7 +99,11 @@ export default function Courses() {
             className="py-16"
           >
             <div className="space-y-4">
-              <CreateCourseDialog onCourseCreated={fetchCourses} />
+              <CreateCourseDialog 
+                onCourseCreated={fetchCourses}
+                autoOpen={autoOpenCreate}
+                onAutoOpenComplete={() => setAutoOpenCreate(false)}
+              />
               
               {/* Helpful hint for next steps */}
               <div className="text-xs text-muted-foreground max-w-md mx-auto mt-4 p-4 bg-muted/30 rounded-lg">

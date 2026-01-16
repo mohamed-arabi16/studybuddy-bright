@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Calculator, Plus, Trash2, Info, Target, TrendingUp, AlertTriangle, ChevronDown, ChevronUp, Settings2, BookOpen, Sparkles, Link2, Link2Off, Zap, HelpCircle } from 'lucide-react';
+import { Calculator, Plus, Trash2, Info, Target, TrendingUp, AlertTriangle, ChevronDown, ChevronUp, Settings2, BookOpen, Sparkles, Link2, Link2Off, Zap, HelpCircle, Save, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,7 +19,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { AggregationRuleDialog } from '@/components/AggregationRuleDialog';
+import { FreeUserUpgradeDialog } from '@/components/FreeUserUpgradeDialog';
 
 // Types for grade calculation
 interface GradeComponent {
@@ -127,6 +129,7 @@ export default function GradeCalculator() {
   const { t, dir } = useLanguage();
   const { isPro } = useSubscription();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   
   // Start dialog state
   const [showStartDialog, setShowStartDialog] = useState(true);
@@ -136,6 +139,12 @@ export default function GradeCalculator() {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [loadingCourses, setLoadingCourses] = useState(false);
   const [showProSuggestion, setShowProSuggestion] = useState(false);
+  const [showFreeUserWarning, setShowFreeUserWarning] = useState(false);
+  
+  // Save/Load state (Pro users)
+  const [savedCalculationId, setSavedCalculationId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   
   // Course Profile State
   const [components, setComponents] = useState<GradeComponent[]>([
@@ -218,17 +227,43 @@ export default function GradeCalculator() {
 
   useEffect(() => {
     fetchCourses();
-  }, [fetchCourses]);
+    
+    // Check for courseId from URL (returning from course creation)
+    const urlCourseId = searchParams.get('courseId');
+    if (urlCourseId) {
+      setSelectedCourseId(urlCourseId);
+      setShowStartDialog(false);
+    }
+  }, [fetchCourses, searchParams]);
+
+  // Update selectedCourse when selectedCourseId changes
+  useEffect(() => {
+    if (selectedCourseId) {
+      const course = courses.find(c => c.id === selectedCourseId);
+      setSelectedCourse(course || null);
+      // Load saved grades for this course if Pro user
+      if (course && isPro) {
+        loadSavedGrades(selectedCourseId);
+      }
+    }
+  }, [selectedCourseId, courses, isPro]);
 
   // Handle start option selection
   const handleStartOptionSelect = (option: 'existing' | 'create' | 'none') => {
     setStartOption(option);
     if (option === 'existing') {
       // Keep dialog open to show course selection
-    } else {
-      // Continue without course (both 'create' and 'none' options close the dialog)
-      // The 'create' button navigates directly to courses page
-      setShowStartDialog(false);
+    } else if (option === 'create') {
+      // Store return intent and navigate to courses
+      sessionStorage.setItem('returnToGradeCalc', 'true');
+      navigate('/app/courses?create=true');
+    } else if (option === 'none') {
+      // For free users, show warning dialog
+      if (!isPro) {
+        setShowFreeUserWarning(true);
+      } else {
+        setShowStartDialog(false);
+      }
     }
   };
 
@@ -239,6 +274,93 @@ export default function GradeCalculator() {
     setSelectedCourse(course || null);
     setShowStartDialog(false);
   };
+
+  // Handle free user warning continue
+  const handleFreeUserContinue = () => {
+    setShowFreeUserWarning(false);
+    setShowStartDialog(false);
+  };
+
+  // Save grades to database (Pro users only)
+  const saveGrades = useCallback(async () => {
+    if (!isPro || !selectedCourseId) return;
+    
+    setIsSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      
+      const gradeData = {
+        user_id: user.id,
+        course_id: selectedCourseId,
+        profile_name: selectedCourse?.title || 'Grade Calculation',
+        components: components as any,
+        settings: { passingThreshold, roundingMethod, curves, constraints } as any,
+        result: result as any,
+      };
+      
+      if (savedCalculationId) {
+        // Update existing
+        const { error } = await supabase
+          .from('grade_calculations')
+          .update(gradeData)
+          .eq('id', savedCalculationId);
+        if (error) throw error;
+      } else {
+        // Create new
+        const { data, error } = await supabase
+          .from('grade_calculations')
+          .insert(gradeData)
+          .select('id')
+          .single();
+        if (error) throw error;
+        setSavedCalculationId(data.id);
+      }
+      
+      setLastSaved(new Date());
+      toast.success(t('gradesSaved'));
+    } catch (error: any) {
+      console.error('Save error:', error);
+      toast.error(t('gradesSaveFailed'));
+    } finally {
+      setIsSaving(false);
+    }
+  }, [isPro, selectedCourseId, selectedCourse, components, passingThreshold, roundingMethod, curves, constraints, result, savedCalculationId, t]);
+
+  // Load saved grades from database
+  const loadSavedGrades = useCallback(async (courseId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('grade_calculations')
+        .select('*')
+        .eq('course_id', courseId)
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      if (data) {
+        setSavedCalculationId(data.id);
+        if (data.components) setComponents(data.components as any);
+        if (data.settings) {
+          const settings = data.settings as any;
+          if (settings.passingThreshold) setPassingThreshold(settings.passingThreshold);
+          if (settings.roundingMethod) setRoundingMethod(settings.roundingMethod);
+          if (settings.curves) setCurves(settings.curves);
+          if (settings.constraints) setConstraints(settings.constraints);
+        }
+        if (data.result) setResult(data.result as any);
+        toast.success(t('gradesLoaded'));
+      }
+    } catch (error) {
+      console.error('Load error:', error);
+    }
+  }, [t]);
 
   // Handle calculate button - show Pro suggestion first for free users
   const handleCalculateClick = () => {

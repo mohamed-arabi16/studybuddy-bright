@@ -990,6 +990,31 @@ const translations: Record<Language, Record<string, string>> = {
     'dropLowestExplanation': 'يحذف أدنى درجة/درجات ثم يحسب المتوسط. مثالي للكويزات التي تُحذف فيها أدنى درجة.',
     'bestOfExplanation': 'يأخذ فقط أعلى عدد محدد من درجاتك. مثال: أعلى 3 كويزات من 5.',
     'weightedExplanation': 'كل عنصر له نسبة مختلفة من الدرجة. مثال: كويز 1 = 40%، كويز 2 = 60%',
+    
+    // Detailed explanations for dialog
+    'aggregationRuleTitle': 'كيف تُحسب درجة هذا القسم؟',
+    'aggregationRuleMainDesc': 'اختر الطريقة المناسبة لجمع درجاتك في هذا القسم بناءً على نظام درجات مادتك',
+    'averageExplanationDetailed': 'تُجمع كل الدرجات ثم تُقسم على عددها. مثال: إذا حصلت على 80 و90 و85 في ثلاث واجبات، المتوسط = (80+90+85) ÷ 3 = 85%',
+    'sumExplanationDetailed': 'تُجمع كل النقاط التي حصلت عليها وتُقسم على إجمالي النقاط الممكنة. مثال: حصلت على 25 من 30 + 18 من 20 + 22 من 25 = 65 من 75 = 86.7%',
+    'dropLowestExplanationDetailed': 'تُحذف أدنى درجة أو أكثر ثم يُحسب المتوسط. مثالي للكويزات إذا كان الدكتور يحذف أقل درجة.',
+    'bestOfExplanationDetailed': 'تُحتسب فقط أعلى عدد محدد من الدرجات. مثال: إذا عندك 5 كويزات وتُحتسب أفضل 3 فقط.',
+    'weightedExplanationDetailed': 'كل عنصر له وزنه الخاص. مثال: واجب 1 يساوي 30% من درجة الواجبات، وواجب 2 يساوي 70%.',
+    'whenToUseAverage': 'استخدمه عندما تكون كل الدرجات متساوية الأهمية',
+    'whenToUseSum': 'استخدمه عندما تختلف الدرجات القصوى لكل عنصر',
+    'whenToUseDropLowest': 'استخدمه عندما يحذف الدكتور أقل درجة',
+    'whenToUseBestOf': 'استخدمه عندما تُحتسب فقط أفضل عدد من الدرجات',
+    'whenToUseWeighted': 'استخدمه عندما تختلف أهمية كل عنصر',
+    'example': 'مثال',
+    
+    // Continue without course warning
+    'continueWithoutCourseWarningTitle': 'لن يتم حفظ درجاتك',
+    'continueWithoutCourseWarningDesc': 'بدون ربط الحساب بمادة، ستفقد نتائج الحساب عند تحديث الصفحة.',
+    'saveGradesDescFull': 'احفظ درجاتك المرتبطة بالمادة وارجع لها في أي وقت',
+    'trackPerformanceDescFull': 'تابع أداءك في كل مادة واعرف أين تحتاج مزيداً من الجهد',
+    'compareGrades': 'قارن بين المواد',
+    'compareGradesDesc': 'اعرف أي مادة تحتاج اهتمامك أكثر بمقارنة درجاتك',
+    'calculateOnce': 'احسب مرة واحدة (لن يُحفظ)',
+    
     'grades': 'الدرجات',
     'viewGrades': 'عرض الدرجات',
     'calculateGrade': 'حساب الدرجة',
@@ -997,6 +1022,9 @@ const translations: Record<Language, Record<string, string>> = {
     'saveGradeCalculation': 'حفظ الحساب',
     'gradesSaved': 'تم حفظ الدرجات بنجاح!',
     'gradesSaveFailed': 'فشل في حفظ الدرجات',
+    'lastSaved': 'آخر حفظ',
+    'loadingGrades': 'جاري تحميل الدرجات...',
+    'gradesLoaded': 'تم تحميل الدرجات المحفوظة',
     
     // Grade Calculator - New Features
     'gradeCalcStart': 'ابدأ حساب الدرجات',
@@ -2007,6 +2035,31 @@ const translations: Record<Language, Record<string, string>> = {
     'dropLowestExplanation': 'Drops lowest score(s) before averaging. Great for quizzes with drops.',
     'bestOfExplanation': 'Takes only your N highest scores. Example: Best 3 out of 5 quizzes.',
     'weightedExplanation': 'Each item has different weight. Example: Quiz 1 = 40%, Quiz 2 = 60%',
+    
+    // Detailed explanations for dialog
+    'aggregationRuleTitle': 'How is this component score calculated?',
+    'aggregationRuleMainDesc': 'Choose the appropriate method for combining scores based on your course grading policy',
+    'averageExplanationDetailed': 'All scores are added together and divided by the count. Example: If you got 80, 90, and 85 on three assignments, the average = (80+90+85) ÷ 3 = 85%',
+    'sumExplanationDetailed': 'All points earned are added and divided by total possible points. Example: You got 25/30 + 18/20 + 22/25 = 65/75 = 86.7%',
+    'dropLowestExplanationDetailed': 'The lowest score(s) are removed before calculating the average. Perfect for quizzes where the professor drops the lowest grade.',
+    'bestOfExplanationDetailed': 'Only your highest N scores count. Example: If you have 5 quizzes and only the best 3 count.',
+    'weightedExplanationDetailed': 'Each item has its own weight. Example: Assignment 1 = 30% of assignments grade, Assignment 2 = 70%.',
+    'whenToUseAverage': 'Use when all scores have equal importance',
+    'whenToUseSum': 'Use when items have different max scores',
+    'whenToUseDropLowest': 'Use when the professor drops the lowest grade',
+    'whenToUseBestOf': 'Use when only the best N scores count',
+    'whenToUseWeighted': 'Use when items have different importance',
+    'example': 'Example',
+    
+    // Continue without course warning
+    'continueWithoutCourseWarningTitle': 'Your grades will not be saved',
+    'continueWithoutCourseWarningDesc': 'Without linking to a course, your calculation will be lost when you refresh the page.',
+    'saveGradesDescFull': 'Save grades linked to courses and access them anytime',
+    'trackPerformanceDescFull': 'Monitor your performance in each course and know where to focus',
+    'compareGrades': 'Compare Grades',
+    'compareGradesDesc': 'Know which class needs more attention by comparing your grades',
+    'calculateOnce': 'Calculate Once (Won\'t Save)',
+    
     'grades': 'Grades',
     'viewGrades': 'View Grades',
     'calculateGrade': 'Calculate Grade',
@@ -2014,6 +2067,9 @@ const translations: Record<Language, Record<string, string>> = {
     'saveGradeCalculation': 'Save Calculation',
     'gradesSaved': 'Grades saved successfully!',
     'gradesSaveFailed': 'Failed to save grades',
+    'lastSaved': 'Last saved',
+    'loadingGrades': 'Loading grades...',
+    'gradesLoaded': 'Saved grades loaded',
     
     // Grade Calculator - New Features
     'gradeCalcStart': 'Start Grade Calculation',
