@@ -590,6 +590,50 @@ export type Database = {
         }
         Relationships: []
       }
+      grade_calculations: {
+        Row: {
+          components: Json
+          course_id: string | null
+          created_at: string
+          id: string
+          profile_name: string
+          result: Json | null
+          settings: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          components?: Json
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          profile_name?: string
+          result?: Json | null
+          settings?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          components?: Json
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          profile_name?: string
+          result?: Json | null
+          settings?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grade_calculations_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       past_exams: {
         Row: {
           analysis_error: string | null
