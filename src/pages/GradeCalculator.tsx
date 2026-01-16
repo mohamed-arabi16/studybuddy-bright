@@ -262,23 +262,6 @@ export default function GradeCalculator() {
     }
   }, [components, curves, constraints, passingThreshold, roundingMethod, selectedCourseId, isPro]);
 
-  // Auto-save with 5-second interval
-  useEffect(() => {
-    // Only auto-save for Pro users with a connected course
-    if (!isPro || !selectedCourseId || !autoSaveEnabled || !hasUnsavedChanges) {
-      return;
-    }
-    
-    const autoSaveTimer = setInterval(async () => {
-      if (hasUnsavedChanges) {
-        await saveGrades(false); // Don't show toast on auto-save
-        setHasUnsavedChanges(false);
-      }
-    }, 5000); // 5 seconds
-    
-    return () => clearInterval(autoSaveTimer);
-  }, [isPro, selectedCourseId, autoSaveEnabled, hasUnsavedChanges, saveGrades]);
-
   // Handle start option selection
   const handleStartOptionSelect = (option: 'existing' | 'create' | 'none') => {
     setStartOption(option);
@@ -361,6 +344,23 @@ export default function GradeCalculator() {
       setIsSaving(false);
     }
   }, [isPro, selectedCourseId, selectedCourse, components, passingThreshold, roundingMethod, curves, constraints, result, savedCalculationId, t]);
+
+  // Auto-save with 5-second interval
+  useEffect(() => {
+    // Only auto-save for Pro users with a connected course
+    if (!isPro || !selectedCourseId || !autoSaveEnabled || !hasUnsavedChanges) {
+      return;
+    }
+    
+    const autoSaveTimer = setInterval(async () => {
+      if (hasUnsavedChanges) {
+        await saveGrades(false); // Don't show toast on auto-save
+        setHasUnsavedChanges(false);
+      }
+    }, 5000); // 5 seconds
+    
+    return () => clearInterval(autoSaveTimer);
+  }, [isPro, selectedCourseId, autoSaveEnabled, hasUnsavedChanges, saveGrades]);
 
   // Load saved grades from database
   const loadSavedGrades = useCallback(async (courseId: string) => {

@@ -183,13 +183,13 @@ const translations: Record<Language, Record<string, string>> = {
     'notStarted': 'لم يبدأ',
     'inProgress': 'قيد الدراسة',
     'done': 'مكتمل',
-    'needsReview': 'موضوع يحتاج مراجعتك (ثقة منخفضة)',
+    'needsReview': 'موضوع يحتاج مراجعتك (دقة الاستخراج منخفضة)',
     'topicsCount': 'المواضيع',
     'reviewTopics': 'راجع وعدّل المواضيع. حدد الأوزان (1-5) للصعوبة وأهمية الامتحان.',
     'addManualTopic': 'إضافة يدوي',
     'status': 'الحالة',
     'title': 'العنوان',
-    'confidence': 'الثقة',
+    'confidence': 'مستوى الدقة',
     'source': 'المصدر',
     'difficulty': 'الصعوبة',
     'importance': 'الأهمية',
@@ -199,7 +199,7 @@ const translations: Record<Language, Record<string, string>> = {
     'medium': 'متوسطة',
     'low': 'منخفضة',
     'page': 'ص',
-    'noSourceContext': 'لا يوجد سياق مصدر',
+    'noSourceContext': 'لا يوجد مصدر محدد',
     'noTopicsYet': 'لا توجد مواضيع بعد. الصق نص المنهج أعلاه أو أضف يدوياً.',
     'topicLimitReached': 'تم الوصول للحد الأقصى من المواضيع',
     'enterTextToExtract': 'الرجاء إدخال نص لاستخراج المواضيع منه',
@@ -216,7 +216,7 @@ const translations: Record<Language, Record<string, string>> = {
     'studySchedule': 'جدول الدراسة',
     'generateScheduleDesc': 'أنشئ خطة دراسة متوازنة من الآن حتى يوم امتحانك في',
     'basicSchedule': 'جدول أساسي',
-    'aiSmartSchedule': 'جدول ذكي بالـ AI',
+    'aiSmartSchedule': 'جدول ذكي بالذكاء الاصطناعي',
     'addTopicsFirst': 'أضف مواضيع لمادتك أولاً.',
     'setExamDate': 'حدد تاريخ الامتحان لإنشاء خطة.',
     'yourPlan': 'خطتك',
@@ -484,7 +484,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     // UsageIndicator
     'freeTrial': 'فترة تجريبية',
-    'nearLimit': 'اقتربت من الحد',
+    'nearLimit': 'اقتربت من الحد الأقصى',
     'usage': 'الاستخدام',
     
     // Credit System (Phase 2)
@@ -910,6 +910,14 @@ const translations: Record<Language, Record<string, string>> = {
     'totalProgressLabel': 'إجمالي التقدم',
     'byCourse': 'حسب المادة',
     
+    // Mastery & Past Exams
+    'mastery': 'الإتقان',
+    'masteryTip': 'تتبع مستوى إتقانك لكل موضوع من خلال الاختبارات. ركز على المتطلبات السابقة الضعيفة لفتح المواضيع المتقدمة.',
+    'pastExams': 'الاختبارات السابقة',
+    
+    // Admin Credits
+    'creditAnalytics': 'تحليلات الرصيد',
+    
     // Grade Calculator
     'gradeCalculator': 'حاسبة الدرجات',
     'gradeCalculatorDesc': 'احسب درجتك الفصلية وتوقع درجتك النهائية',
@@ -941,22 +949,22 @@ const translations: Record<Language, Record<string, string>> = {
     'roundNearest': 'لأقرب عدد صحيح',
     'roundDown': 'للأسفل',
     'roundUp': 'للأعلى',
-    'curveAdjustments': 'تعديلات المنحنى (Curve)',
-    'addCurve': 'إضافة منحنى',
-    'noCurvesYet': 'لم تُضف تعديلات منحنى بعد',
+    'curveAdjustments': 'تعديلات إضافية على الدرجة',
+    'addCurve': 'إضافة تعديل',
+    'noCurvesYet': 'لم تُضف تعديلات بعد',
     'component': 'مكون',
     'overall': 'الإجمالي',
     'selectComponent': 'اختر مكوناً',
     'add': 'إضافة',
     'multiply': 'ضرب',
     'set': 'تعيين',
-    'clamp': 'حدّ',
+    'clamp': 'تقييد (0-100)',
     'constraints': 'القيود',
     'addConstraint': 'إضافة قيد',
     'newConstraint': 'قيد جديد',
     'noConstraintsYet': 'لم تُضف قيود بعد',
     'minExamAvg': 'حد أدنى للامتحانات',
-    'capWork': 'سقف الأعمال',
+    'capWork': 'حد أقصى لدرجة الأعمال',
     'minComponent': 'حد أدنى لمكون',
     'results': 'النتائج',
     'passed': 'ناجح',
@@ -1971,6 +1979,14 @@ const translations: Record<Language, Record<string, string>> = {
     'complete': 'Complete',
     'totalProgressLabel': 'Total Progress',
     'byCourse': 'By Course',
+    
+    // Mastery & Past Exams
+    'mastery': 'Mastery',
+    'masteryTip': 'Track your mastery level for each topic through quizzes. Focus on weak prerequisites to unlock more advanced topics.',
+    'pastExams': 'Past Exams',
+    
+    // Admin Credits
+    'creditAnalytics': 'Credit Analytics',
     
     // Grade Calculator
     'gradeCalculator': 'Grade Calculator',
