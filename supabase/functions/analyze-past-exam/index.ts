@@ -32,11 +32,11 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anthropicApiKey = Deno.env.get("ANTHROPIC_API_KEY");
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const body = await req.json();
-    const { course_id, past_exam_id, file_id, title, exam_date } = body;
+    const { course_id, past_exam_id, file_id, file_name: inputFileName, file_path: inputFilePath } = body;
 
     // Validate input
     if (!course_id) {
@@ -89,7 +89,7 @@ serve(async (req) => {
       // Verify file ownership and get extracted text
       const { data: file, error: fileError } = await supabase
         .from("course_files")
-        .select("id, extracted_text, file_name, user_id")
+        .select("id, extracted_text, file_name, file_path, file_size, mime_type, user_id")
         .eq("id", file_id)
         .single();
 
@@ -109,15 +109,16 @@ serve(async (req) => {
 
       extractedText = file.extracted_text;
 
-      // Create past exam record
+      // Create past exam record with correct schema columns
       const { data: newExam, error: examCreateError } = await supabase
         .from("past_exams")
         .insert({
           user_id: user.id,
           course_id,
-          title: title || file.file_name || "Past Exam",
-          exam_date: exam_date || null,
-          file_id,
+          file_name: inputFileName || file.file_name || "Past Exam",
+          file_path: inputFilePath || file.file_path,
+          file_size: file.file_size,
+          mime_type: file.mime_type || 'application/pdf',
           extracted_text: extractedText,
           analysis_status: 'analyzing',
         })
@@ -127,7 +128,7 @@ serve(async (req) => {
       if (examCreateError) {
         console.error("[analyze-past-exam] Error creating exam record:", examCreateError);
         return new Response(
-          JSON.stringify({ error: "Failed to create exam record" }),
+          JSON.stringify({ error: "Failed to create exam record", details: examCreateError.message }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -162,7 +163,7 @@ serve(async (req) => {
       // Update status to failed
       await supabase
         .from("past_exams")
-        .update({ analysis_status: 'failed', analysis_result: { error: 'Insufficient text content' } })
+        .update({ analysis_status: 'failed', analysis_error: 'Insufficient text content' })
         .eq("id", examId);
 
       return new Response(
@@ -206,7 +207,7 @@ serve(async (req) => {
     if (topicsError || !topics || topics.length === 0) {
       await supabase
         .from("past_exams")
-        .update({ analysis_status: 'failed', analysis_result: { error: 'No topics found in course' } })
+        .update({ analysis_status: 'failed', analysis_error: 'No topics found in course' })
         .eq("id", examId);
 
       return new Response(
@@ -221,23 +222,22 @@ serve(async (req) => {
     let tokensOut = 0;
     let latencyMs = 0;
 
-    if (!anthropicApiKey) {
+    if (!lovableApiKey) {
       // Mock analysis for testing
-      console.log("[analyze-past-exam] No ANTHROPIC_API_KEY, generating mock analysis");
+      console.log("[analyze-past-exam] No LOVABLE_API_KEY, generating mock analysis");
       analysisResult = generateMockAnalysis(topics);
     } else {
       const startTime = Date.now();
       const prompt = buildAnalysisPrompt(extractedText, topics, course.title);
       
-      const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
+      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": anthropicApiKey,
-          "anthropic-version": "2023-06-01",
+          "Authorization": `Bearer ${lovableApiKey}`,
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "google/gemini-2.5-flash",
           max_tokens: 4096,
           messages: [
             {
@@ -250,13 +250,13 @@ serve(async (req) => {
 
       latencyMs = Date.now() - startTime;
 
-      if (!anthropicResponse.ok) {
-        const errorText = await anthropicResponse.text();
-        console.error("[analyze-past-exam] Claude API error:", errorText);
+      if (!aiResponse.ok) {
+        const errorText = await aiResponse.text();
+        console.error("[analyze-past-exam] AI API error:", errorText);
         
         await supabase
           .from("past_exams")
-          .update({ analysis_status: 'failed', analysis_result: { error: 'AI analysis failed' } })
+          .update({ analysis_status: 'failed', analysis_error: 'AI analysis failed' })
           .eq("id", examId);
 
         return new Response(
@@ -265,9 +265,9 @@ serve(async (req) => {
         );
       }
 
-      const aiResult = await anthropicResponse.json();
-      tokensIn = aiResult.usage?.input_tokens || 0;
-      tokensOut = aiResult.usage?.output_tokens || 0;
+      const aiResult = await aiResponse.json();
+      tokensIn = aiResult.usage?.prompt_tokens || 0;
+      tokensOut = aiResult.usage?.completion_tokens || 0;
 
       // Update token usage
       if (creditResult.event_id) {
@@ -277,12 +277,12 @@ serve(async (req) => {
           tokensIn,
           tokensOut,
           latencyMs,
-          "claude-sonnet-4-20250514"
+          "google/gemini-2.5-flash"
         );
       }
 
       // Parse AI response
-      const aiContent = aiResult.content?.[0]?.text || "";
+      const aiContent = aiResult.choices?.[0]?.message?.content || "";
       
       try {
         const jsonMatch = aiContent.match(/```json\n?([\s\S]*?)\n?```/) || 
@@ -301,11 +301,11 @@ serve(async (req) => {
       .from("past_exams")
       .update({
         analysis_status: 'completed',
-        analysis_result: analysisResult,
+        analyzed_at: new Date().toISOString(),
       })
       .eq("id", examId);
 
-    // Store exam_topic_map entries
+    // Store exam_questions and exam_topic_map entries
     const topicMappings = analysisResult.high_yield_topics || [];
     
     for (const mapping of topicMappings) {
@@ -313,20 +313,36 @@ serve(async (req) => {
       const topicExists = topics.find(t => t.id === mapping.topic_id);
       if (!topicExists) continue;
 
+      // Create exam question entry
+      const { data: question, error: questionError } = await supabase
+        .from("exam_questions")
+        .insert({
+          past_exam_id: examId,
+          question_text: mapping.evidence.join('; ') || `Related to ${mapping.topic_title}`,
+          question_type: 'mixed',
+          points: Math.round(mapping.weight * 100),
+        })
+        .select()
+        .single();
+
+      if (questionError) {
+        console.error("[analyze-past-exam] Error creating question:", questionError);
+        continue;
+      }
+
+      // Create topic mapping
       await supabase
         .from("exam_topic_map")
-        .upsert({
-          past_exam_id: examId,
+        .insert({
+          exam_question_id: question.id,
           topic_id: mapping.topic_id,
           weight: mapping.weight,
-          evidence: { snippets: mapping.evidence, question_numbers: mapping.question_numbers },
-        }, {
-          onConflict: 'past_exam_id,topic_id',
+          confidence: mapping.weight > 0.3 ? 'high' : mapping.weight > 0.15 ? 'medium' : 'low',
         });
     }
 
     // ============= Refresh yield metrics =============
-    const { data: refreshCount, error: refreshError } = await supabase
+    const { error: refreshError } = await supabase
       .rpc('refresh_topic_yield_metrics', {
         p_user_id: user.id,
         p_course_id: course_id,
@@ -339,10 +355,10 @@ serve(async (req) => {
     // ============= Fetch updated yield metrics =============
     const { data: yieldMetrics } = await supabase
       .from("topic_yield_metrics")
-      .select("topic_id, frequency_count, normalized_yield, exam_count")
+      .select("topic_id, total_exam_appearances, normalized_yield_score, total_points_possible")
       .eq("user_id", user.id)
       .eq("course_id", course_id)
-      .order("normalized_yield", { ascending: false });
+      .order("normalized_yield_score", { ascending: false });
 
     return new Response(
       JSON.stringify({
@@ -351,7 +367,6 @@ serve(async (req) => {
         analysis: analysisResult,
         yield_metrics: yieldMetrics || [],
         topics_mapped: topicMappings.length,
-        metrics_refreshed: refreshCount || 0,
         usage: {
           tokens_in: tokensIn,
           tokens_out: tokensOut,
