@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { Calculator, Plus, Trash2, Info, Target, TrendingUp, AlertTriangle, ChevronDown, ChevronUp, Settings2 } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import { Calculator, Plus, Trash2, Info, Target, TrendingUp, AlertTriangle, ChevronDown, ChevronUp, Settings2, BookOpen, Sparkles, Link2, Link2Off, Zap, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,8 +13,13 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
 import { LiquidGlassCard } from '@/components/ui/LiquidGlassCard';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useSubscription } from '@/hooks/useSubscription';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 // Types for grade calculation
 interface GradeComponent {
@@ -94,8 +99,42 @@ const WEIGHT_TOLERANCE = 0.01;
 // Utility function to generate unique IDs
 const generateId = () => crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
+// Course type for selection
+interface Course {
+  id: string;
+  title: string;
+  exam_date: string | null;
+}
+
+// Info Tooltip Component
+function InfoTooltip({ content }: { content: string }) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help inline-flex ml-1" />
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs">
+          <p>{content}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 export default function GradeCalculator() {
   const { t, dir } = useLanguage();
+  const { isPro } = useSubscription();
+  const navigate = useNavigate();
+  
+  // Start dialog state
+  const [showStartDialog, setShowStartDialog] = useState(true);
+  const [startOption, setStartOption] = useState<'existing' | 'create' | 'none' | null>(null);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+  const [showProSuggestion, setShowProSuggestion] = useState(false);
   
   // Course Profile State
   const [components, setComponents] = useState<GradeComponent[]>([
@@ -151,6 +190,73 @@ export default function GradeCalculator() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [expandedComponent, setExpandedComponent] = useState<string | null>(null);
   const [result, setResult] = useState<CalculationResult | null>(null);
+
+  // Fetch user's courses
+  const fetchCourses = useCallback(async () => {
+    setLoadingCourses(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('courses')
+        .select('id, title, exam_date')
+        .eq('user_id', user.id)
+        .neq('status', 'archived')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setCourses(data || []);
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+    } finally {
+      setLoadingCourses(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCourses();
+  }, [fetchCourses]);
+
+  // Handle start option selection
+  const handleStartOptionSelect = (option: 'existing' | 'create' | 'none') => {
+    setStartOption(option);
+    if (option === 'existing') {
+      // Keep dialog open to show course selection
+    } else if (option === 'create') {
+      // Navigate to create course or show create dialog
+      setShowStartDialog(false);
+      // We'll let the user continue to grade calculator but without a course
+      // They can create a course from the courses page
+    } else {
+      // Continue without course
+      setShowStartDialog(false);
+    }
+  };
+
+  // Handle course selection
+  const handleCourseSelect = (courseId: string) => {
+    setSelectedCourseId(courseId);
+    const course = courses.find(c => c.id === courseId);
+    setSelectedCourse(course || null);
+    setShowStartDialog(false);
+  };
+
+  // Handle calculate button - show Pro suggestion first for free users
+  const handleCalculateClick = () => {
+    if (!isPro && !showProSuggestion) {
+      setShowProSuggestion(true);
+    } else {
+      calculateGrade();
+      setShowProSuggestion(false);
+    }
+  };
+
+  // Skip Pro suggestion and calculate
+  const handleSkipProSuggestion = () => {
+    setShowProSuggestion(false);
+    calculateGrade();
+  };
 
   // Add a new component
   const addComponent = useCallback(() => {
@@ -477,6 +583,165 @@ export default function GradeCalculator() {
 
   return (
     <div className="space-y-6" dir={dir}>
+      {/* Start Dialog - Shows when user enters the page */}
+      <Dialog open={showStartDialog} onOpenChange={setShowStartDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Calculator className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <DialogTitle>{t('gradeCalcStart')}</DialogTitle>
+                <DialogDescription>{t('gradeCalcStartDesc')}</DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          
+          <div className="space-y-3 py-4">
+            {/* Option 1: Existing Course */}
+            {startOption !== 'existing' ? (
+              <button
+                onClick={() => handleStartOptionSelect('existing')}
+                className="w-full p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-muted/50 transition-all text-left flex items-start gap-3"
+              >
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <BookOpen className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-medium">{t('existingCourse')}</h3>
+                  <p className="text-sm text-muted-foreground">{t('existingCourseDesc')}</p>
+                </div>
+              </button>
+            ) : (
+              <div className="p-4 rounded-lg border border-primary/50 bg-muted/50 space-y-3">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-primary" />
+                  <h3 className="font-medium">{t('selectCourse')}</h3>
+                </div>
+                {loadingCourses ? (
+                  <p className="text-sm text-muted-foreground">{t('loading')}</p>
+                ) : courses.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{t('noCourses')}</p>
+                ) : (
+                  <Select onValueChange={handleCourseSelect}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('selectCourse')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {courses.map((course) => (
+                        <SelectItem key={course.id} value={course.id}>
+                          {course.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                <Button variant="ghost" size="sm" onClick={() => setStartOption(null)}>
+                  {t('cancel')}
+                </Button>
+              </div>
+            )}
+
+            {/* Option 2: Create New Course */}
+            {startOption !== 'existing' && (
+              <button
+                onClick={() => {
+                  setShowStartDialog(false);
+                  navigate('/app/courses');
+                }}
+                className="w-full p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-muted/50 transition-all text-left flex items-start gap-3"
+              >
+                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                  <Plus className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="font-medium">{t('createNewCourse')}</h3>
+                  <p className="text-sm text-muted-foreground">{t('createNewCourseDesc')}</p>
+                </div>
+              </button>
+            )}
+
+            {/* Option 3: Continue Without Course */}
+            {startOption !== 'existing' && (
+              <button
+                onClick={() => handleStartOptionSelect('none')}
+                className="w-full p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-muted/50 transition-all text-left flex items-start gap-3"
+              >
+                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                  <Link2Off className="w-5 h-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <h3 className="font-medium">{t('continueWithoutCourse')}</h3>
+                  <p className="text-sm text-muted-foreground">{t('continueWithoutCourseDesc')}</p>
+                </div>
+              </button>
+            )}
+          </div>
+
+          {/* Free user note */}
+          {!isPro && startOption !== 'existing' && (
+            <Alert variant="default" className="bg-amber-500/10 border-amber-500/20">
+              <Info className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-sm">
+                {t('freeUserNote')}
+              </AlertDescription>
+            </Alert>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Pro Upgrade Suggestion Dialog */}
+      <Dialog open={showProSuggestion} onOpenChange={setShowProSuggestion}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <DialogTitle>{t('gradeCalcProBenefit')}</DialogTitle>
+                <DialogDescription>{t('gradeCalcProBenefitDesc')}</DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          
+          <div className="space-y-3 py-4">
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <BookOpen className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-medium text-sm">{t('saveGrades')}</h4>
+                <p className="text-xs text-muted-foreground">{t('saveGradesDesc')}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <TrendingUp className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-medium text-sm">{t('trackPerformance')}</h4>
+                <p className="text-xs text-muted-foreground">{t('trackPerformanceDesc')}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button variant="outline" className="flex-1" onClick={handleSkipProSuggestion}>
+              {t('calculate')}
+            </Button>
+            <Button className="flex-1 gap-2" onClick={() => {
+              setShowProSuggestion(false);
+              navigate('/app/settings');
+            }}>
+              <Zap className="w-4 h-4" />
+              {t('upgradeNow')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -486,11 +751,48 @@ export default function GradeCalculator() {
             <p className="text-sm text-muted-foreground">{t('gradeCalculatorDesc')}</p>
           </div>
         </div>
-        <Button onClick={calculateGrade} className="gap-2">
+        <Button onClick={handleCalculateClick} className="gap-2">
           <Calculator className="w-4 h-4" />
           {t('calculate')}
         </Button>
       </div>
+
+      {/* Course Connection Status */}
+      {selectedCourse ? (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
+          <Link2 className="w-4 h-4 text-primary" />
+          <span className="text-sm">
+            {t('connectedToCourse')}: <strong>{selectedCourse.title}</strong>
+          </span>
+          {isPro && (
+            <Badge variant="secondary" className="ml-auto">
+              <Sparkles className="w-3 h-3 mr-1" />
+              {t('proFeature')}
+            </Badge>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+          <Link2Off className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">{t('notConnectedToCourse')}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto"
+            onClick={() => setShowStartDialog(true)}
+          >
+            {t('selectCourse')}
+          </Button>
+        </div>
+      )}
+
+      {/* Guess Score Hint */}
+      <Alert variant="default" className="bg-blue-500/5 border-blue-500/20">
+        <HelpCircle className="h-4 w-4 text-blue-600" />
+        <AlertDescription className="text-sm">
+          {t('guessScoreHint')}
+        </AlertDescription>
+      </Alert>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left Column - Components & Scores */}
@@ -551,6 +853,7 @@ export default function GradeCalculator() {
                               max={100}
                             />
                             <span className="text-sm text-muted-foreground">%</span>
+                            <InfoTooltip content={t('componentWeightInfo')} />
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -580,7 +883,10 @@ export default function GradeCalculator() {
                       {/* Component Settings */}
                       <div className="grid gap-4 sm:grid-cols-3">
                         <div>
-                          <Label className="text-xs">{t('scaleMax')}</Label>
+                          <Label className="text-xs flex items-center">
+                            {t('scaleMax')}
+                            <InfoTooltip content={t('maxScoreInfo')} />
+                          </Label>
                           <Input
                             type="number"
                             value={component.scaleMax}
@@ -589,7 +895,10 @@ export default function GradeCalculator() {
                           />
                         </div>
                         <div>
-                          <Label className="text-xs">{t('aggregationRule')}</Label>
+                          <Label className="text-xs flex items-center">
+                            {t('aggregationRule')}
+                            <InfoTooltip content={t('aggregationRuleInfo')} />
+                          </Label>
                           <Select
                             value={component.aggregationRule}
                             onValueChange={(v) => updateComponent(component.id, { aggregationRule: v as GradeComponent['aggregationRule'] })}
@@ -648,7 +957,10 @@ export default function GradeCalculator() {
                       {/* Items */}
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <Label className="text-xs">{t('scores')}</Label>
+                          <Label className="text-xs flex items-center">
+                            {t('scores')}
+                            <InfoTooltip content={t('scoreInputInfo')} />
+                          </Label>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -666,7 +978,10 @@ export default function GradeCalculator() {
                           </div>
                         ) : (
                           <div className="space-y-2">
-                            {component.items.map((item, itemIndex) => (
+                            {component.items.map((item, itemIndex) => {
+                              // Check if this is a Final component item (optional grade)
+                              const isFinalComponent = component.name.toLowerCase().includes('final') || component.name.includes('النهائي');
+                              return (
                               <div key={item.id} className="flex items-center gap-2 p-2 rounded bg-muted/30">
                                 <Input
                                   value={item.name}
@@ -674,15 +989,24 @@ export default function GradeCalculator() {
                                   placeholder={t('itemName')}
                                   className="h-7 flex-1"
                                 />
-                                <Input
-                                  type="number"
-                                  value={item.rawScore ?? ''}
-                                  onChange={(e) => updateItem(component.id, item.id, { 
-                                    rawScore: e.target.value === '' ? null : parseFloat(e.target.value) 
-                                  })}
-                                  placeholder="Score"
-                                  className="h-7 w-20"
-                                />
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Input
+                                        type="number"
+                                        value={item.rawScore ?? ''}
+                                        onChange={(e) => updateItem(component.id, item.id, { 
+                                          rawScore: e.target.value === '' ? null : parseFloat(e.target.value) 
+                                        })}
+                                        placeholder={isFinalComponent ? t('optional') : t('actualGrade')}
+                                        className="h-7 w-20"
+                                      />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>{isFinalComponent ? t('finalGradeHint') : t('scoreInputInfo')}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                                 <span className="text-sm text-muted-foreground">/</span>
                                 <Input
                                   type="number"
@@ -711,7 +1035,8 @@ export default function GradeCalculator() {
                                   <Trash2 className="w-3 h-3" />
                                 </Button>
                               </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                       </div>
