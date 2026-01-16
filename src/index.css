@@ -352,6 +352,24 @@
   .flip-rtl {
     @apply rtl:scale-x-[-1];
   }
+  
+  /* Prevent horizontal overflow globally */
+  .overflow-x-safe {
+    overflow-x: clip;
+    max-width: 100vw;
+  }
+  
+  /* Mobile-safe container */
+  .mobile-container {
+    @apply px-4 sm:px-6 lg:px-8;
+    max-width: 100%;
+  }
+  
+  /* Touch-friendly minimum sizes */
+  .touch-target {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 /* === RTL SUPPORT === */
@@ -366,6 +384,29 @@
 
 [dir="rtl"] body {
   line-height: 1.8;
+}
+
+/* RTL-aware logical classes */
+.ltr\:right-4 {
+  right: 1rem;
+}
+
+.rtl\:left-4 {
+  left: 1rem;
+}
+
+[dir="rtl"] .rtl\:left-4 {
+  left: 1rem;
+}
+
+[dir="ltr"] .ltr\:right-4 {
+  right: 1rem;
+}
+
+/* Prevent horizontal scroll */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 /* === ANIMATIONS === */
