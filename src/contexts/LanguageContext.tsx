@@ -1064,6 +1064,15 @@ const translations: Record<Language, Record<string, string>> = {
     'viewEditGrades': 'عرض الدرجات',
     'gradesSummary': 'ملخص الدرجات',
     'lastCalculation': 'آخر حساب',
+    'confirmDeleteCalculation': 'حذف حساب الدرجات؟',
+    'deleteCalculationWarning': 'سيتم حذف حساب الدرجات هذا نهائياً:',
+    'calculationDeleted': 'تم حذف حساب الدرجات',
+    'deleteCalculationFailed': 'فشل في حذف حساب الدرجات',
+    'selectCalculation': 'اختر الحساب',
+    'newCalculation': 'حساب جديد',
+    'newCalculationStarted': 'تم بدء حساب جديد',
+    'autoSaved': 'تم الحفظ تلقائياً',
+    'unsavedChanges': 'تغييرات غير محفوظة',
   },
   en: {
     // Layout
@@ -2118,6 +2127,15 @@ const translations: Record<Language, Record<string, string>> = {
     'viewEditGrades': 'View Grades',
     'gradesSummary': 'Grades Summary',
     'lastCalculation': 'Last calculation',
+    'confirmDeleteCalculation': 'Delete Grade Calculation?',
+    'deleteCalculationWarning': 'This will permanently delete the grade calculation:',
+    'calculationDeleted': 'Grade calculation deleted',
+    'deleteCalculationFailed': 'Failed to delete grade calculation',
+    'selectCalculation': 'Select Calculation',
+    'newCalculation': 'New Calculation',
+    'newCalculationStarted': 'New calculation started',
+    'autoSaved': 'Auto-saved',
+    'unsavedChanges': 'Unsaved changes',
   }
 };
 
