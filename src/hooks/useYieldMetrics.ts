@@ -3,17 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface TopicYieldMetric {
   topic_id: string;
-  frequency_count: number;
-  normalized_yield: number;
-  total_weight: number;
-  exam_count: number;
+  total_exam_appearances: number;
+  total_points_possible: number;
+  normalized_yield_score: number;
   updated_at: string;
 }
 
 export interface PastExam {
   id: string;
-  title: string;
-  exam_date: string | null;
+  file_name: string;
   analysis_status: string;
   created_at: string;
 }
@@ -66,14 +64,14 @@ export function useYieldMetrics(courseId?: string): UseYieldMetricsReturn {
 
       const { data: metrics } = await supabase
         .from('topic_yield_metrics')
-        .select('*')
+        .select('topic_id, total_exam_appearances, total_points_possible, normalized_yield_score, updated_at')
         .eq('user_id', user.id)
         .eq('course_id', courseId)
-        .order('normalized_yield', { ascending: false });
+        .order('normalized_yield_score', { ascending: false });
 
       const { data: exams } = await supabase
         .from('past_exams')
-        .select('id, title, exam_date, analysis_status, created_at')
+        .select('id, file_name, analysis_status, created_at')
         .eq('user_id', user.id)
         .eq('course_id', courseId)
         .order('created_at', { ascending: false });
@@ -82,7 +80,7 @@ export function useYieldMetrics(courseId?: string): UseYieldMetricsReturn {
       setPastExams(exams || []);
       
       const completedExams = (exams || []).filter(e => e.analysis_status === 'completed').length;
-      const highYield = (metrics || []).filter(m => m.normalized_yield >= 0.7).length;
+      const highYield = (metrics || []).filter(m => m.normalized_yield_score >= 70).length;
       
       setSummary({
         exams_analyzed: completedExams,

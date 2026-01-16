@@ -6,6 +6,9 @@ verify_jwt = false
 [functions.admin-stats]
 verify_jwt = false
 
+[functions.analyze-past-exam]
+verify_jwt = false
+
 [functions.analyze-topic]
 verify_jwt = false
 
@@ -21,6 +24,9 @@ verify_jwt = false
 [functions.extract-topics]
 verify_jwt = false
 
+[functions.generate-quiz]
+verify_jwt = false
+
 [functions.generate-smart-plan]
 verify_jwt = false
 
@@ -30,16 +36,13 @@ verify_jwt = false
 [functions.generate-unified-plan]
 verify_jwt = false
 
-[functions.parse-pdf]
+[functions.get-yield-summary]
 verify_jwt = false
 
 [functions.google-calendar-auth]
 verify_jwt = false
 
-[functions.sync-calendar]
-verify_jwt = false
-
-[functions.disconnect-calendar]
+[functions.healthz]
 verify_jwt = false
 
 [functions.ingest-pdf-text]
@@ -48,8 +51,17 @@ verify_jwt = false
 [functions.ocr-pages]
 verify_jwt = false
 
-[functions.healthz]
+[functions.parse-pdf]
 verify_jwt = false
 
 [functions.stripe-webhook]
+verify_jwt = false
+
+[functions.submit-quiz-attempt]
+verify_jwt = false
+
+[functions.sync-calendar]
+verify_jwt = false
+
+[functions.disconnect-calendar]
 verify_jwt = false

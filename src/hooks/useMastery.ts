@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface TopicMastery {
   topic_id: string;
   mastery_score: number;
-  confidence: number;
+  confidence: string; // 'low' | 'medium' | 'high'
   last_assessed_at: string | null;
   quiz_attempts_count: number;
   total_time_spent_sec: number;
