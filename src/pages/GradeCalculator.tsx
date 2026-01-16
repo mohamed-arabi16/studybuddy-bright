@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Calculator, Plus, Trash2, Info, Target, TrendingUp, AlertTriangle, ChevronDown, ChevronUp, Settings2, BookOpen, Sparkles, Link2, Link2Off, Zap, HelpCircle, Save, Loader2 } from 'lucide-react';
+import { Calculator, Plus, Trash2, Info, Target, TrendingUp, AlertTriangle, ChevronDown, ChevronUp, Settings2, BookOpen, Sparkles, Link2, Link2Off, Zap, HelpCircle, Save, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -362,6 +362,68 @@ export default function GradeCalculator() {
     }
   }, [t]);
 
+  // Handle Start Again - saves current and resets
+  const handleStartAgain = useCallback(async () => {
+    // Save current calculation if Pro user with linked course
+    if (isPro && selectedCourseId && result) {
+      await saveGrades();
+    }
+    
+    // Reset all state to defaults
+    setComponents([
+      {
+        id: generateId(),
+        name: t('midterm') || 'Midterm',
+        weight: 25,
+        scaleMax: 100,
+        aggregationRule: 'average',
+        group: 'exam',
+        items: [{ id: generateId(), name: 'Midterm', rawScore: null, maxScore: 100 }],
+      },
+      {
+        id: generateId(),
+        name: t('final') || 'Final',
+        weight: 40,
+        scaleMax: 100,
+        aggregationRule: 'average',
+        group: 'exam',
+        isFinalExam: true,
+        items: [{ id: generateId(), name: 'Final', rawScore: null, maxScore: 100 }],
+      },
+      {
+        id: generateId(),
+        name: t('homework') || 'Homework',
+        weight: 20,
+        scaleMax: 100,
+        aggregationRule: 'average',
+        group: 'work',
+        items: [],
+      },
+      {
+        id: generateId(),
+        name: t('quizzes') || 'Quizzes',
+        weight: 15,
+        scaleMax: 100,
+        aggregationRule: 'average',
+        group: 'work',
+        items: [],
+      },
+    ]);
+    setResult(null);
+    setSavedCalculationId(null);
+    setLastSaved(null);
+    setSelectedCourseId(null);
+    setSelectedCourse(null);
+    setStartOption(null);
+    setCurves([]);
+    setConstraints([]);
+    setPassingThreshold(60);
+    setRoundingMethod('none');
+    
+    // Show start dialog again
+    setShowStartDialog(true);
+  }, [isPro, selectedCourseId, result, saveGrades, t]);
+
   // Handle calculate button - show Pro suggestion first for free users
   const handleCalculateClick = () => {
     if (!isPro) {
@@ -701,7 +763,7 @@ export default function GradeCalculator() {
   }, [components, curves, constraints, passingThreshold, targetGrade, targetComponent, t, applyRounding, getLetterGrade]);
 
   return (
-    <div className="space-y-6" dir={dir}>
+    <div className="space-y-4 md:space-y-6" dir={dir}>
       {/* Start Dialog - Shows when user enters the page */}
       <Dialog open={showStartDialog} onOpenChange={setShowStartDialog}>
         <DialogContent className="sm:max-w-lg">
@@ -862,42 +924,61 @@ export default function GradeCalculator() {
       </Dialog>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <Calculator className="w-6 h-6 text-primary" strokeWidth={1.5} />
+          <Calculator className="w-6 h-6 text-primary flex-shrink-0" strokeWidth={1.5} />
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{t('gradeCalculator')}</h1>
-            <p className="text-sm text-muted-foreground">{t('gradeCalculatorDesc')}</p>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">{t('gradeCalculator')}</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">{t('gradeCalculatorDesc')}</p>
           </div>
         </div>
-        <Button onClick={handleCalculateClick} className="gap-2">
-          <Calculator className="w-4 h-4" />
-          {t('calculate')}
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Start Again Button */}
+          <Button 
+            variant="outline" 
+            onClick={handleStartAgain} 
+            className="gap-2 min-h-[44px] flex-1 sm:flex-none rtl:flex-row-reverse"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span className="hidden sm:inline">{t('startAgain')}</span>
+          </Button>
+          {/* Calculate Button */}
+          <Button 
+            onClick={handleCalculateClick} 
+            className="gap-2 min-h-[44px] flex-1 sm:flex-none rtl:flex-row-reverse"
+          >
+            <Calculator className="w-4 h-4" />
+            {t('calculate')}
+          </Button>
+        </div>
       </div>
 
       {/* Course Connection Status */}
       {selectedCourse ? (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
-          <Link2 className="w-4 h-4 text-primary" />
-          <span className="text-sm">
-            {t('connectedToCourse')}: <strong>{selectedCourse.title}</strong>
-          </span>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center p-3 rounded-lg bg-primary/5 border border-primary/20">
+          <div className="flex items-center gap-2">
+            <Link2 className="w-4 h-4 text-primary flex-shrink-0" />
+            <span className="text-sm">
+              {t('connectedToCourse')}: <strong>{selectedCourse.title}</strong>
+            </span>
+          </div>
           {isPro && (
-            <Badge variant="secondary" className="ml-auto">
-              <Sparkles className="w-3 h-3 mr-1" />
+            <Badge variant="secondary" className="w-fit sm:ms-auto rtl:flex-row-reverse">
+              <Sparkles className="w-3 h-3 me-1" />
               {t('proFeature')}
             </Badge>
           )}
         </div>
       ) : (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
-          <Link2Off className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">{t('notConnectedToCourse')}</span>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center p-3 rounded-lg bg-muted/50">
+          <div className="flex items-center gap-2">
+            <Link2Off className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <span className="text-sm text-muted-foreground">{t('notConnectedToCourse')}</span>
+          </div>
           <Button
             variant="ghost"
             size="sm"
-            className="ml-auto"
+            className="w-fit sm:ms-auto min-h-[44px]"
             onClick={() => setShowStartDialog(true)}
           >
             {t('selectCourse')}
@@ -913,9 +994,9 @@ export default function GradeCalculator() {
         </AlertDescription>
       </Alert>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-3 lg:gap-6">
         {/* Left Column - Components & Scores */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-4 order-2 lg:order-1">
           {/* Components Card */}
           <Card>
             <CardHeader className="pb-3">
@@ -1084,7 +1165,7 @@ export default function GradeCalculator() {
                             variant="ghost"
                             size="sm"
                             onClick={() => addItemToComponent(component.id)}
-                            className="h-7 text-xs gap-1"
+                            className="min-h-[44px] sm:h-7 text-xs gap-1 rtl:flex-row-reverse"
                           >
                             <Plus className="w-3 h-3" />
                             {t('addScore')}
@@ -1101,58 +1182,63 @@ export default function GradeCalculator() {
                               // Use the isFinalExam field to determine if scores are optional
                               const isOptionalScore = component.isFinalExam === true;
                               return (
-                              <div key={item.id} className="flex items-center gap-2 p-2 rounded bg-muted/30">
+                              <div key={item.id} className="flex flex-col gap-2 p-3 rounded bg-muted/30 sm:flex-row sm:items-center sm:p-2">
                                 <Input
                                   value={item.name}
                                   onChange={(e) => updateItem(component.id, item.id, { name: e.target.value })}
                                   placeholder={t('itemName')}
-                                  className="h-7 flex-1"
+                                  className="min-h-[44px] sm:h-7 flex-1"
                                 />
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
+                                <div className="flex items-center gap-2">
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Input
+                                          type="number"
+                                          dir="ltr"
+                                          value={item.rawScore ?? ''}
+                                          onChange={(e) => updateItem(component.id, item.id, { 
+                                            rawScore: e.target.value === '' ? null : parseFloat(e.target.value) 
+                                          })}
+                                          placeholder={isOptionalScore ? t('optional') : t('actualGrade')}
+                                          className="min-h-[44px] sm:h-7 w-20 text-start"
+                                        />
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>{isOptionalScore ? t('finalGradeHint') : t('scoreInputInfo')}</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                  <span className="text-sm text-muted-foreground">/</span>
+                                  <Input
+                                    type="number"
+                                    dir="ltr"
+                                    value={item.maxScore}
+                                    onChange={(e) => updateItem(component.id, item.id, { maxScore: parseFloat(e.target.value) || 100 })}
+                                    className="min-h-[44px] sm:h-7 w-16 text-start"
+                                  />
+                                  {component.aggregationRule === 'weighted' && (
+                                    <>
+                                      <span className="text-sm text-muted-foreground">×</span>
                                       <Input
                                         type="number"
-                                        value={item.rawScore ?? ''}
-                                        onChange={(e) => updateItem(component.id, item.id, { 
-                                          rawScore: e.target.value === '' ? null : parseFloat(e.target.value) 
-                                        })}
-                                        placeholder={isOptionalScore ? t('optional') : t('actualGrade')}
-                                        className="h-7 w-20"
+                                        dir="ltr"
+                                        value={item.weight ?? 1}
+                                        onChange={(e) => updateItem(component.id, item.id, { weight: parseFloat(e.target.value) || 1 })}
+                                        className="min-h-[44px] sm:h-7 w-16 text-start"
+                                        placeholder="Weight"
                                       />
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>{isOptionalScore ? t('finalGradeHint') : t('scoreInputInfo')}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                                <span className="text-sm text-muted-foreground">/</span>
-                                <Input
-                                  type="number"
-                                  value={item.maxScore}
-                                  onChange={(e) => updateItem(component.id, item.id, { maxScore: parseFloat(e.target.value) || 100 })}
-                                  className="h-7 w-16"
-                                />
-                                {component.aggregationRule === 'weighted' && (
-                                  <>
-                                    <span className="text-sm text-muted-foreground">×</span>
-                                    <Input
-                                      type="number"
-                                      value={item.weight ?? 1}
-                                      onChange={(e) => updateItem(component.id, item.id, { weight: parseFloat(e.target.value) || 1 })}
-                                      className="h-7 w-16"
-                                      placeholder="Weight"
-                                    />
-                                  </>
-                                )}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeItemFromComponent(component.id, item.id)}
-                                  className="h-7 w-7 text-destructive hover:text-destructive"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
+                                    </>
+                                  )}
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => removeItemFromComponent(component.id, item.id)}
+                                    className="min-h-[44px] min-w-[44px] sm:h-7 sm:w-7 text-destructive hover:text-destructive"
+                                  >
+                                    <Trash2 className="w-4 h-4 sm:w-3 sm:h-3" />
+                                  </Button>
+                                </div>
                               </div>
                               );
                             })}
@@ -1389,7 +1475,7 @@ export default function GradeCalculator() {
         </div>
 
         {/* Right Column - Results & What-If */}
-        <div className="space-y-4">
+        <div className="space-y-4 order-1 lg:order-2">
           {/* Results Card */}
           <LiquidGlassCard className="p-6">
             <div className="flex items-center gap-2 mb-4">

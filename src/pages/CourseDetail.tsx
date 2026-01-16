@@ -3,12 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   Loader2, ArrowLeft, Calendar, Upload, FileText, List, 
   Sparkles, RefreshCw, AlertCircle, CheckCircle, Info,
-  Pencil, Trash2, MoreVertical, Brain, BarChart3
+  Pencil, Trash2, MoreVertical, Brain, BarChart3, Calculator
 } from "lucide-react";
 import { format } from "date-fns";
 import TopicManager from "@/components/TopicManager";
@@ -58,12 +58,20 @@ type CourseFile = {
   created_at: string;
 };
 
+type GradeCalculation = {
+  id: string;
+  profile_name: string;
+  result: unknown;
+  updated_at: string;
+};
+
 export default function CourseDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t, dir } = useLanguage();
   const [course, setCourse] = useState<Course | null>(null);
   const [files, setFiles] = useState<CourseFile[]>([]);
+  const [gradeCalculations, setGradeCalculations] = useState<GradeCalculation[]>([]);
   const [loading, setLoading] = useState(true);
   const [extractingFileId, setExtractingFileId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -110,6 +118,15 @@ export default function CourseDetail() {
       
       setTopics(topicsData || []);
       setTopicCount(count || 0);
+
+      // Fetch grade calculations for this course
+      const { data: gradesData } = await supabase
+        .from("grade_calculations")
+        .select("id, profile_name, result, updated_at")
+        .eq("course_id", id)
+        .order("updated_at", { ascending: false });
+      
+      setGradeCalculations(gradesData || []);
     } catch (error) {
       console.error("Error fetching course:", error);
       toast.error(t('planError'));
@@ -303,7 +320,7 @@ export default function CourseDetail() {
       </div>
 
       <Tabs defaultValue="files" className="space-y-4">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="files" className="gap-2">
             <Upload className="w-4 h-4" />
             {t('files')}
@@ -311,6 +328,10 @@ export default function CourseDetail() {
           <TabsTrigger value="topics" className="gap-2">
             <List className="w-4 h-4" />
             {t('topics')}
+          </TabsTrigger>
+          <TabsTrigger value="grades" className="gap-2">
+            <Calculator className="w-4 h-4" />
+            {t('grades')}
           </TabsTrigger>
           <TabsTrigger value="mastery" className="gap-2">
             <Brain className="w-4 h-4" />
@@ -469,6 +490,71 @@ export default function CourseDetail() {
           <TopicManager courseId={course.id} />
           {/* Dependency Flow Visualization */}
           <DependencyFlowVisual courseId={course.id} />
+        </TabsContent>
+
+        <TabsContent value="grades" className="space-y-4">
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>{t('gradesSummary') || 'View and manage your grade calculations for this course.'}</AlertDescription>
+          </Alert>
+          
+          {gradeCalculations.length === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center">
+                <Calculator className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <p className="text-muted-foreground mb-4">{t('noGradeCalculations')}</p>
+                <Button onClick={() => navigate(`/app/grade-calculator?courseId=${id}`)} className="gap-2">
+                  <Calculator className="w-4 h-4" />
+                  {t('calculateGrade')}
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {gradeCalculations.map((calc) => {
+                const result = calc.result as { finalGrade?: number; letterGrade?: string; passed?: boolean } | null;
+                return (
+                  <Card key={calc.id} className="hover:border-primary/30 transition-colors">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <span className="text-lg font-bold text-primary">
+                              {result?.finalGrade?.toFixed(0) || '?'}%
+                            </span>
+                          </div>
+                          <div>
+                            <h3 className="font-medium">{calc.profile_name}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {result?.letterGrade && <Badge variant="outline" className="me-2">{result.letterGrade}</Badge>}
+                              {t('lastCalculation')}: {format(new Date(calc.updated_at), 'PPp')}
+                            </p>
+                          </div>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => navigate(`/app/grade-calculator?courseId=${id}`)}
+                          className="gap-2"
+                        >
+                          <Calculator className="w-4 h-4" />
+                          {t('openCalculator')}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+              <Button 
+                variant="outline" 
+                onClick={() => navigate(`/app/grade-calculator?courseId=${id}`)} 
+                className="w-full gap-2"
+              >
+                <Calculator className="w-4 h-4" />
+                {t('calculateGrade')}
+              </Button>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="mastery" className="space-y-4">
