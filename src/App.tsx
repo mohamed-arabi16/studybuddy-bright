@@ -27,6 +27,7 @@ import AdminTrials from "./pages/Admin/Trials";
 import AdminFeedback from "./pages/Admin/Feedback";
 import AdminAuditLog from "./pages/Admin/AuditLog";
 import AdminCredits from "./pages/Admin/Credits";
+import GradeCalculator from "./pages/GradeCalculator";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,7 @@ const App = () => (
               <Route path="courses" element={<Courses />} />
               <Route path="courses/:id" element={<CourseDetail />} />
               <Route path="plan" element={<Plan />} />
+              <Route path="grade-calculator" element={<GradeCalculator />} />
               <Route path="settings" element={<Settings />} />
             </Route>
 

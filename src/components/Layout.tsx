@@ -11,6 +11,7 @@ import {
   Menu,
   Shield,
   Languages,
+  Calculator,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Session } from "@supabase/supabase-js";
@@ -129,6 +130,7 @@ export default function Layout() {
     { href: "/app/dashboard", icon: LayoutDashboard, label: t('dashboard') },
     { href: "/app/courses", icon: BookOpen, label: t('courses') },
     { href: "/app/plan", icon: Calendar, label: t('plan') },
+    { href: "/app/grade-calculator", icon: Calculator, label: t('gradeCalculator') },
     { href: "/app/settings", icon: Settings, label: t('settings') },
   ];
 
