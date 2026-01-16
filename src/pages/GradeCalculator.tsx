@@ -1198,8 +1198,8 @@ export default function GradeCalculator() {
                                       <TooltipTrigger asChild>
                                         <Input
                                           type="text"
-                                          inputMode="numeric"
-                                          pattern="[0-9]*"
+                                          inputMode="decimal"
+                                          pattern="[0-9]*\.?[0-9]*"
                                           dir="ltr"
                                           value={item.rawScore ?? ''}
                                           onChange={(e) => updateItem(component.id, item.id, { 
@@ -1217,8 +1217,8 @@ export default function GradeCalculator() {
                                   <span className="text-sm text-muted-foreground">/</span>
                                   <Input
                                     type="text"
-                                    inputMode="numeric"
-                                    pattern="[0-9]*"
+                                    inputMode="decimal"
+                                    pattern="[0-9]*\.?[0-9]*"
                                     dir="ltr"
                                     value={item.maxScore}
                                     onChange={(e) => updateItem(component.id, item.id, { maxScore: parseFloat(e.target.value) || 100 })}
@@ -1229,8 +1229,8 @@ export default function GradeCalculator() {
                                       <span className="text-sm text-muted-foreground">×</span>
                                       <Input
                                         type="text"
-                                        inputMode="numeric"
-                                        pattern="[0-9]*"
+                                        inputMode="decimal"
+                                        pattern="[0-9]*\.?[0-9]*"
                                         dir="ltr"
                                         value={item.weight ?? 1}
                                         onChange={(e) => updateItem(component.id, item.id, { weight: parseFloat(e.target.value) || 1 })}
