@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Calculator, Plus, Trash2, Info, Target, TrendingUp, AlertTriangle, ChevronDown, ChevronUp, Settings2, BookOpen, Sparkles, Link2, Link2Off, Zap, HelpCircle, Save, Loader2, RefreshCw } from 'lucide-react';
+import { Calculator, Plus, Trash2, Info, Target, TrendingUp, AlertTriangle, ChevronDown, ChevronUp, Settings2, BookOpen, Sparkles, Link2, Link2Off, Zap, HelpCircle, Save, Loader2, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,6 +20,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { format } from 'date-fns';
 import { AggregationRuleDialog } from '@/components/AggregationRuleDialog';
 import { FreeUserUpgradeDialog } from '@/components/FreeUserUpgradeDialog';
 
@@ -145,6 +146,7 @@ export default function GradeCalculator() {
   const [savedCalculationId, setSavedCalculationId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [savedCalculations, setSavedCalculations] = useState<Array<{id: string; profile_name: string; updated_at: string}>>([]);
   
   // Course Profile State
   const [components, setComponents] = useState<GradeComponent[]>([
@@ -201,6 +203,10 @@ export default function GradeCalculator() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [expandedComponent, setExpandedComponent] = useState<string | null>(null);
   const [result, setResult] = useState<CalculationResult | null>(null);
+  
+  // Auto-save state
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
 
   // Fetch user's courses
   const fetchCourses = useCallback(async () => {
@@ -248,6 +254,31 @@ export default function GradeCalculator() {
     }
   }, [selectedCourseId, courses, isPro]);
 
+  // Track changes in components, curves, constraints, etc.
+  useEffect(() => {
+    // Mark as having unsaved changes when any calculation data changes
+    if (selectedCourseId && isPro) {
+      setHasUnsavedChanges(true);
+    }
+  }, [components, curves, constraints, passingThreshold, roundingMethod, selectedCourseId, isPro]);
+
+  // Auto-save with 5-second interval
+  useEffect(() => {
+    // Only auto-save for Pro users with a connected course
+    if (!isPro || !selectedCourseId || !autoSaveEnabled || !hasUnsavedChanges) {
+      return;
+    }
+    
+    const autoSaveTimer = setInterval(async () => {
+      if (hasUnsavedChanges) {
+        await saveGrades(false); // Don't show toast on auto-save
+        setHasUnsavedChanges(false);
+      }
+    }, 5000); // 5 seconds
+    
+    return () => clearInterval(autoSaveTimer);
+  }, [isPro, selectedCourseId, autoSaveEnabled, hasUnsavedChanges, saveGrades]);
+
   // Handle start option selection
   const handleStartOptionSelect = (option: 'existing' | 'create' | 'none') => {
     setStartOption(option);
@@ -282,7 +313,7 @@ export default function GradeCalculator() {
   };
 
   // Save grades to database (Pro users only)
-  const saveGrades = useCallback(async () => {
+  const saveGrades = useCallback(async (showToast: boolean = true) => {
     if (!isPro || !selectedCourseId) return;
     
     setIsSaving(true);
@@ -318,10 +349,14 @@ export default function GradeCalculator() {
       }
       
       setLastSaved(new Date());
-      toast.success(t('gradesSaved'));
+      if (showToast) {
+        toast.success(t('gradesSaved'));
+      }
     } catch (error: any) {
       console.error('Save error:', error);
-      toast.error(t('gradesSaveFailed'));
+      if (showToast) {
+        toast.error(t('gradesSaveFailed'));
+      }
     } finally {
       setIsSaving(false);
     }
@@ -333,16 +368,35 @@ export default function GradeCalculator() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       
+      // Fetch all calculations for this course
+      const { data: allCalcs, error: listError } = await supabase
+        .from('grade_calculations')
+        .select('id, profile_name, updated_at')
+        .eq('course_id', courseId)
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false });
+      
+      if (listError) throw listError;
+      setSavedCalculations(allCalcs || []);
+      
+      // Load the most recent one by default
+      if (allCalcs && allCalcs.length > 0) {
+        await loadSpecificCalculation(allCalcs[0].id);
+      }
+    } catch (error) {
+      console.error('Load error:', error);
+    }
+  }, [t]);
+
+  const loadSpecificCalculation = useCallback(async (calculationId: string) => {
+    try {
       const { data, error } = await supabase
         .from('grade_calculations')
         .select('*')
-        .eq('course_id', courseId)
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false })
-        .limit(1)
+        .eq('id', calculationId)
         .single();
       
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
       
       if (data) {
         setSavedCalculationId(data.id);
@@ -358,7 +412,7 @@ export default function GradeCalculator() {
         toast.success(t('gradesLoaded'));
       }
     } catch (error) {
-      console.error('Load error:', error);
+      console.error('Load specific calculation error:', error);
     }
   }, [t]);
 
@@ -423,6 +477,57 @@ export default function GradeCalculator() {
     // Show start dialog again
     setShowStartDialog(true);
   }, [isPro, selectedCourseId, result, saveGrades, t]);
+
+  // Handle Create New Calculation
+  const handleCreateNewCalculation = useCallback(() => {
+    // Reset to defaults but keep course connection
+    setSavedCalculationId(null);
+    setComponents([
+      {
+        id: generateId(),
+        name: t('midterm') || 'Midterm',
+        weight: 25,
+        scaleMax: 100,
+        aggregationRule: 'average',
+        group: 'exam',
+        items: [{ id: generateId(), name: 'Midterm', rawScore: null, maxScore: 100 }],
+      },
+      {
+        id: generateId(),
+        name: t('final') || 'Final',
+        weight: 40,
+        scaleMax: 100,
+        aggregationRule: 'average',
+        group: 'exam',
+        isFinalExam: true,
+        items: [{ id: generateId(), name: 'Final', rawScore: null, maxScore: 100 }],
+      },
+      {
+        id: generateId(),
+        name: t('homework') || 'Homework',
+        weight: 20,
+        scaleMax: 100,
+        aggregationRule: 'average',
+        group: 'work',
+        items: [],
+      },
+      {
+        id: generateId(),
+        name: t('quizzes') || 'Quizzes',
+        weight: 15,
+        scaleMax: 100,
+        aggregationRule: 'average',
+        group: 'work',
+        items: [],
+      },
+    ]);
+    setResult(null);
+    setCurves([]);
+    setConstraints([]);
+    setPassingThreshold(60);
+    setRoundingMethod('none');
+    toast.info(t('newCalculationStarted'));
+  }, [t]);
 
   // Handle calculate button - show Pro suggestion first for free users
   const handleCalculateClick = () => {
@@ -760,7 +865,13 @@ export default function GradeCalculator() {
     });
 
     toast.success(t('calculationComplete') || 'Calculation complete!');
-  }, [components, curves, constraints, passingThreshold, targetGrade, targetComponent, t, applyRounding, getLetterGrade]);
+    
+    // After setting result, trigger save for Pro users
+    if (isPro && selectedCourseId) {
+      saveGrades(true); // Show toast on manual calculate
+      setHasUnsavedChanges(false);
+    }
+  }, [components, curves, constraints, passingThreshold, targetGrade, targetComponent, t, applyRounding, getLetterGrade, isPro, selectedCourseId, saveGrades]);
 
   return (
     <div className="space-y-4 md:space-y-6" dir={dir}>
@@ -955,18 +1066,64 @@ export default function GradeCalculator() {
 
       {/* Course Connection Status */}
       {selectedCourse ? (
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center p-3 rounded-lg bg-primary/5 border border-primary/20">
-          <div className="flex items-center gap-2">
-            <Link2 className="w-4 h-4 text-primary flex-shrink-0" />
-            <span className="text-sm">
-              {t('connectedToCourse')}: <strong>{selectedCourse.title}</strong>
-            </span>
+        <div className="flex flex-col gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2">
+              <Link2 className="w-4 h-4 text-primary flex-shrink-0" />
+              <span className="text-sm">
+                {t('connectedToCourse')}: <strong>{selectedCourse.title}</strong>
+              </span>
+            </div>
+            {isPro && (
+              <div className="flex items-center gap-2 sm:ms-auto">
+                <Badge variant="secondary" className="w-fit rtl:flex-row-reverse">
+                  <Sparkles className="w-3 h-3 me-1" />
+                  {t('proFeature')}
+                </Badge>
+                {/* Auto-save indicator */}
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      {t('saving')}
+                    </>
+                  ) : lastSaved ? (
+                    <>
+                      <CheckCircle className="w-3 h-3 text-green-500" />
+                      {t('autoSaved')}: {format(lastSaved, 'HH:mm:ss')}
+                    </>
+                  ) : hasUnsavedChanges ? (
+                    <>
+                      <AlertCircle className="w-3 h-3 text-amber-500" />
+                      {t('unsavedChanges')}
+                    </>
+                  ) : null}
+                </div>
+              </div>
+            )}
           </div>
-          {isPro && (
-            <Badge variant="secondary" className="w-fit sm:ms-auto rtl:flex-row-reverse">
-              <Sparkles className="w-3 h-3 me-1" />
-              {t('proFeature')}
-            </Badge>
+          {savedCalculations.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <Select 
+                value={savedCalculationId || ''} 
+                onValueChange={(id) => loadSpecificCalculation(id)}
+              >
+                <SelectTrigger className="w-48 h-8">
+                  <SelectValue placeholder={t('selectCalculation')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {savedCalculations.map((calc) => (
+                    <SelectItem key={calc.id} value={calc.id}>
+                      {calc.profile_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" onClick={handleCreateNewCalculation}>
+                <Plus className="w-4 h-4 me-1" />
+                {t('newCalculation')}
+              </Button>
+            </div>
           )}
         </div>
       ) : (

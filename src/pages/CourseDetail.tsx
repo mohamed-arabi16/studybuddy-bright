@@ -87,6 +87,8 @@ export default function CourseDetail() {
     difficulty_weight: number | null;
     exam_importance: number | null;
   }>>([]);
+  const [calculationToDelete, setCalculationToDelete] = useState<GradeCalculation | null>(null);
+  const [deletingCalculation, setDeletingCalculation] = useState(false);
 
   const fetchCourse = async () => {
     if (!id) return;
@@ -252,6 +254,30 @@ export default function CourseDetail() {
       toast.error(t('deleteFileFailed'));
     } finally {
       setDeletingFile(false);
+    }
+  };
+
+  const handleDeleteCalculation = async () => {
+    if (!calculationToDelete) return;
+    
+    try {
+      setDeletingCalculation(true);
+      
+      const { error } = await supabase
+        .from('grade_calculations')
+        .delete()
+        .eq('id', calculationToDelete.id);
+      
+      if (error) throw error;
+      
+      toast.success(t('calculationDeleted'));
+      setCalculationToDelete(null);
+      fetchCourse(); // Refresh the list
+    } catch (error) {
+      console.error("Delete calculation error:", error);
+      toast.error(t('deleteCalculationFailed'));
+    } finally {
+      setDeletingCalculation(false);
     }
   };
 
@@ -533,15 +559,28 @@ export default function CourseDetail() {
                             </p>
                           </div>
                         </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => navigate(`/app/grade-calculator?courseId=${id}`)}
-                          className="gap-2"
-                        >
-                          <Calculator className="w-4 h-4" />
-                          {t('openCalculator')}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => navigate(`/app/grade-calculator?courseId=${id}`)}
+                            className="gap-2"
+                          >
+                            <Calculator className="w-4 h-4" />
+                            {t('openCalculator')}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCalculationToDelete(calc);
+                            }}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -617,6 +656,29 @@ export default function CourseDetail() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deletingFile && <Loader2 className="w-4 h-4 me-2 animate-spin" />}
+              {t('delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Calculation Confirmation Dialog */}
+      <AlertDialog open={!!calculationToDelete} onOpenChange={(open) => !open && setCalculationToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('confirmDeleteCalculation')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('deleteCalculationWarning')} "{calculationToDelete?.profile_name}"
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCalculation}
+              disabled={deletingCalculation}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingCalculation && <Loader2 className="w-4 h-4 me-2 animate-spin" />}
               {t('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
