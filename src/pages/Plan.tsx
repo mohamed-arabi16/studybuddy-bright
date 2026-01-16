@@ -408,6 +408,8 @@ export default function Plan() {
                                   examProximityDays={item.exam_proximity_days}
                                   loadBalanceNote={item.load_balance_note}
                                   prereqTopicIds={item.prereq_topic_ids}
+                                  yieldWeight={item.yield_weight}
+                                  masterySnapshot={item.mastery_snapshot}
                                 />
                               </div>
                               <p className="text-xs text-muted-foreground truncate">
