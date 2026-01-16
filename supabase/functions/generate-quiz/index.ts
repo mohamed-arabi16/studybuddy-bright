@@ -190,7 +190,9 @@ serve(async (req) => {
 
     // Call Claude API
     const startTime = Date.now();
-    const courseTitle = (topic.courses as { title: string })?.title || 'Unknown Course';
+    // Handle course relationship - Supabase returns it as an object, not array
+    const courseData = topic.courses as unknown as { title: string } | null;
+    const courseTitle = courseData?.title || 'Unknown Course';
     
     const prompt = buildQuizPrompt(topic.title, topic.description || '', courseTitle, difficulty, count);
     

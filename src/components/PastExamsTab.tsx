@@ -332,12 +332,12 @@ export function PastExamsTab({ courseId, files }: PastExamsTabProps) {
                         {(metric as any).topic_title || `Topic ${index + 1}`}
                       </p>
                       <Progress 
-                        value={metric.normalized_yield * 100}
+                        value={metric.normalized_yield_score}
                         className="h-1.5 mt-1"
                       />
                     </div>
-                    <Badge variant={getYieldBadgeVariant(metric.normalized_yield)}>
-                      {Math.round(metric.normalized_yield * 100)}%
+                    <Badge variant={getYieldBadgeVariant(metric.normalized_yield_score / 100)}>
+                      {Math.round(metric.normalized_yield_score)}%
                     </Badge>
                   </div>
                 ))}
@@ -365,12 +365,10 @@ export function PastExamsTab({ courseId, files }: PastExamsTabProps) {
                   <div className="flex items-center gap-3">
                     <FileText className="w-4 h-4 text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-medium">{exam.title}</p>
-                      {exam.exam_date && (
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(exam.exam_date).toLocaleDateString()}
-                        </p>
-                      )}
+                      <p className="text-sm font-medium">{exam.file_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(exam.created_at).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
                   <Badge variant={
