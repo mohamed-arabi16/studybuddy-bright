@@ -31,6 +31,7 @@ interface GradeComponent {
   dropCount?: number;
   bestOf?: number;
   group: 'exam' | 'work';
+  isFinalExam?: boolean; // Indicates if this is a final exam (scores are optional)
   items: ComponentItem[];
 }
 
@@ -154,6 +155,7 @@ export default function GradeCalculator() {
       scaleMax: 100,
       aggregationRule: 'average',
       group: 'exam',
+      isFinalExam: true, // Final exam scores are optional
       items: [{ id: generateId(), name: 'Final', rawScore: null, maxScore: 100 }],
     },
     {
@@ -223,13 +225,9 @@ export default function GradeCalculator() {
     setStartOption(option);
     if (option === 'existing') {
       // Keep dialog open to show course selection
-    } else if (option === 'create') {
-      // Navigate to create course or show create dialog
-      setShowStartDialog(false);
-      // We'll let the user continue to grade calculator but without a course
-      // They can create a course from the courses page
     } else {
-      // Continue without course
+      // Continue without course (both 'create' and 'none' options close the dialog)
+      // The 'create' button navigates directly to courses page
       setShowStartDialog(false);
     }
   };
@@ -244,11 +242,10 @@ export default function GradeCalculator() {
 
   // Handle calculate button - show Pro suggestion first for free users
   const handleCalculateClick = () => {
-    if (!isPro && !showProSuggestion) {
+    if (!isPro) {
       setShowProSuggestion(true);
     } else {
       calculateGrade();
-      setShowProSuggestion(false);
     }
   };
 
@@ -979,8 +976,8 @@ export default function GradeCalculator() {
                         ) : (
                           <div className="space-y-2">
                             {component.items.map((item, itemIndex) => {
-                              // Check if this is a Final component item (optional grade)
-                              const isFinalComponent = component.name.toLowerCase().includes('final') || component.name.includes('النهائي');
+                              // Use the isFinalExam field to determine if scores are optional
+                              const isOptionalScore = component.isFinalExam === true;
                               return (
                               <div key={item.id} className="flex items-center gap-2 p-2 rounded bg-muted/30">
                                 <Input
@@ -998,12 +995,12 @@ export default function GradeCalculator() {
                                         onChange={(e) => updateItem(component.id, item.id, { 
                                           rawScore: e.target.value === '' ? null : parseFloat(e.target.value) 
                                         })}
-                                        placeholder={isFinalComponent ? t('optional') : t('actualGrade')}
+                                        placeholder={isOptionalScore ? t('optional') : t('actualGrade')}
                                         className="h-7 w-20"
                                       />
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                      <p>{isFinalComponent ? t('finalGradeHint') : t('scoreInputInfo')}</p>
+                                      <p>{isOptionalScore ? t('finalGradeHint') : t('scoreInputInfo')}</p>
                                     </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
