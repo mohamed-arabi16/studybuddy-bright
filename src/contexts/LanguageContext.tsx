@@ -1056,6 +1056,14 @@ const translations: Record<Language, Record<string, string>> = {
     'notConnectedToCourse': 'غير مرتبط بمادة',
     'loadSavedGrades': 'تحميل الدرجات المحفوظة',
     'noSavedGrades': 'لا توجد درجات محفوظة لهذه المادة',
+    'startAgain': 'ابدأ من جديد',
+    'startAgainConfirm': 'بدء حساب جديد؟ سيتم حفظ البيانات الحالية.',
+    'savedGrades': 'الحسابات المحفوظة',
+    'gradeOf': 'درجة',
+    'openCalculator': 'فتح الحاسبة',
+    'viewEditGrades': 'عرض الدرجات',
+    'gradesSummary': 'ملخص الدرجات',
+    'lastCalculation': 'آخر حساب',
   },
   en: {
     // Layout
@@ -2102,6 +2110,14 @@ const translations: Record<Language, Record<string, string>> = {
     'notConnectedToCourse': 'Not connected to a course',
     'loadSavedGrades': 'Load Saved Grades',
     'noSavedGrades': 'No saved grades for this course',
+    'startAgain': 'Start Again',
+    'startAgainConfirm': 'Start a new calculation? Current data will be saved.',
+    'savedGrades': 'Saved Calculations',
+    'gradeOf': 'Grade of',
+    'openCalculator': 'Open Calculator',
+    'viewEditGrades': 'View Grades',
+    'gradesSummary': 'Grades Summary',
+    'lastCalculation': 'Last calculation',
   }
 };
 

@@ -120,7 +120,7 @@ serve(async (req) => {
           file_size: file.file_size,
           mime_type: file.mime_type || 'application/pdf',
           extracted_text: extractedText,
-          analysis_status: 'analyzing',
+          analysis_status: 'processing',
         })
         .select()
         .single();
