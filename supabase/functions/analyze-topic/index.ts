@@ -97,12 +97,16 @@ serve(async (req) => {
     // P1 Fix: Fetch course context for better scoring
     let courseContext = "";
     if (courseId) {
-      const { data: course } = await supabase
+      const { data: course, error: courseError } = await supabase
         .from('courses')
         .select('title, description')
         .eq('id', courseId)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
+
+      if (courseError) {
+        console.warn(`Error fetching course context for ${courseId}:`, courseError);
+      }
       
       if (course) {
         courseContext = `Course: ${course.title}${course.description ? ` - ${course.description}` : ''}`;
