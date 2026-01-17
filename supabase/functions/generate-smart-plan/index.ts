@@ -4,6 +4,11 @@ import {
   calculateUrgencyScore, 
   PRIORITY_WEIGHTS 
 } from "../_shared/urgency-constants.ts";
+import { 
+  consumeCredits, 
+  createInsufficientCreditsResponse,
+  updateTokenUsage 
+} from "../_shared/credits.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -575,6 +580,26 @@ serve(async (req) => {
 
     log('User authenticated', { userId: user.id });
 
+    // ============= CONSUME CREDITS BEFORE AI CALL =============
+    const creditResult = await consumeCredits(supabase, user.id, 'generate_plan');
+
+    if (!creditResult.success) {
+      log('Insufficient credits', { balance: creditResult.balance, required: creditResult.required });
+      return createInsufficientCreditsResponse(
+        creditResult.balance || 0,
+        creditResult.required || 15,
+        creditResult.plan_tier
+      );
+    }
+
+    log('Credits consumed', { 
+      charged: creditResult.credits_charged, 
+      balance: creditResult.balance,
+      eventId: creditResult.event_id
+    });
+
+    const planStartTime = Date.now();
+
     // Get user preferences
     const { data: profile } = await supabase
       .from('profiles')
@@ -1103,6 +1128,22 @@ REQUIREMENTS:
     }
 
     const aiData = await response.json();
+    
+    // ============= TRACK TOKEN USAGE FOR COST ANALYTICS =============
+    if (creditResult.event_id && aiData?.usage) {
+      await updateTokenUsage(
+        supabase,
+        creditResult.event_id,
+        aiData.usage.prompt_tokens || 0,
+        aiData.usage.completion_tokens || 0,
+        Date.now() - planStartTime,
+        'google/gemini-2.5-flash'
+      );
+      log('Token usage recorded', { 
+        promptTokens: aiData.usage.prompt_tokens, 
+        completionTokens: aiData.usage.completion_tokens 
+      });
+    }
     
     // Parse AI response - check for tool calls first, then fall back to content
     let parsed: { 

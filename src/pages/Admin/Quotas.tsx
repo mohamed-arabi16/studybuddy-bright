@@ -216,10 +216,10 @@ export default function AdminQuotas() {
       </div>
       
       <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder={t('searchUser')}
-          className="pl-9"
+          className="ps-9"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -234,7 +234,7 @@ export default function AdminQuotas() {
               <TableHead className="w-40 px-4 py-3 text-sm text-gray-400" title="Balance / Monthly Allowance">{t('aiCreditsUsed')}</TableHead>
               <TableHead className="w-52 px-4 py-3 text-sm text-gray-400">{t('limits')}</TableHead>
               <TableHead className="w-32 px-4 py-3 text-sm text-gray-400">{t('overrides')}</TableHead>
-              <TableHead className="w-44 px-4 py-3 text-right text-sm text-gray-400">{t('actions')}</TableHead>
+              <TableHead className="w-44 px-4 py-3 text-end text-sm text-gray-400">{t('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -291,15 +291,15 @@ export default function AdminQuotas() {
                       <span className="text-muted-foreground">—</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-right px-4 py-4">
+                  <TableCell className="text-end px-4 py-4">
                     <div className="flex items-center justify-end gap-2">
                       <Button variant="outline" size="sm" onClick={() => openEdit(user)}>
-                        <Pencil className="h-4 w-4 mr-2" />
+                        <Pencil className="h-4 w-4 me-2" />
                         {t('edit')}
                       </Button>
                       {user.has_override && (
                         <Button variant="ghost" size="sm" onClick={() => clearOverride(user.user_id)}>
-                          <RotateCcw className="h-4 w-4 mr-2" />
+                          <RotateCcw className="h-4 w-4 me-2" />
                           {t('resetOverride')}
                         </Button>
                       )}

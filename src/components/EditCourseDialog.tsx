@@ -107,11 +107,11 @@ export function EditCourseDialog({
                 <Button
                   variant="outline"
                   className={cn(
-                    "justify-start text-left font-normal",
+                    "justify-start text-start font-normal",
                     !examDate && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <CalendarIcon className="me-2 h-4 w-4" />
                   {examDate ? format(examDate, "PPP") : (t('selectDate') || 'Select date')}
                 </Button>
               </PopoverTrigger>
@@ -133,7 +133,7 @@ export function EditCourseDialog({
             {t('cancel') || 'Cancel'}
           </Button>
           <Button onClick={handleSave} disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {loading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
             {t('saveChanges') || 'Save Changes'}
           </Button>
         </DialogFooter>

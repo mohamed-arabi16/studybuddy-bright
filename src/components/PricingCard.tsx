@@ -65,9 +65,9 @@ export function PricingCard({ currentPlan = "free" }: PricingCardProps) {
         {/* Pro Plan */}
         <Card className={`relative ${isPro ? "border-primary" : "border-primary/50"}`}>
           {!isPro && (
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+            <div className="absolute -top-3 start-1/2 -translate-x-1/2 rtl:translate-x-1/2">
               <Badge className="bg-primary text-primary-foreground">
-                <Sparkles className="w-3 h-3 mr-1" />
+                <Sparkles className="w-3 h-3 me-1" />
                 {t('recommended')}
               </Badge>
             </div>
@@ -126,7 +126,7 @@ export function PricingCard({ currentPlan = "free" }: PricingCardProps) {
                 t('currentPlan')
               ) : (
                 <>
-                  <Phone className="mr-2 h-4 w-4" />
+                  <Phone className="me-2 h-4 w-4" />
                   {t('contactUs')}
                 </>
               )}
