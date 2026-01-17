@@ -403,6 +403,19 @@
   right: 1rem;
 }
 
+/* RTL-safe spacing utilities */
+.space-x-2-rtl-safe {
+  @apply space-x-2 rtl:space-x-reverse;
+}
+
+.space-x-3-rtl-safe {
+  @apply space-x-3 rtl:space-x-reverse;
+}
+
+.space-x-4-rtl-safe {
+  @apply space-x-4 rtl:space-x-reverse;
+}
+
 /* Prevent horizontal scroll without hiding content */
 html, body {
   overflow-x: clip;
