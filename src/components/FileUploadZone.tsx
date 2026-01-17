@@ -25,6 +25,7 @@ interface UploadedFile {
 }
 
 const OCR_BATCH_SIZE = 3; // Pages per OCR batch
+const OCR_CONCURRENCY = 2; // Concurrent batches
 
 export function FileUploadZone({ courseId, onUploadComplete, maxSizeMB = 20 }: FileUploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
@@ -94,40 +95,71 @@ export function FileUploadZone({ courseId, onUploadComplete, maxSizeMB = 20 }: F
       
       const courseIdForOcr = fileRecord?.course_id || courseId;
 
-      let allText = '';
-      let processedPages = 0;
-
-      // Process pages in batches
+      // Prepare batches
+      const batches = [];
       for (let startPage = 1; startPage <= totalPages; startPage += OCR_BATCH_SIZE) {
-        const endPage = Math.min(startPage + OCR_BATCH_SIZE - 1, totalPages);
-        
-        // Render this batch of pages to images
-        const pageImages = await renderPagesToImages(file, startPage, endPage, 1.2, 0.7);
-        
-        // Send to OCR endpoint
-        const response = await supabase.functions.invoke('ocr-pages', {
-          body: {
-            courseId: courseIdForOcr,
-            fileId,
-            pages: pageImages.map(p => ({
-              pageNumber: p.pageNumber,
-              imageBase64: p.imageBase64,
-            })),
-          },
-          headers: { Authorization: `Bearer ${session.access_token}` },
+        batches.push({
+          startPage,
+          endPage: Math.min(startPage + OCR_BATCH_SIZE - 1, totalPages)
         });
+      }
 
-        if (response.error) {
-          console.error('OCR error:', response.error);
-          // Continue with other pages
-        } else if (response.data?.pages) {
-          for (const page of response.data.pages) {
-            allText += `\n--- Page ${page.pageNumber} ---\n${page.text}\n`;
+      let completedPages = 0;
+      const allPagesMap = new Map<number, string>();
+
+      // Worker function to process a single batch
+      const processBatch = async (batch: { startPage: number, endPage: number }) => {
+        try {
+          // Render this batch of pages to images
+          const pageImages = await renderPagesToImages(file, batch.startPage, batch.endPage, 1.2, 0.7);
+
+          // Send to OCR endpoint
+          const response = await supabase.functions.invoke('ocr-pages', {
+            body: {
+              courseId: courseIdForOcr,
+              fileId,
+              pages: pageImages.map(p => ({
+                pageNumber: p.pageNumber,
+                imageBase64: p.imageBase64,
+              })),
+            },
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+
+          if (response.error) {
+            console.error('OCR error for batch:', batch, response.error);
+          } else if (response.data?.pages) {
+            for (const page of response.data.pages) {
+              allPagesMap.set(page.pageNumber, page.text);
+            }
+          }
+        } catch (err) {
+          console.error('Batch processing error:', err);
+        } finally {
+          completedPages += (batch.endPage - batch.startPage + 1);
+          updateFile(fileId, { ocrProgress: { current: Math.min(completedPages, totalPages), total: totalPages } });
+        }
+      };
+
+      // Process batches with concurrency control
+      const queue = [...batches];
+      const workers = Array(OCR_CONCURRENCY).fill(null).map(async () => {
+        while (queue.length > 0) {
+          const batch = queue.shift();
+          if (batch) {
+            await processBatch(batch);
           }
         }
+      });
 
-        processedPages = endPage;
-        updateFile(fileId, { ocrProgress: { current: processedPages, total: totalPages } });
+      await Promise.all(workers);
+
+      // Reconstruct full text in order
+      let allText = '';
+      for (let i = 1; i <= totalPages; i++) {
+        if (allPagesMap.has(i)) {
+          allText += `\n--- Page ${i} ---\n${allPagesMap.get(i)}\n`;
+        }
       }
 
       if (!allText || allText.length < 50) {
