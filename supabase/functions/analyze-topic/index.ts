@@ -420,7 +420,7 @@ You MUST call the analyze_topic function. Do not return text responses.`;
       );
     }
     
-    // Log only metadata, not full response
+    // Log only metadata to avoid PII and reduce log volume
     console.log("AI response metadata:", {
       model: aiResponse.model,
       hasToolCalls: !!aiResponse.choices?.[0]?.message?.tool_calls?.length,
