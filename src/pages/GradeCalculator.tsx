@@ -772,13 +772,27 @@ export default function GradeCalculator() {
     const subtotal = componentScores.reduce((sum, c) => sum + c.contribution, 0);
 
     // Check constraints
+    // Pre-calculate grouped scores for optimization
+    const componentGroupMap = new Map<string, GradeComponent['group']>();
+    for (const comp of components) {
+      componentGroupMap.set(comp.id, comp.group);
+    }
+
+    const examScores: typeof componentScores = [];
+    const workScores: typeof componentScores = [];
+
+    for (const cs of componentScores) {
+      const group = componentGroupMap.get(cs.id);
+      if (group === 'exam') {
+        examScores.push(cs);
+      } else if (group === 'work') {
+        workScores.push(cs);
+      }
+    }
+
     for (const constraint of constraints) {
       switch (constraint.type) {
         case 'min_exam': {
-          const examComponents = components.filter(c => c.group === 'exam');
-          const examScores = componentScores.filter(cs => 
-            examComponents.some(ec => ec.id === cs.id)
-          );
           const examAvg = examScores.length > 0 
             ? examScores.reduce((sum, e) => sum + e.adjustedScore, 0) / examScores.length 
             : 0;
@@ -788,14 +802,6 @@ export default function GradeCalculator() {
           break;
         }
         case 'cap_work': {
-          const examComponents = components.filter(c => c.group === 'exam');
-          const workComponents = components.filter(c => c.group === 'work');
-          const examScores = componentScores.filter(cs => 
-            examComponents.some(ec => ec.id === cs.id)
-          );
-          const workScores = componentScores.filter(cs => 
-            workComponents.some(wc => wc.id === cs.id)
-          );
           const examAvg = examScores.length > 0 
             ? examScores.reduce((sum, e) => sum + e.adjustedScore, 0) / examScores.length 
             : 0;
