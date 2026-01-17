@@ -142,15 +142,16 @@ export const HowItWorksSection = () => {
               <LiquidGlassCard 
                 hover
                 disableAnimation
-                className="p-6 relative h-full group border border-white/10"
+                className="p-5 sm:p-6 relative h-full group border border-white/10"
               >
                 {/* Premium radial gradient background on hover - feathered edges */}
                 <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out rounded-2xl pointer-events-none"
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 rounded-2xl pointer-events-none"
                   style={{
                     background: `radial-gradient(circle at center, ${step.hoverColor} 0%, transparent 70%)`,
                     backdropFilter: 'blur(10px)',
                     WebkitBackdropFilter: 'blur(10px)',
+                    transition: 'opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
                   }}
                 />
                 

@@ -23,12 +23,13 @@ const LiquidGlassCard = forwardRef<HTMLDivElement, LiquidGlassCardProps>(
           variantClasses[variant],
           'rounded-2xl relative overflow-hidden group',
           !disableAnimation && 'animate-fade-in',
-          hover && 'transition-all duration-300 ease-out hover:scale-[1.02] hover:-translate-y-1 active:scale-[0.98]',
+          hover && 'hover:scale-[1.02] hover:-translate-y-1 active:scale-[0.98]',
           className
         )}
         style={{
           ...style,
           animationDelay: disableAnimation ? undefined : `${delay}s`,
+          transition: hover ? 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1)' : undefined,
         }}
         {...props}
       >
@@ -37,9 +38,10 @@ const LiquidGlassCard = forwardRef<HTMLDivElement, LiquidGlassCardProps>(
         {/* Premium Liquid Glass hover effect - radial gradient with feathered edges */}
         {hover && (
           <div 
-            className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out"
+            className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100"
             style={{
               background: 'radial-gradient(circle at center, hsl(var(--primary) / 0.12) 0%, transparent 70%)',
+              transition: 'opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
           />
         )}
