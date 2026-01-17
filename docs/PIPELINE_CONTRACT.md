@@ -1,6 +1,6 @@
-# StudyBudy Pipeline Contract
+# StudyBuddy Pipeline Contract
 
-This document defines the contracts, invariants, and requirements for the StudyBudy AI pipeline.
+This document defines the contracts, invariants, and requirements for the StudyBuddy AI pipeline.
 
 ---
 

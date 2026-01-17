@@ -345,7 +345,7 @@ const translations: Record<Language, Record<string, string>> = {
     'hours': 'س',
     
     // Dashboard - Welcome (New Users)
-    'welcomeTitle': 'مرحباً بك في StudyBudy',
+    'welcomeTitle': 'مرحباً بك في StudyBuddy',
     'welcomeSubtitle': 'ابدأ رحلتك الدراسية بإضافة مادتك الأولى. سنساعدك في تنظيم وقتك وتحقيق أهدافك.',
     'howToStart': 'كيف تبدأ؟',
     'addFirstCourseStep': 'أضف مادتك الأولى',
@@ -585,6 +585,11 @@ const translations: Record<Language, Record<string, string>> = {
     // Legal Pages
     'termsOfService': 'شروط الخدمة',
     'privacyPolicy': 'سياسة الخصوصية',
+    'refundPolicy': 'سياسة الاسترداد',
+    'refundTitle': 'سياسة الاسترداد',
+    'refundIntro': 'نحن في StudyBuddy نسعى لرضاكم الكامل. إذا لم تكن راضياً عن خدمتنا، يمكنك طلب استرداد أموالك وفقاً للشروط التالية.',
+    'refundTerms': 'نقدم ضمان استرداد الأموال لمدة 7 أيام لجميع الاشتراكات الجديدة. إذا قمت بإلغاء اشتراكك وطلبت استرداد الأموال خلال 7 أيام من تاريخ الشراء الأولي، فسنقوم برد المبلغ بالكامل دون أي أسئلة.',
+    'refundContact': 'لطلب استرداد الأموال، يرجى التواصل معنا عبر البريد الإلكتروني support@studybuddy.app مع ذكر رقم الطلب أو البريد الإلكتروني المستخدم في التسجيل.',
 
     // Password Reset & Change
     'resetPasswordTitle': 'إعادة تعيين كلمة المرور',
@@ -1420,7 +1425,7 @@ const translations: Record<Language, Record<string, string>> = {
     'hours': 'h',
     
     // Dashboard - Welcome (New Users)
-    'welcomeTitle': 'Welcome to StudyBudy',
+    'welcomeTitle': 'Welcome to StudyBuddy',
     'welcomeSubtitle': 'Start your study journey by adding your first course. We\'ll help you organize your time and achieve your goals.',
     'howToStart': 'How to start?',
     'addFirstCourseStep': 'Add your first course',
@@ -1660,6 +1665,11 @@ const translations: Record<Language, Record<string, string>> = {
     // Legal Pages
     'termsOfService': 'Terms of Service',
     'privacyPolicy': 'Privacy Policy',
+    'refundPolicy': 'Refund Policy',
+    'refundTitle': 'Refund Policy',
+    'refundIntro': 'At StudyBuddy, we strive for your complete satisfaction. If you are not satisfied with our service, you may request a refund subject to the following terms.',
+    'refundTerms': 'We offer a 7-day money-back guarantee on all new subscriptions. If you cancel your subscription and request a refund within 7 days of your initial purchase, we will refund the full amount, no questions asked.',
+    'refundContact': 'To request a refund, please contact us at support@studybuddy.app with your order number or registered email address.',
 
     // Password Reset & Change
     'resetPasswordTitle': 'Reset Password',
@@ -2165,13 +2175,13 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>(() => {
-    const saved = localStorage.getItem('zen-study-language');
+    const saved = localStorage.getItem('study-buddy-language');
     return (saved as Language) || 'ar';
   });
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
-    localStorage.setItem('zen-study-language', lang);
+    localStorage.setItem('study-buddy-language', lang);
     // Update document direction
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = lang;

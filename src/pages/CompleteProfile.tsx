@@ -127,7 +127,7 @@ const CompleteProfile = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto">
-            <span className="text-2xl font-bold text-foreground">StudyBudy</span>
+            <span className="text-2xl font-bold text-foreground">StudyBuddy</span>
           </div>
           <CardTitle className="text-2xl">{t("completeYourProfile")}</CardTitle>
           <CardDescription>{t("profileRequiredInfo")}</CardDescription>

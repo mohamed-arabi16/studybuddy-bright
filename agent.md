@@ -18,7 +18,7 @@
 
 ## Project Overview
 
-**StudyBuddy** (also known as "Zen Study Spot v2") is an AI-powered study planning platform designed to help students organize their coursework, extract topics from syllabi using AI, and generate personalized study plans.
+**StudyBuddy** is an AI-powered study planning platform designed to help students organize their coursework, extract topics from syllabi using AI, and generate personalized study plans.
 
 ### Purpose
 - Help students manage multiple courses with different exam dates

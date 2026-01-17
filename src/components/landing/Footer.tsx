@@ -10,7 +10,7 @@ export const Footer = () => {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <span className="text-lg font-bold text-foreground">StudyBudy</span>
+            <span className="text-lg font-bold text-foreground">StudyBuddy</span>
           </Link>
 
           {/* Legal Links */}
@@ -21,11 +21,14 @@ export const Footer = () => {
             <Link to="/privacy" className="hover:text-foreground transition-colors">
               {t('privacyPolicy')}
             </Link>
+            <Link to="/refund" className="hover:text-foreground transition-colors">
+              {t('refundPolicy')}
+            </Link>
           </div>
 
           {/* Copyright */}
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} StudyBudy. {t('allRightsReserved')}
+            © {new Date().getFullYear()} StudyBuddy. {t('allRightsReserved')}
           </p>
         </div>
       </div>

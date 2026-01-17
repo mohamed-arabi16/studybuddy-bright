@@ -298,7 +298,7 @@ export default function Auth() {
       <LiquidGlassCard variant="elevated" className="w-full max-w-md p-8">
         <div className="text-center mb-8">
           <Link to="/" className="inline-block mb-6">
-            <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">StudyBudy</span>
+            <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">StudyBuddy</span>
           </Link>
           <h1 className="text-xl font-medium mb-2 text-white/90">{title}</h1>
           {subtitle ? <p className="text-sm text-gray-400">{subtitle}</p> : null}

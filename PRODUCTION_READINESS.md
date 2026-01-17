@@ -1,6 +1,6 @@
 # Production Readiness Spec - Phase 3
 
-This document outlines the requirements and standards for moving "Zen Study Spot v2" from a prototype to a production-hardened SaaS application.
+This document outlines the requirements and standards for moving "StudyBuddy" from a prototype to a production-hardened SaaS application.
 
 ## 1. Environments and Release Discipline
 

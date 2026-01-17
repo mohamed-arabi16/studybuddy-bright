@@ -1,6 +1,6 @@
 # Super Admin Management Guide
 
-This document explains how the admin system works in Zen Study Spot and how to manage super admins.
+This document explains how the admin system works in StudyBuddy and how to manage super admins.
 
 ## How the Admin System Works
 

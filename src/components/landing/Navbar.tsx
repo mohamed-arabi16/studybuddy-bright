@@ -28,7 +28,7 @@ export const Navbar = () => {
       <div className="container flex h-16 items-center justify-between px-4">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
-          <span className="text-xl font-bold text-foreground">StudyBudy</span>
+          <span className="text-xl font-bold text-foreground">StudyBuddy</span>
         </Link>
 
         {/* Actions - Simplified */}
