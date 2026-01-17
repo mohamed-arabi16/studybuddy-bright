@@ -292,8 +292,17 @@ You MUST call the analyze_topic function. Do not return text responses.`;
       const content = aiResponse.choices?.[0]?.message?.content;
       if (content) {
         try {
-          const contentParsed = JSON.parse(content.replace(/```json|```/g, '').trim());
-          if (contentParsed.difficulty_weight && contentParsed.exam_importance) {
+          // Robust JSON extraction
+          const firstBrace = content.indexOf('{');
+          const lastBrace = content.lastIndexOf('}');
+
+          let contentParsed;
+          if (firstBrace !== -1 && lastBrace !== -1 && firstBrace <= lastBrace) {
+            const jsonString = content.substring(firstBrace, lastBrace + 1);
+            contentParsed = JSON.parse(jsonString);
+          }
+
+          if (contentParsed?.difficulty_weight && contentParsed?.exam_importance) {
             const diffWeight = Math.min(5, Math.max(1, contentParsed.difficulty_weight));
             const examImp = Math.min(5, Math.max(1, contentParsed.exam_importance));
             
