@@ -285,6 +285,17 @@ serve(async (req) => {
       );
     }
 
+    // ============= TRACK SUBSCRIPTION USAGE FOR REFUND ELIGIBILITY =============
+    try {
+      await supabase.rpc('increment_subscription_usage', {
+        p_user_id: user.id,
+        p_counter_name: 'quizzes_generated_count',
+        p_increment_by: 1
+      });
+    } catch (usageErr) {
+      console.error("[generate-quiz] Failed to track usage:", usageErr);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

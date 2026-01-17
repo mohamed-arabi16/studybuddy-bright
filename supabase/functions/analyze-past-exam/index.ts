@@ -352,6 +352,17 @@ serve(async (req) => {
       console.error("[analyze-past-exam] Error refreshing yield metrics:", refreshError);
     }
 
+    // ============= TRACK SUBSCRIPTION USAGE FOR REFUND ELIGIBILITY =============
+    try {
+      await supabase.rpc('increment_subscription_usage', {
+        p_user_id: user.id,
+        p_counter_name: 'past_exam_analyses_completed',
+        p_increment_by: 1
+      });
+    } catch (usageErr) {
+      console.error("[analyze-past-exam] Failed to track usage:", usageErr);
+    }
+
     // ============= Fetch updated yield metrics =============
     const { data: yieldMetrics } = await supabase
       .from("topic_yield_metrics")

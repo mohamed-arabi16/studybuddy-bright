@@ -141,6 +141,17 @@ serve(async (req) => {
       planDaysCount: (planDays || []).length,
     });
 
+    // ============= TRACK SUBSCRIPTION USAGE FOR REFUND ELIGIBILITY =============
+    try {
+      await supabaseAdmin.rpc('increment_subscription_usage', {
+        p_user_id: userId,
+        p_counter_name: 'exports_count',
+        p_increment_by: 1
+      });
+    } catch (usageErr) {
+      logStep("Failed to track export usage (non-fatal)", { usageErr });
+    }
+
     // Return as JSON download
     return new Response(
       JSON.stringify(exportData, null, 2),

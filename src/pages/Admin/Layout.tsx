@@ -16,6 +16,7 @@ import {
   Languages,
   Gift,
   Coins,
+  Receipt,
 } from "lucide-react";
 
 export default function AdminLayout() {
@@ -60,6 +61,7 @@ export default function AdminLayout() {
     { href: "/admin/quotas", icon: Settings, label: t('quotas') },
     { href: "/admin/trials", icon: Shield, label: t('trials') },
     { href: "/admin/credits", icon: Coins, label: t('creditAnalytics') },
+    { href: "/admin/refunds", icon: Receipt, label: t('refundManagement') },
     { href: "/admin/feedback", icon: MessageSquare, label: t('feedbackTitle') },
     { href: "/admin/audit", icon: Shield, label: t('auditLog') },
   ];

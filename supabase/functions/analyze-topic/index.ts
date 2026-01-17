@@ -384,6 +384,17 @@ You MUST call the analyze_topic function. Do not return text responses.`;
       result_json: { difficulty_weight: difficultyWeight, exam_importance: examImportance },
     });
 
+    // ============= TRACK SUBSCRIPTION USAGE FOR REFUND ELIGIBILITY =============
+    try {
+      await supabase.rpc('increment_subscription_usage', {
+        p_user_id: user.id,
+        p_counter_name: 'topic_deepdives_count',
+        p_increment_by: 1
+      });
+    } catch (usageErr) {
+      console.error("Failed to track topic deepdive usage:", usageErr);
+    }
+
     // P1 Fix: Add needs_review flag to distinguish AI vs defaults
     return new Response(JSON.stringify({
       difficulty_weight: difficultyWeight,

@@ -1162,6 +1162,87 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_usage: {
+        Row: {
+          calendar_events_synced_count: number
+          created_at: string
+          exports_count: number
+          id: string
+          is_first_pro_purchase: boolean
+          past_exam_analyses_completed: number
+          period_end: string | null
+          period_start: string
+          pro_courses_created_count: number
+          quizzes_generated_count: number
+          refund_approved_at: string | null
+          refund_denial_reason: string | null
+          refund_denied_at: string | null
+          refund_requested_at: string | null
+          subscription_id: string | null
+          syllabus_extractions_count: number
+          topic_deepdives_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calendar_events_synced_count?: number
+          created_at?: string
+          exports_count?: number
+          id?: string
+          is_first_pro_purchase?: boolean
+          past_exam_analyses_completed?: number
+          period_end?: string | null
+          period_start?: string
+          pro_courses_created_count?: number
+          quizzes_generated_count?: number
+          refund_approved_at?: string | null
+          refund_denial_reason?: string | null
+          refund_denied_at?: string | null
+          refund_requested_at?: string | null
+          subscription_id?: string | null
+          syllabus_extractions_count?: number
+          topic_deepdives_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calendar_events_synced_count?: number
+          created_at?: string
+          exports_count?: number
+          id?: string
+          is_first_pro_purchase?: boolean
+          past_exam_analyses_completed?: number
+          period_end?: string | null
+          period_start?: string
+          pro_courses_created_count?: number
+          quizzes_generated_count?: number
+          refund_approved_at?: string | null
+          refund_denial_reason?: string | null
+          refund_denied_at?: string | null
+          refund_requested_at?: string | null
+          subscription_id?: string | null
+          syllabus_extractions_count?: number
+          topic_deepdives_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_usage_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "admin_refund_eligibility"
+            referencedColumns: ["subscription_id"]
+          },
+          {
+            foreignKeyName: "subscription_usage_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           created_at: string
@@ -1584,6 +1665,45 @@ export type Database = {
           },
         ]
       }
+      admin_refund_eligibility: {
+        Row: {
+          calendar_events_synced_count: number | null
+          calendar_limit_exceeded: boolean | null
+          courses_limit_exceeded: boolean | null
+          days_remaining: number | null
+          deepdives_limit_exceeded: boolean | null
+          display_name: string | null
+          email: string | null
+          exports_count: number | null
+          exports_limit_exceeded: boolean | null
+          full_name: string | null
+          id: string | null
+          is_first_pro_purchase: boolean | null
+          is_refund_eligible: boolean | null
+          last_activity: string | null
+          past_exam_analyses_completed: number | null
+          past_exam_limit_exceeded: boolean | null
+          plan_name: string | null
+          pro_courses_created_count: number | null
+          quizzes_generated_count: number | null
+          quizzes_limit_exceeded: boolean | null
+          refund_approved_at: string | null
+          refund_denial_reason: string | null
+          refund_denied_at: string | null
+          refund_requested_at: string | null
+          refund_window_expires: string | null
+          subscription_id: string | null
+          subscription_started: string | null
+          subscription_status: string | null
+          syllabus_extractions_count: number | null
+          syllabus_limit_exceeded: boolean | null
+          topic_deepdives_count: number | null
+          usage_tracking_started: string | null
+          user_id: string | null
+          within_refund_window: boolean | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       consume_credits: {
@@ -1602,6 +1722,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_subscription_usage: {
+        Args: {
+          p_counter_name: string
+          p_increment_by?: number
+          p_user_id: string
+        }
+        Returns: undefined
       }
       is_user_enabled: { Args: { _user_id: string }; Returns: boolean }
       redeem_promo_code: { Args: { p_code: string }; Returns: Json }
