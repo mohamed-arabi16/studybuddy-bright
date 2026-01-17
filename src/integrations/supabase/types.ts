@@ -1439,6 +1439,7 @@ export type Database = {
       user_credits: {
         Row: {
           balance: number
+          billing_anchor_date: string | null
           last_reset_date: string
           monthly_allowance: number
           plan_tier: string
@@ -1447,6 +1448,7 @@ export type Database = {
         }
         Insert: {
           balance?: number
+          billing_anchor_date?: string | null
           last_reset_date?: string
           monthly_allowance?: number
           plan_tier?: string
@@ -1455,6 +1457,7 @@ export type Database = {
         }
         Update: {
           balance?: number
+          billing_anchor_date?: string | null
           last_reset_date?: string
           monthly_allowance?: number
           plan_tier?: string
