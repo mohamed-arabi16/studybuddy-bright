@@ -668,12 +668,30 @@ serve(async (req) => {
     const topicExtractionRunIds = new Map<string, string>();
     
     // P0 FIX: Build status map of ALL topics (done + pending) to filter prerequisites properly
+    // We fetch ALL topics for the user (not just active courses) to correctly handle cross-course dependencies
+    const { data: allUserTopics, error: allTopicsError } = await supabase
+      .from('topics')
+      .select('id, status')
+      .eq('user_id', user.id);
+
+    if (allTopicsError) {
+      log('Error fetching all topics', { error: allTopicsError });
+    }
+
     const allTopicStatusMap = new Map<string, string>();
-    courses.forEach((course: Course) => {
-      (course.topics || []).forEach((t: Topic) => {
+
+    if (allUserTopics) {
+      allUserTopics.forEach((t: { id: string; status: string }) => {
         allTopicStatusMap.set(t.id, t.status);
       });
-    });
+    } else {
+      // Fallback: use topics from fetched courses if separate query fails
+      courses.forEach((course: Course) => {
+        (course.topics || []).forEach((t: Topic) => {
+          allTopicStatusMap.set(t.id, t.status);
+        });
+      });
+    }
 
     const courseData = courses.map((course: Course) => {
       const examDate = new Date(course.exam_date);
