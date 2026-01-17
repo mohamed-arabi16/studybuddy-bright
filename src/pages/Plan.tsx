@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { usePlanGeneration } from '@/hooks/usePlanGeneration';
+import { useCredits } from '@/hooks/useCredits';
 import { useToast } from '@/hooks/use-toast';
 import { RescheduleCard } from '@/components/RescheduleCard';
 import { PlanSummaryCard } from '@/components/PlanSummaryCard';
@@ -36,6 +37,7 @@ export default function Plan() {
     toggleItemCompletion 
   } = usePlanGeneration();
   const { toast } = useToast();
+  const { refresh: refreshCredits } = useCredits();
   const { t, dir, language } = useLanguage();
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
   const [hasCoursesWithTopics, setHasCoursesWithTopics] = useState<boolean | null>(null);
@@ -72,6 +74,7 @@ export default function Plan() {
   const handleGenerate = async () => {
     try {
       const result = await generatePlan();
+      await refreshCredits(); // Refresh credits after plan generation
       toast({
         title: t('planCreated'),
         description: t('planCreatedDesc').replace('{days}', String(result.plan_days)).replace('{items}', String(result.plan_items)),
@@ -88,6 +91,7 @@ export default function Plan() {
   const handleReplan = async () => {
     try {
       const result = await recreatePlan();
+      await refreshCredits(); // Refresh credits after plan regeneration
       toast({
         title: t('weekReplanned'),
         description: t('missedItemsDistributed').replace('{count}', String(result.plan_items || 0)),

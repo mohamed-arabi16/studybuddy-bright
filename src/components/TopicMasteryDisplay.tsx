@@ -1,10 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Brain, TrendingUp, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Brain, TrendingUp, AlertTriangle, CheckCircle2, ClipboardCheck } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useMastery, TopicMastery } from "@/hooks/useMastery";
+import { useMastery } from "@/hooks/useMastery";
+import { QuizModal } from "@/components/QuizModal";
 import { cn } from "@/lib/utils";
 
 interface Topic {
@@ -27,7 +29,11 @@ interface TopicMasteryDisplayProps {
  */
 export function TopicMasteryDisplay({ courseId, topics }: TopicMasteryDisplayProps) {
   const { t, language, dir } = useLanguage();
-  const { masteryData, isLoading, getMastery } = useMastery(courseId);
+  const { masteryData, isLoading, getMastery, refresh: refreshMastery } = useMastery(courseId);
+  
+  // State for quiz modal
+  const [quizOpen, setQuizOpen] = useState(false);
+  const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
 
   // Calculate mastery statistics
   const stats = useMemo(() => {
@@ -200,24 +206,36 @@ export function TopicMasteryDisplay({ courseId, topics }: TopicMasteryDisplayPro
                     </span>
                   </div>
                 </div>
-                <Badge 
-                  variant="outline" 
-                  className={cn(
-                    "text-xs flex-shrink-0",
-                    score >= 70 && "border-green-500/50 text-green-600",
-                    score >= 50 && score < 70 && "border-yellow-500/50 text-yellow-600",
-                    score > 0 && score < 50 && "border-red-500/50 text-red-600",
-                  )}
-                >
-                  {attempts > 0 ? (
+                {/* Show "Assess" button for unassessed topics */}
+                {attempts === 0 ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs gap-1 flex-shrink-0"
+                    onClick={() => {
+                      setSelectedTopic(topic);
+                      setQuizOpen(true);
+                    }}
+                  >
+                    <ClipboardCheck className="w-3 h-3" />
+                    {t('assess')}
+                  </Button>
+                ) : (
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "text-xs flex-shrink-0",
+                      score >= 70 && "border-green-500/50 text-green-600",
+                      score >= 50 && score < 70 && "border-yellow-500/50 text-yellow-600",
+                      score > 0 && score < 50 && "border-red-500/50 text-red-600",
+                    )}
+                  >
                     <span className="flex items-center gap-1">
                       <TrendingUp className="w-3 h-3" />
                       {attempts}
                     </span>
-                  ) : (
-                    getMasteryLabel(score)
-                  )}
-                </Badge>
+                  </Badge>
+                )}
               </div>
             );
           })}
@@ -230,6 +248,21 @@ export function TopicMasteryDisplay({ courseId, topics }: TopicMasteryDisplayPro
           )}
         </div>
       </CardContent>
+
+      {/* Quiz Modal */}
+      {selectedTopic && (
+        <QuizModal
+          open={quizOpen}
+          onOpenChange={setQuizOpen}
+          topicId={selectedTopic.id}
+          topicTitle={selectedTopic.title}
+          courseId={courseId}
+          onQuizComplete={() => {
+            refreshMastery();
+            setQuizOpen(false);
+          }}
+        />
+      )}
     </Card>
   );
 }
