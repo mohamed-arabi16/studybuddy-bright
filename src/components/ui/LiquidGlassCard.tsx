@@ -1,13 +1,11 @@
 import { cn } from '@/lib/utils';
-import { forwardRef } from 'react';
-import { motion, MotionProps, HTMLMotionProps } from 'framer-motion';
+import { forwardRef, HTMLAttributes } from 'react';
 
-export interface LiquidGlassCardProps extends Omit<HTMLMotionProps<"div">, 'children'> {
+export interface LiquidGlassCardProps extends HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'elevated' | 'subtle';
   hover?: boolean;
   delay?: number;
   disableAnimation?: boolean;
-  children?: React.ReactNode;
 }
 
 const LiquidGlassCard = forwardRef<HTMLDivElement, LiquidGlassCardProps>(
@@ -18,33 +16,20 @@ const LiquidGlassCard = forwardRef<HTMLDivElement, LiquidGlassCardProps>(
       subtle: 'liquid-glass-subtle'
     };
 
-    const animationProps: MotionProps = disableAnimation ? {} : {
-      initial: { opacity: 0, y: 20 },
-      animate: { opacity: 1, y: 0 },
-      transition: { 
-        duration: 0.5, 
-        delay: delay, 
-        type: "spring", 
-        stiffness: 120,
-        damping: 20
-      },
-      whileHover: hover ? { 
-        scale: 1.02, 
-        y: -2
-      } : undefined,
-      whileTap: hover ? { scale: 0.98 } : undefined,
-    };
-
     return (
-      <motion.div
+      <div
         ref={ref}
         className={cn(
           variantClasses[variant],
           'rounded-2xl relative overflow-hidden group',
+          !disableAnimation && 'animate-fade-in',
+          hover && 'transition-transform duration-200 hover:scale-[1.02] hover:-translate-y-0.5 active:scale-[0.98]',
           className
         )}
-        style={style}
-        {...animationProps}
+        style={{
+          ...style,
+          animationDelay: disableAnimation ? undefined : `${delay}s`,
+        }}
         {...props}
       >
         {/* Subtle shine effect gradient overlay */}
@@ -55,13 +40,11 @@ const LiquidGlassCard = forwardRef<HTMLDivElement, LiquidGlassCardProps>(
             className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
             style={{
               background: 'radial-gradient(circle at center, hsl(var(--primary) / 0.12) 0%, transparent 70%)',
-              backdropFilter: 'blur(10px)',
-              WebkitBackdropFilter: 'blur(10px)',
             }}
           />
         )}
         <div className="relative z-10">{children}</div>
-      </motion.div>
+      </div>
     );
   }
 );

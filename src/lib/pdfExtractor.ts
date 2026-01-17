@@ -1,7 +1,7 @@
-import * as pdfjsLib from 'pdfjs-dist';
+// Lazy-loaded PDF.js library for performance
+// Only loads the ~2.5MB library when actually needed
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+import type { PDFDocumentProxy } from 'pdfjs-dist';
 
 export type ExtractionMode = 'text' | 'ocr';
 
@@ -23,12 +23,25 @@ export interface PageImage {
 const CHAR_THRESHOLD = 1200; // Total chars in probe to be considered text-based
 const PROBE_PAGES = 5; // Number of pages to sample
 
+// Lazy load PDF.js library
+let pdfjsLib: typeof import('pdfjs-dist') | null = null;
+
+async function getPdfLib(): Promise<typeof import('pdfjs-dist')> {
+  if (!pdfjsLib) {
+    pdfjsLib = await import('pdfjs-dist');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 
+      `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+  }
+  return pdfjsLib;
+}
+
 /**
  * Probe first N pages of a PDF to determine extraction mode
  */
 export async function probePdf(file: File): Promise<ProbeResult> {
+  const lib = await getPdfLib();
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const pdf = await lib.getDocument({ data: arrayBuffer }).promise;
   
   const totalPages = pdf.numPages;
   const maxProbePages = Math.min(totalPages, PROBE_PAGES);
@@ -58,8 +71,9 @@ export async function probePdf(file: File): Promise<ProbeResult> {
  * Extract full text from all pages (TEXT mode)
  */
 export async function extractFullText(file: File): Promise<string> {
+  const lib = await getPdfLib();
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const pdf = await lib.getDocument({ data: arrayBuffer }).promise;
   
   let fullText = '';
   
@@ -79,7 +93,7 @@ export async function extractFullText(file: File): Promise<string> {
  * Render a single page to JPEG image (for OCR mode)
  */
 async function renderPageToImage(
-  pdf: pdfjsLib.PDFDocumentProxy,
+  pdf: PDFDocumentProxy,
   pageNumber: number,
   scale: number = 1.5,
   quality: number = 0.75
@@ -130,8 +144,9 @@ export async function renderPagesToImages(
   scale: number = 1.5,
   quality: number = 0.75
 ): Promise<PageImage[]> {
+  const lib = await getPdfLib();
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const pdf = await lib.getDocument({ data: arrayBuffer }).promise;
   
   const lastPage = endPage ?? pdf.numPages;
   const images: PageImage[] = [];
@@ -148,7 +163,8 @@ export async function renderPagesToImages(
  * Get total page count of a PDF
  */
 export async function getPageCount(file: File): Promise<number> {
+  const lib = await getPdfLib();
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const pdf = await lib.getDocument({ data: arrayBuffer }).promise;
   return pdf.numPages;
 }

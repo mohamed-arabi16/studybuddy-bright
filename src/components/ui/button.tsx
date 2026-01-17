@@ -1,12 +1,11 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-import { motion, HTMLMotionProps } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:scale-[1.02] hover:-translate-y-0.5 active:scale-[0.98]",
   {
     variants: {
       variant: {
@@ -32,64 +31,20 @@ const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends VariantProps<typeof buttonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
   asChild?: boolean;
-  className?: string;
-  children?: React.ReactNode;
-  type?: "button" | "submit" | "reset";
-  disabled?: boolean;
-  onClick?: React.MouseEventHandler<HTMLButtonElement>;
-  onMouseDown?: React.MouseEventHandler<HTMLButtonElement>;
-  onMouseUp?: React.MouseEventHandler<HTMLButtonElement>;
-  onFocus?: React.FocusEventHandler<HTMLButtonElement>;
-  onBlur?: React.FocusEventHandler<HTMLButtonElement>;
-  id?: string;
-  name?: string;
-  value?: string;
-  form?: string;
-  formAction?: string;
-  formMethod?: string;
-  formNoValidate?: boolean;
-  formTarget?: string;
-  autoFocus?: boolean;
-  tabIndex?: number;
-  "aria-label"?: string;
-  "aria-labelledby"?: string;
-  "aria-describedby"?: string;
-  "aria-expanded"?: boolean;
-  "aria-haspopup"?: boolean | "menu" | "listbox" | "tree" | "grid" | "dialog";
-  "aria-controls"?: string;
-  "aria-pressed"?: boolean | "mixed";
-  "data-state"?: string;
-  "data-disabled"?: boolean | string;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, children, ...props }, ref) => {
-    if (asChild) {
-      return <Slot className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props}>{children}</Slot>;
-    }
-    
-    const { type, disabled, onClick, onMouseDown, onMouseUp, onFocus, onBlur, ...restProps } = props;
-    
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button";
     return (
-      <motion.button 
-        className={cn(buttonVariants({ variant, size, className }))} 
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
-        type={type}
-        disabled={disabled}
-        onClick={onClick}
-        onMouseDown={onMouseDown}
-        onMouseUp={onMouseUp}
-        onFocus={onFocus}
-        onBlur={onBlur}
-        whileHover={disabled ? undefined : { scale: 1.02, y: -1 }}
-        whileTap={disabled ? undefined : { scale: 0.98 }}
-        transition={{ type: "spring", stiffness: 400, damping: 17 }}
-        {...(restProps as any)}
-      >
-        {children}
-      </motion.button>
+        {...props}
+      />
     );
   },
 );
