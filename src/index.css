@@ -313,10 +313,12 @@
     transition-timing-function: var(--ease-out);
   }
 
-  .glass-card-hover:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--glass-shadow-elevated), var(--glass-edge-highlight);
-    border-color: hsl(var(--primary) / 0.2);
+  @media (hover: hover) {
+    .glass-card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--glass-shadow-elevated), var(--glass-edge-highlight);
+      border-color: hsl(var(--primary) / 0.2);
+    }
   }
 
   /* Liquid Glass Hover Effect - Premium smooth radial gradient */
@@ -338,8 +340,10 @@
     -webkit-backdrop-filter: blur(10px);
   }
 
-  .liquid-glass-hover-effect:hover::after {
-    opacity: 1;
+  @media (hover: hover) {
+    .liquid-glass-hover-effect:hover::after {
+      opacity: 1;
+    }
   }
 
   /* Gradient text using accent color only */
