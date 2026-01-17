@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-**StudyBuddy** (also referred to as "Zen Study Spot") is a SaaS study planning application built with React, TypeScript, Vite, and Supabase. The application helps students organize their courses, extract topics from syllabi using AI, and generate personalized study plans optimized for exam dates.
+**StudyBuddy** is a SaaS study planning application built with React, TypeScript, Vite, and Supabase. The application helps students organize their courses, extract topics from syllabi using AI, and generate personalized study plans optimized for exam dates.
 
 This document provides a comprehensive analysis of the project architecture and a prioritized plan to make it production-ready.
 

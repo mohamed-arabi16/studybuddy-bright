@@ -236,7 +236,7 @@ serve(async (req) => {
 
         const event = {
           summary: `📚 ${courseName}: ${topicName}`,
-          description: `Study session for ${courseName}\nTopic: ${topicName}\nDuration: ${hours} hour(s)\n\nPowered by StudyBudy`,
+          description: `Study session for ${courseName}\nTopic: ${topicName}\nDuration: ${hours} hour(s)\n\nPowered by StudyBuddy`,
           start: {
             dateTime: startTime.toISOString(),
             timeZone: 'UTC',

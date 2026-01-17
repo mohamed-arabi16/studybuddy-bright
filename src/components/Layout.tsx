@@ -152,7 +152,7 @@ export default function Layout() {
         <div className="flex items-center justify-between">
           <Link to="/app/dashboard" className="flex items-center gap-2 px-2">
             <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-              StudyBudy
+              StudyBuddy
             </span>
           </Link>
         </div>
@@ -217,7 +217,7 @@ export default function Layout() {
         <header className="md:hidden flex items-center justify-between p-4 bg-white/5 backdrop-blur-xl border-b border-white/10">
           <Link to="/app/dashboard" className="flex items-center gap-2">
             <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-              StudyBudy
+              StudyBuddy
             </span>
           </Link>
           <div className="flex items-center gap-2">
@@ -238,7 +238,7 @@ export default function Layout() {
                 <div className="flex flex-col h-full space-y-6">
                   <Link to="/app/dashboard" className="px-2">
                     <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-                      StudyBudy
+                      StudyBuddy
                     </span>
                   </Link>
                   <nav className="flex-1 space-y-2">

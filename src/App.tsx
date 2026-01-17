@@ -17,6 +17,7 @@ import Plan from "./pages/Plan";
 import Settings from "./pages/Settings";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
+import Refund from "./pages/Refund";
 import AdminLayout from "./pages/Admin/Layout";
 import AdminDashboard from "./pages/Admin/Dashboard";
 import AdminUsers from "./pages/Admin/Users";
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/complete-profile" element={<CompleteProfile />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="/refund" element={<Refund />} />
 
             <Route path="/app" element={<Layout />}>
               <Route index element={<Navigate to="/app/dashboard" replace />} />

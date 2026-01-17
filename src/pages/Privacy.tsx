@@ -27,8 +27,8 @@ export default function Privacy() {
             <h2 className="text-xl font-semibold">{t('privacyIntro')}</h2>
             <p>
               {language === 'ar'
-                ? 'نحن في StudyBudy نحترم خصوصيتك ونلتزم بحماية بياناتك الشخصية. توضح هذه السياسة كيفية جمع واستخدام وحماية معلوماتك.'
-                : 'At StudyBudy, we respect your privacy and are committed to protecting your personal data. This policy explains how we collect, use, and protect your information.'}
+                ? 'نحن في StudyBuddy نحترم خصوصيتك ونلتزم بحماية بياناتك الشخصية. توضح هذه السياسة كيفية جمع واستخدام وحماية معلوماتك.'
+                : 'At StudyBuddy, we respect your privacy and are committed to protecting your personal data. This policy explains how we collect, use, and protect your information.'}
             </p>
           </section>
 
@@ -152,8 +152,8 @@ export default function Privacy() {
             <h2 className="text-xl font-semibold">{t('privacyContact')}</h2>
             <p>
               {language === 'ar'
-                ? 'لأي استفسارات تتعلق بالخصوصية، يرجى التواصل معنا عبر: privacy@studybudy.app'
-                : 'For any privacy-related inquiries, please contact us at: privacy@studybudy.app'}
+                ? 'لأي استفسارات تتعلق بالخصوصية، يرجى التواصل معنا عبر: privacy@studybuddy.app'
+                : 'For any privacy-related inquiries, please contact us at: privacy@studybuddy.app'}
             </p>
           </section>
         </div>

@@ -2,7 +2,7 @@
 
 **Version:** 1.0  
 **Date:** January 2026  
-**Application:** StudyBuddy (Zen Study Spot v2)  
+**Application:** StudyBuddy
 **Purpose:** Comprehensive End-to-End Testing Documentation for Pre-Production Deployment
 
 ---
