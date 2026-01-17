@@ -667,7 +667,7 @@ serve(async (req) => {
     // Build topic extraction run ID map for plan versioning
     const topicExtractionRunIds = new Map<string, string>();
     
-    // P0 FIX: Build status map of ALL topics (done + pending) to filter prerequisites properly
+    // Build status map of ALL topics (done + pending) to filter prerequisites properly
     // We fetch ALL topics for the user (not just active courses) to correctly handle cross-course dependencies
     const { data: allUserTopics, error: allTopicsError } = await supabase
       .from('topics')
@@ -703,7 +703,7 @@ serve(async (req) => {
           topicExtractionRunIds.set(t.id, t.extraction_run_id);
         }
         
-        // P0 FIX: Filter out prerequisites that are already done (satisfied)
+        // Filter out prerequisites that are already done (satisfied)
         const rawPrereqs = t.prerequisite_ids || [];
         const pendingPrereqs = rawPrereqs.filter(prereqId => 
           allTopicStatusMap.get(prereqId) !== 'done'
