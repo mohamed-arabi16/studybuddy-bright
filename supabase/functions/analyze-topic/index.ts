@@ -344,7 +344,11 @@ You MUST call the analyze_topic function. Do not return text responses.`;
     // P0 Fix: Safe JSON parsing with try-catch
     let analysis: { difficulty_weight?: number; exam_importance?: number };
     try {
-      analysis = JSON.parse(toolCall.function.arguments);
+      const parsed = JSON.parse(toolCall.function.arguments);
+      if (typeof parsed !== 'object' || parsed === null) {
+        throw new Error("Parsed arguments must be a non-null object");
+      }
+      analysis = parsed;
     } catch (parseError) {
       console.warn("Failed to parse tool arguments:", parseError);
       
