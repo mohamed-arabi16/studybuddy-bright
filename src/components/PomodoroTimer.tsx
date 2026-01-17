@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, RotateCcw, Coffee, BookOpen, CheckCircle2, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -89,7 +89,9 @@ export function PomodoroTimer({ planItems = [], onTopicStatusChange, compact = f
   const [currentWorkingItem, setCurrentWorkingItem] = useState<PlanItem | null>(null);
   
   // Filter available items (incomplete items with topics)
-  const availableItems = planItems.filter(item => !item.is_completed && item.topic);
+  const availableItems = useMemo(() => {
+    return planItems.filter(item => !item.is_completed && item.topic);
+  }, [planItems]);
 
   useEffect(() => {
     audioRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleScAHIveli8AEn7NtHEjABN3zaRVJQAXfM6mWCcAEXvKolglABl+y6VYJgARfMqiWCUAGH7Lo1gmABF8yqJYJQAYfsuiWCYAEXzKolglABh+y6JYJgARfMqiWCUAGH7LolglABF8yqJYJQAYfsuiWCYAEXzKolglABh+y6JYJgARfMqiWCUA');
