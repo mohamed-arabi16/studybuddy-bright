@@ -100,12 +100,16 @@ serve(async (req) => {
     // Fetch course context for better scoring
     let courseContext = "";
     if (courseId) {
-      const { data: course } = await supabase
+      const { data: course, error: courseError } = await supabase
         .from('courses')
         .select('title, description')
         .eq('id', courseId)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
+
+      if (courseError) {
+        console.warn(`Error fetching course context for ${courseId}:`, courseError);
+      }
       
       if (!creditResult.success) {
         console.log(`Insufficient credits for analyze_topic: user ${user.id}, have ${creditResult.balance}, need ${creditResult.required}`);
