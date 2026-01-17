@@ -397,8 +397,58 @@ You MUST call the analyze_topic function. Do not return text responses.`;
 
       console.log(`Analysis complete: difficulty=${difficultyWeight}, importance=${examImportance}`);
 
-      // Log the successful analysis call
-      await supabase.from('ai_jobs').update({
+    // Extract tool call result
+    const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
+    
+    // P1 Fix: Add content fallback parsing if no tool call
+    if (!toolCall?.function?.arguments) {
+      // Try parsing message content as fallback
+      const content = aiResponse.choices?.[0]?.message?.content;
+      if (content) {
+        try {
+          // Robust JSON extraction
+          const firstBrace = content.indexOf('{');
+          const lastBrace = content.lastIndexOf('}');
+
+          let contentParsed;
+          if (firstBrace !== -1 && lastBrace !== -1 && firstBrace <= lastBrace) {
+            const jsonString = content.substring(firstBrace, lastBrace + 1);
+            contentParsed = JSON.parse(jsonString);
+          }
+
+          if (contentParsed?.difficulty_weight && contentParsed?.exam_importance) {
+            const diffWeight = Math.min(5, Math.max(1, contentParsed.difficulty_weight));
+            const examImp = Math.min(5, Math.max(1, contentParsed.exam_importance));
+            
+            // Log the analysis call
+            await supabase.from('ai_jobs').insert({
+              user_id: user.id,
+              course_id: courseId || null,
+              job_type: 'analyze_topic',
+              status: 'completed',
+              input_hash: title.toLowerCase().trim().substring(0, 100),
+              result_json: { difficulty_weight: diffWeight, exam_importance: examImp, fallback: true },
+            });
+            
+            return new Response(JSON.stringify({
+              difficulty_weight: diffWeight,
+              exam_importance: examImp,
+              needs_review: true,
+              fallback_reason: "content_parse",
+            }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+          }
+        } catch {
+          // Fall through to defaults
+        }
+      }
+      
+      console.warn("No tool call or parseable content, using defaults");
+      
+      // Log the analysis call with defaults
+      await supabase.from('ai_jobs').insert({
+        user_id: user.id,
+        course_id: courseId || null,
+        job_type: 'analyze_topic',
         status: 'completed',
         result_json: { difficulty_weight: difficultyWeight, exam_importance: examImportance },
       }).eq('id', jobId);
