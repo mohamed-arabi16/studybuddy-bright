@@ -64,7 +64,6 @@ export default function AddTopicDialog({
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
-      // P1 Fix: Pass courseId for better scoring context
       const response = await supabase.functions.invoke("analyze-topic", {
         body: { title, notes, courseId },
         headers: { Authorization: `Bearer ${session.access_token}` },
@@ -117,7 +116,6 @@ export default function AddTopicDialog({
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session) {
-            // P1 Fix: Pass courseId for better scoring context
             const response = await supabase.functions.invoke("analyze-topic", {
               body: { title, notes, courseId },
               headers: { Authorization: `Bearer ${session.access_token}` },
