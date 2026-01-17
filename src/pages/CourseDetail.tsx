@@ -38,6 +38,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { CourseDetailSkeleton } from "@/components/ui/course-detail-skeleton";
 
 type Course = {
   id: string;
@@ -286,11 +287,7 @@ export default function CourseDetail() {
   }, [id]);
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-full">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
+    return <CourseDetailSkeleton />;
   }
 
   if (!course) return null;
