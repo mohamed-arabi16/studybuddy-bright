@@ -4,12 +4,21 @@ import {
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LiquidGlassCard } from "@/components/ui/LiquidGlassCard";
 import { motion, useInView } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useState, useCallback } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export const FeatureShowcase = () => {
   const { t, dir } = useLanguage();
   const sectionRef = useRef(null);
   const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
+  const isMobile = useIsMobile();
+  const [activeCard, setActiveCard] = useState<string | null>(null);
+
+  const handleCardTap = useCallback((key: string) => {
+    if (isMobile) {
+      setActiveCard(prev => prev === key ? null : key);
+    }
+  }, [isMobile]);
 
   const features = [
     {
@@ -97,82 +106,91 @@ export const FeatureShowcase = () => {
         </motion.div>
 
         {/* Features Grid - 2x2 with enhanced cards */}
-        <div className="grid sm:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {features.map((feature, index) => (
-            <motion.div
-              key={feature.titleKey}
-              initial={{ opacity: 0, y: 40, scale: 0.95 }}
-              animate={isInView ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 40, scale: 0.95 }}
-              transition={{ 
-                duration: 0.5, 
-                delay: feature.delay + 0.3,
-                type: "spring",
-                stiffness: 100,
-              }}
-            >
-              <LiquidGlassCard
-                hover
-                disableAnimation
-                className="p-6 sm:p-8 h-full group relative overflow-hidden border border-white/10"
+        <div className="grid sm:grid-cols-2 gap-4 sm:gap-8 max-w-4xl mx-auto px-2 sm:px-0">
+          {features.map((feature, index) => {
+            const isCardActive = activeCard === feature.titleKey;
+            return (
+              <motion.div
+                key={feature.titleKey}
+                initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                animate={isInView ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 40, scale: 0.95 }}
+                transition={{ 
+                  duration: 0.5, 
+                  delay: feature.delay + 0.3,
+                  type: "spring",
+                  stiffness: 100,
+                }}
+                onTouchStart={() => handleCardTap(feature.titleKey)}
               >
-                {/* Premium radial gradient overlay on hover - feathered edges */}
-                <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 rounded-2xl pointer-events-none"
-                  style={{
-                    background: `radial-gradient(circle at center, ${feature.hoverColor} 0%, transparent 70%)`,
-                    backdropFilter: 'blur(10px)',
-                    WebkitBackdropFilter: 'blur(10px)',
-                    transition: 'opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-                  }}
-                />
-
-                {/* Decorative corner glow - subtle */}
-                <motion.div 
-                  className={`absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br ${feature.color} rounded-full blur-[100px] opacity-0 group-hover:opacity-15 transition-opacity duration-500`}
-                />
-
-                {/* Icon with animated background */}
-                <div className="relative mb-6 flex justify-end rtl:justify-start">
-                  <motion.div 
-                    className="w-16 h-16 rounded-2xl backdrop-blur-md flex items-center justify-center"
+                <LiquidGlassCard
+                  hover
+                  disableAnimation
+                  className="p-4 sm:p-6 md:p-8 h-full group relative overflow-hidden border border-white/10"
+                >
+                  {/* Premium radial gradient overlay on hover - feathered edges */}
+                  <div 
+                    className={`absolute inset-0 rounded-2xl pointer-events-none transition-opacity duration-500 ${
+                      isCardActive || (!isMobile && 'group-hover:opacity-100')
+                    } ${isCardActive ? 'opacity-100' : 'opacity-0'}`}
                     style={{
-                      background: `radial-gradient(circle at center, ${feature.hoverColor} 0%, transparent 100%)`,
+                      background: `radial-gradient(circle at center, ${feature.hoverColor} 0%, transparent 70%)`,
+                      backdropFilter: 'blur(10px)',
+                      WebkitBackdropFilter: 'blur(10px)',
                     }}
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    transition={{ type: "spring", stiffness: 300 }}
-                  >
-                    <feature.icon className="w-8 h-8 text-primary" strokeWidth={1.5} />
-                  </motion.div>
-                  
-                  {/* Animated ring */}
-                  <motion.div 
-                    className="absolute rounded-2xl border border-primary/30 w-16 h-16 right-0 rtl:right-auto rtl:left-0"
-                    animate={{ 
-                      scale: [1, 1.15, 1],
-                      opacity: [0.3, 0, 0.3],
-                    }}
-                    transition={{ duration: 2.5, repeat: Infinity, delay: index * 0.3 }}
                   />
-                </div>
 
-                {/* Content */}
-                <h3 className="text-xl font-bold mb-3 text-foreground/90 relative text-right">
-                  {t(feature.titleKey)}
-                </h3>
-                <p className="text-muted-foreground leading-relaxed relative text-right">
-                  {t(feature.descKey)}
-                </p>
+                  {/* Decorative corner glow - subtle */}
+                  <motion.div 
+                    className={`absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br ${feature.color} rounded-full blur-[100px] transition-opacity duration-500 ${
+                      isCardActive ? 'opacity-15' : 'opacity-0 group-hover:opacity-15'
+                    }`}
+                  />
 
-                {/* Bottom line accent */}
-                <motion.div 
-                  className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${feature.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
-                  initial={{ scaleX: 0 }}
-                  whileHover={{ scaleX: 1 }}
-                  transition={{ duration: 0.3 }}
-                />
-              </LiquidGlassCard>
-            </motion.div>
-          ))}
+                  {/* Icon with animated background */}
+                  <div className="relative mb-4 sm:mb-6 flex justify-end rtl:justify-start">
+                    <motion.div 
+                      className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl backdrop-blur-md flex items-center justify-center"
+                      style={{
+                        background: `radial-gradient(circle at center, ${feature.hoverColor} 0%, transparent 100%)`,
+                      }}
+                      whileHover={{ scale: 1.1, rotate: 5 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                    >
+                      <feature.icon className="w-6 h-6 sm:w-8 sm:h-8 text-primary" strokeWidth={1.5} />
+                    </motion.div>
+                    
+                    {/* Animated ring */}
+                    <motion.div 
+                      className="absolute rounded-2xl border border-primary/30 w-12 h-12 sm:w-16 sm:h-16 right-0 rtl:right-auto rtl:left-0"
+                      animate={{ 
+                        scale: [1, 1.15, 1],
+                        opacity: [0.3, 0, 0.3],
+                      }}
+                      transition={{ duration: 2.5, repeat: Infinity, delay: index * 0.3 }}
+                    />
+                  </div>
+
+                  {/* Content */}
+                  <h3 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3 text-foreground/90 relative text-right">
+                    {t(feature.titleKey)}
+                  </h3>
+                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed relative text-right">
+                    {t(feature.descKey)}
+                  </p>
+
+                  {/* Bottom line accent */}
+                  <motion.div 
+                    className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${feature.color} transition-opacity duration-300 ${
+                      isCardActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    }`}
+                    initial={{ scaleX: 0 }}
+                    whileHover={{ scaleX: 1 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </LiquidGlassCard>
+              </motion.div>
+            );
+          })}
         </div>
 
         {/* Bottom CTA */}

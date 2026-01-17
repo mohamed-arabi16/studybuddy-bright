@@ -1,12 +1,36 @@
-import { useEffect } from "react";
+import { useEffect, Suspense, lazy } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/landing/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
-import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
-import { FeatureShowcase } from "@/components/landing/FeatureShowcase";
-import { Footer } from "@/components/landing/Footer";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy load below-fold sections for better performance
+const HowItWorksSection = lazy(() => 
+  import("@/components/landing/HowItWorksSection").then(m => ({ default: m.HowItWorksSection }))
+);
+const FeatureShowcase = lazy(() => 
+  import("@/components/landing/FeatureShowcase").then(m => ({ default: m.FeatureShowcase }))
+);
+const Footer = lazy(() => 
+  import("@/components/landing/Footer").then(m => ({ default: m.Footer }))
+);
+
+// Skeleton fallback for lazy sections
+const SectionSkeleton = () => (
+  <div className="w-full py-16 px-4">
+    <div className="max-w-4xl mx-auto space-y-6">
+      <Skeleton className="h-10 w-2/3 mx-auto bg-white/5" />
+      <Skeleton className="h-6 w-1/2 mx-auto bg-white/5" />
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
+        {[...Array(4)].map((_, i) => (
+          <Skeleton key={i} className="h-52 rounded-2xl bg-white/5" />
+        ))}
+      </div>
+    </div>
+  </div>
+);
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -36,10 +60,16 @@ const Landing = () => {
       <Navbar />
       <main className="flex-1 pt-16 relative z-10">
         <HeroSection />
-        <HowItWorksSection />
-        <FeatureShowcase />
+        <Suspense fallback={<SectionSkeleton />}>
+          <HowItWorksSection />
+        </Suspense>
+        <Suspense fallback={<SectionSkeleton />}>
+          <FeatureShowcase />
+        </Suspense>
       </main>
-      <Footer />
+      <Suspense fallback={<div className="h-32" />}>
+        <Footer />
+      </Suspense>
     </div>
   );
 };
