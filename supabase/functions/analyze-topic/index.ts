@@ -78,16 +78,19 @@ serve(async (req) => {
       });
     }
 
-    // ============= P2: CONSUME CREDITS BEFORE AI CALL =============
-    const creditResult = await consumeCredits(supabase, user.id, 'analyze_topic', null, courseId);
-    
-    if (!creditResult.success) {
-      console.log(`Insufficient credits for analyze_topic: user ${user.id}, have ${creditResult.balance}, need ${creditResult.required}`);
-      return createInsufficientCreditsResponse(
-        creditResult.balance || 0,
-        creditResult.required || 5,
-        creditResult.plan_tier
-      );
+    // Initialize job tracking immediately to prevent bursts
+    const inputHash = title.toLowerCase().trim().substring(0, 100);
+    const { data: job, error: jobError } = await supabase.from('ai_jobs').insert({
+      user_id: user.id,
+      course_id: courseId || null,
+      job_type: 'analyze_topic',
+      status: 'running',
+      input_hash: inputHash,
+    }).select().single();
+
+    if (jobError) {
+      console.error("Failed to create job record:", jobError);
+      throw new Error("Failed to initialize job tracking");
     }
     
     console.log(`Credits consumed for analyze_topic: charged ${creditResult.credits_charged}, balance ${creditResult.balance}`);
@@ -104,15 +107,44 @@ serve(async (req) => {
         .eq('user_id', user.id)
         .single();
       
-      if (course) {
-        courseContext = `Course: ${course.title}${course.description ? ` - ${course.description}` : ''}`;
+      if (!creditResult.success) {
+        console.log(`Insufficient credits for analyze_topic: user ${user.id}, have ${creditResult.balance}, need ${creditResult.required}`);
+
+        await supabase.from('ai_jobs').update({
+          status: 'failed',
+          error_message: 'Insufficient credits',
+        }).eq('id', jobId);
+
+        return createInsufficientCreditsResponse(
+          creditResult.balance || 0,
+          creditResult.required || 5,
+          creditResult.plan_tier
+        );
       }
-    }
 
-    console.log(`Analyzing topic: "${title}" for user ${user.id}${courseContext ? ` (${courseContext})` : ''}`);
+      console.log(`Credits consumed for analyze_topic: charged ${creditResult.credits_charged}, balance ${creditResult.balance}`);
+      const creditEventId = creditResult.event_id;
+      const aiCallStartTime = Date.now();
 
-    // Enhanced system prompt with domain-specific heuristics
-    const systemPrompt = `You are an expert educational AI assistant specializing in academic content analysis.
+      // P1 Fix: Fetch course context for better scoring
+      let courseContext = "";
+      if (courseId) {
+        const { data: course } = await supabase
+          .from('courses')
+          .select('title, description')
+          .eq('id', courseId)
+          .eq('user_id', user.id)
+          .single();
+
+        if (course) {
+          courseContext = `Course: ${course.title}${course.description ? ` - ${course.description}` : ''}`;
+        }
+      }
+
+      console.log(`Analyzing topic: "${title}" for user ${user.id}${courseContext ? ` (${courseContext})` : ''}`);
+
+      // Enhanced system prompt with domain-specific heuristics
+      const systemPrompt = `You are an expert educational AI assistant specializing in academic content analysis.
 Given a topic title, course context, and optional notes, analyze and call the analyze_topic tool.
 
 DIFFICULTY ASSESSMENT FRAMEWORK (1-5):
@@ -187,74 +219,188 @@ IMPORTANCE MODIFIERS:
 
 You MUST call the analyze_topic function. Do not return text responses.`;
 
-    // Build user prompt with course context
-    const userPrompt = courseContext
-      ? `${courseContext}\n\nTopic: ${title}${notes ? `\nNotes: ${notes}` : ''}`
-      : `Topic: ${title}${notes ? `\nNotes: ${notes}` : ''}`;
+      // Build user prompt with course context
+      const userPrompt = courseContext
+        ? `${courseContext}\n\nTopic: ${title}${notes ? `\nNotes: ${notes}` : ''}`
+        : `Topic: ${title}${notes ? `\nNotes: ${notes}` : ''}`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "analyze_topic",
-              description: "Analyze a study topic and return difficulty and importance weights",
-              parameters: {
-                type: "object",
-                properties: {
-                  difficulty_weight: {
-                    type: "integer",
-                    minimum: 1,
-                    maximum: 5,
-                    description: "Difficulty level 1-5",
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          tools: [
+            {
+              type: "function",
+              function: {
+                name: "analyze_topic",
+                description: "Analyze a study topic and return difficulty and importance weights",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    difficulty_weight: {
+                      type: "integer",
+                      minimum: 1,
+                      maximum: 5,
+                      description: "Difficulty level 1-5",
+                    },
+                    exam_importance: {
+                      type: "integer",
+                      minimum: 1,
+                      maximum: 5,
+                      description: "Exam importance 1-5",
+                    },
                   },
-                  exam_importance: {
-                    type: "integer",
-                    minimum: 1,
-                    maximum: 5,
-                    description: "Exam importance 1-5",
-                  },
+                  required: ["difficulty_weight", "exam_importance"],
+                  additionalProperties: false,
                 },
-                required: ["difficulty_weight", "exam_importance"],
-                additionalProperties: false,
               },
             },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "analyze_topic" } },
-      }),
-    });
+          ],
+          tool_choice: { type: "function", function: { name: "analyze_topic" } },
+        }),
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("AI Gateway error:", response.status, errorText);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("AI Gateway error:", response.status, errorText);
+
+        if (response.status === 429) {
+          await supabase.from('ai_jobs').update({
+            status: 'failed',
+            error_message: 'Gateway rate limit exceeded',
+          }).eq('id', jobId);
+
+          return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (response.status === 402) {
+          await supabase.from('ai_jobs').update({
+            status: 'failed',
+            error_message: 'Gateway credits exhausted',
+          }).eq('id', jobId);
+
+          return new Response(JSON.stringify({ error: "AI credits exhausted. Please add more credits." }), {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        throw new Error(`AI gateway error: ${response.status}`);
+      }
+
+      const aiResponse = await response.json();
+      const aiCallEndTime = Date.now();
+      const aiLatencyMs = aiCallEndTime - aiCallStartTime;
+
+      // ============= P2: TRACK TOKEN USAGE =============
+      const usage = aiResponse.usage;
+      if (creditEventId && usage) {
+        await updateTokenUsage(
+          supabase,
+          creditEventId,
+          usage.prompt_tokens || 0,
+          usage.completion_tokens || 0,
+          aiLatencyMs,
+          aiResponse.model || 'google/gemini-2.5-flash',
+          { model: aiResponse.model, usage }
+        );
+      }
+
+      // P0 Fix: Log only metadata, not full response
+      console.log("AI response metadata:", {
+        model: aiResponse.model,
+        hasToolCalls: !!aiResponse.choices?.[0]?.message?.tool_calls?.length,
+        finishReason: aiResponse.choices?.[0]?.finish_reason,
+        usage: aiResponse.usage,
+        latencyMs: aiLatencyMs,
+      });
+
+      // Extract tool call result
+      const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
       
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add more credits." }), {
-          status: 402,
+      // P1 Fix: Add content fallback parsing if no tool call
+      if (!toolCall?.function?.arguments) {
+        // Try parsing message content as fallback
+        const content = aiResponse.choices?.[0]?.message?.content;
+        if (content) {
+          try {
+            const contentParsed = JSON.parse(content.replace(/```json|```/g, '').trim());
+            if (contentParsed.difficulty_weight && contentParsed.exam_importance) {
+              const diffWeight = Math.min(5, Math.max(1, contentParsed.difficulty_weight));
+              const examImp = Math.min(5, Math.max(1, contentParsed.exam_importance));
+
+              // Log the analysis call
+              await supabase.from('ai_jobs').update({
+                status: 'completed',
+                result_json: { difficulty_weight: diffWeight, exam_importance: examImp, fallback: true },
+              }).eq('id', jobId);
+
+              return new Response(JSON.stringify({
+                difficulty_weight: diffWeight,
+                exam_importance: examImp,
+                needs_review: true,
+                fallback_reason: "content_parse",
+              }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            }
+          } catch {
+            // Fall through to defaults
+          }
+        }
+
+        console.warn("No tool call or parseable content, using defaults");
+
+        // Log the analysis call with defaults
+        await supabase.from('ai_jobs').update({
+          status: 'completed',
+          result_json: { difficulty_weight: 3, exam_importance: 3, fallback: true },
+        }).eq('id', jobId);
+
+        return new Response(JSON.stringify({
+          difficulty_weight: 3,
+          exam_importance: 3,
+          needs_review: true,
+          fallback_reason: "no_tool_call",
+        }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      throw new Error(`AI gateway error: ${response.status}`);
-    }
+      // P0 Fix: Safe JSON parsing with try-catch
+      let analysis: { difficulty_weight?: number; exam_importance?: number };
+      try {
+        analysis = JSON.parse(toolCall.function.arguments);
+      } catch (parseError) {
+        console.warn("Failed to parse tool arguments:", parseError);
+
+        // Log the analysis call with defaults
+        await supabase.from('ai_jobs').update({
+          status: 'completed',
+          result_json: { difficulty_weight: 3, exam_importance: 3, parse_error: true },
+        }).eq('id', jobId);
+
+        return new Response(JSON.stringify({
+          difficulty_weight: 3,
+          exam_importance: 3,
+          needs_review: true,
+          fallback_reason: "parse_error",
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Validate and clamp values
+      const difficultyWeight = Math.min(5, Math.max(1, analysis.difficulty_weight || 3));
+      const examImportance = Math.min(5, Math.max(1, analysis.exam_importance || 3));
 
     const aiResponse = await response.json();
     const aiCallEndTime = Date.now();
@@ -292,8 +438,17 @@ You MUST call the analyze_topic function. Do not return text responses.`;
       const content = aiResponse.choices?.[0]?.message?.content;
       if (content) {
         try {
-          const contentParsed = JSON.parse(content.replace(/```json|```/g, '').trim());
-          if (contentParsed.difficulty_weight && contentParsed.exam_importance) {
+          // Robust JSON extraction
+          const firstBrace = content.indexOf('{');
+          const lastBrace = content.lastIndexOf('}');
+
+          let contentParsed;
+          if (firstBrace !== -1 && lastBrace !== -1 && firstBrace <= lastBrace) {
+            const jsonString = content.substring(firstBrace, lastBrace + 1);
+            contentParsed = JSON.parse(jsonString);
+          }
+
+          if (contentParsed?.difficulty_weight && contentParsed?.exam_importance) {
             const diffWeight = Math.min(5, Math.max(1, contentParsed.difficulty_weight));
             const examImp = Math.min(5, Math.max(1, contentParsed.exam_importance));
             
@@ -327,19 +482,28 @@ You MUST call the analyze_topic function. Do not return text responses.`;
         course_id: courseId || null,
         job_type: 'analyze_topic',
         status: 'completed',
-        input_hash: title.toLowerCase().trim().substring(0, 100),
-        result_json: { difficulty_weight: 3, exam_importance: 3, fallback: true },
-      });
-      
+        result_json: { difficulty_weight: difficultyWeight, exam_importance: examImportance },
+      }).eq('id', jobId);
+
+      // ============= TRACK SUBSCRIPTION USAGE FOR REFUND ELIGIBILITY =============
+      try {
+        await supabase.rpc('increment_subscription_usage', {
+          p_user_id: user.id,
+          p_counter_name: 'topic_deepdives_count',
+          p_increment_by: 1
+        });
+      } catch (usageErr) {
+        console.error("Failed to track topic deepdive usage:", usageErr);
+      }
+
+      // P1 Fix: Add needs_review flag to distinguish AI vs defaults
       return new Response(JSON.stringify({
-        difficulty_weight: 3,
-        exam_importance: 3,
-        needs_review: true,
-        fallback_reason: "no_tool_call",
+        difficulty_weight: difficultyWeight,
+        exam_importance: examImportance,
+        needs_review: false,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    }
 
     // Safe JSON parsing with try-catch
     let analysis: { difficulty_weight?: number; exam_importance?: number };
@@ -358,12 +522,16 @@ You MUST call the analyze_topic function. Do not return text responses.`;
         result_json: { difficulty_weight: 3, exam_importance: 3, parse_error: true },
       });
       
+      // Update job status to failed
+      await supabase.from('ai_jobs').update({
+        status: 'failed',
+        error_message: error instanceof Error ? error.message : "Unknown error",
+      }).eq('id', jobId);
+
       return new Response(JSON.stringify({
-        difficulty_weight: 3,
-        exam_importance: 3,
-        needs_review: true,
-        fallback_reason: "parse_error",
+        error: error instanceof Error ? error.message : "Unknown error",
       }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -405,7 +573,7 @@ You MUST call the analyze_topic function. Do not return text responses.`;
     });
 
   } catch (error) {
-    console.error("Error in analyze-topic:", error);
+    console.error("Error in analyze-topic top-level:", error);
     return new Response(JSON.stringify({
       error: error instanceof Error ? error.message : "Unknown error",
     }), {

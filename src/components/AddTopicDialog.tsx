@@ -175,7 +175,10 @@ export default function AddTopicDialog({
             <Input
               id="title"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                setHasAnalyzed(false);
+              }}
               placeholder={t('topicTitlePlaceholder')}
               dir="auto"
             />
@@ -186,7 +189,10 @@ export default function AddTopicDialog({
             <Textarea
               id="notes"
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(e) => {
+                setNotes(e.target.value);
+                setHasAnalyzed(false);
+              }}
               placeholder={t('notesPlaceholder')}
               dir="auto"
               rows={2}

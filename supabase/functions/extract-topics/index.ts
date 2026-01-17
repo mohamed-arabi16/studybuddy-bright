@@ -60,10 +60,18 @@ function detectCycles(topics: ExtractedTopic[]): { hasCycles: boolean; cycleInfo
   const visited = new Set<string>();
   const recursionStack = new Set<string>();
   const cycles: string[] = [];
+  const edgesToRemove = new Set<string>(); // "fromKey##toKey"
   
   function dfs(key: string, path: string[]): boolean {
     if (recursionStack.has(key)) {
-      cycles.push(`Cycle: ${[...path, key].join(' → ')}`);
+      // Cycle detected!
+      // The edge causing the cycle is from the last node in path to current key
+      if (path.length > 0) {
+        const fromKey = path[path.length - 1];
+        const toKey = key;
+        cycles.push(`Cycle: ${[...path, key].join(' → ')}`);
+        edgesToRemove.add(`${fromKey}##${toKey}`);
+      }
       return true;
     }
     if (visited.has(key)) return false;
@@ -93,19 +101,13 @@ function detectCycles(topics: ExtractedTopic[]): { hasCycles: boolean; cycleInfo
     }
   });
 
-  // If cycles detected, break them by removing the last edge
+  // If cycles detected, break them by removing the specific edges that formed the cycle
   const cleanedTopics = topics.map(t => {
     if (!t.prerequisites || t.prerequisites.length === 0) return t;
     
-    // Remove any prerequisite that would create a cycle
+    // Remove any prerequisite that was identified as a cycle-closing edge
     const cleanedPrereqs = t.prerequisites.filter(prereqKey => {
-      // Check if prereqKey eventually leads back to t.topic_key
-      const prereqIdx = keyToIndex.get(prereqKey);
-      if (prereqIdx === undefined) return true; // Keep unknown prereqs
-      
-      // Simple check: if prereq has t.topic_key as a prerequisite, remove it
-      const prereqTopic = topics[prereqIdx];
-      if (prereqTopic.prerequisites?.includes(t.topic_key)) {
+      if (edgesToRemove.has(`${t.topic_key}##${prereqKey}`)) {
         return false; // Remove this edge to break cycle
       }
       return true;
