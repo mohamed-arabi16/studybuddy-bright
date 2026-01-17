@@ -786,6 +786,17 @@ Extract at most ${maxTopicsToExtract} distinct study topics. Merge duplicates.`;
       cyclesDetected: cycleCheck.hasCycles,
     });
 
+    // ============= TRACK SUBSCRIPTION USAGE FOR REFUND ELIGIBILITY =============
+    try {
+      await supabase.rpc('increment_subscription_usage', {
+        p_user_id: user.id,
+        p_counter_name: 'syllabus_extractions_count',
+        p_increment_by: 1
+      });
+    } catch (usageErr) {
+      log('Failed to track usage (non-fatal)', { usageErr });
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

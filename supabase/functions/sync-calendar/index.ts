@@ -285,6 +285,19 @@ serve(async (req) => {
       .update({ updated_at: new Date().toISOString() })
       .eq('user_id', userId);
 
+    // ============= TRACK SUBSCRIPTION USAGE FOR REFUND ELIGIBILITY =============
+    if (eventsCreated > 0) {
+      try {
+        await supabaseAdmin.rpc('increment_subscription_usage', {
+          p_user_id: userId,
+          p_counter_name: 'calendar_events_synced_count',
+          p_increment_by: eventsCreated
+        });
+      } catch (usageErr) {
+        console.error('Failed to track calendar sync usage:', usageErr);
+      }
+    }
+
     console.log(`Synced ${eventsCreated} events for user ${userId}`);
 
     return new Response(JSON.stringify({ 

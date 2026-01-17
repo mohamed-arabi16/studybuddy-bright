@@ -28,6 +28,7 @@ import AdminTrials from "./pages/Admin/Trials";
 import AdminFeedback from "./pages/Admin/Feedback";
 import AdminAuditLog from "./pages/Admin/AuditLog";
 import AdminCredits from "./pages/Admin/Credits";
+import AdminRefunds from "./pages/Admin/Refunds";
 import GradeCalculator from "./pages/GradeCalculator";
 
 const queryClient = new QueryClient();
@@ -69,6 +70,7 @@ const App = () => (
                <Route path="feedback" element={<AdminFeedback />} />
                <Route path="audit" element={<AdminAuditLog />} />
                <Route path="credits" element={<AdminCredits />} />
+               <Route path="refunds" element={<AdminRefunds />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
