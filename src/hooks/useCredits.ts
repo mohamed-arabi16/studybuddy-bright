@@ -43,6 +43,9 @@ const DEFAULT_ALLOWANCES: Record<string, number> = {
   pro: 1500,
 };
 
+// Constants
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
 export function useCredits(): UseCreditsReturn {
   const [credits, setCredits] = useState<CreditState | null>(null);
   const [costs, setCosts] = useState<CreditCost[]>([]);
@@ -58,7 +61,7 @@ export function useCredits(): UseCreditsReturn {
         return;
       }
 
-      // Fetch user credits
+      // Fetch user credits including billing_anchor_date
       const { data: creditData, error: creditError } = await supabase
         .from('user_credits')
         .select('balance, monthly_allowance, last_reset_date, billing_anchor_date, plan_tier')
@@ -73,14 +76,14 @@ export function useCredits(): UseCreditsReturn {
           balance: creditData.balance,
           monthlyAllowance: creditData.monthly_allowance,
           lastResetDate: creditData.last_reset_date,
-          billingAnchorDate: creditData.billing_anchor_date || null,
+          billingAnchorDate: creditData.billing_anchor_date,
           planTier: creditData.plan_tier as 'free' | 'trial' | 'pro',
         });
         setError(null);
       } else {
         // No credit record yet - determine plan tier from subscription
         // This will be auto-created on first AI call via consume_credits()
-        const [subResult, overrideResult, creditPlansResult] = await Promise.all([
+        const [subResult, overrideResult, creditPlansResult, profileResult] = await Promise.all([
           supabase
             .from('subscriptions')
             .select('status, trial_end, plans(name)')
@@ -95,6 +98,11 @@ export function useCredits(): UseCreditsReturn {
             .from('credit_plans')
             .select('tier, monthly_allowance')
             .eq('is_active', true),
+          supabase
+            .from('profiles')
+            .select('created_at')
+            .eq('user_id', user.id)
+            .maybeSingle(),
         ]);
 
         // Build allowance map from DB
@@ -128,11 +136,16 @@ export function useCredits(): UseCreditsReturn {
 
         const allowance = allowanceMap[tier] ?? 50;
         
+        // Use profile creation date as billing anchor for free users
+        const billingAnchor = profileResult.data?.created_at 
+          ? new Date(profileResult.data.created_at).toISOString().split('T')[0]
+          : new Date().toISOString().split('T')[0];
+        
         setCredits({
           balance: allowance, // Full balance since no usage yet
           monthlyAllowance: allowance,
           lastResetDate: new Date().toISOString(),
-          billingAnchorDate: new Date().toISOString(), // Use current timestamp as anchor for new users
+          billingAnchorDate: billingAnchor,
           planTier: tier,
         });
         setError(null);
@@ -188,21 +201,13 @@ export function useCredits(): UseCreditsReturn {
     return credits.monthlyAllowance - credits.balance;
   }, [credits]);
 
-  // Milliseconds per day constant for reset date calculations
-  const MS_PER_DAY = 1000 * 60 * 60 * 24;
-
-  // Get next reset date
-  // For free users: rolling 30-day cycle from billing anchor
-  // For Pro/Trial users: calendar month
+  // Get next reset date based on plan type
   const getResetDate = useCallback((): Date => {
-    // Fallback for when credits aren't loaded yet: assume 30 days from now for new users
     if (!credits) {
       const now = new Date();
-      const fallbackReset = new Date(now);
-      fallbackReset.setDate(fallbackReset.getDate() + 30);
-      return fallbackReset;
+      return new Date(now.getFullYear(), now.getMonth() + 1, 1);
     }
-
+    
     // For free users: use rolling 30-day cycle from billing anchor
     if (credits.planTier === 'free' && credits.billingAnchorDate) {
       const anchor = new Date(credits.billingAnchorDate);
@@ -213,8 +218,8 @@ export function useCredits(): UseCreditsReturn {
       nextReset.setDate(nextReset.getDate() + (cyclesPassed + 1) * 30);
       return nextReset;
     }
-
-    // For Pro/Trial: use calendar month from last reset
+    
+    // For Pro/Trial: use calendar month reset
     const lastReset = new Date(credits.lastResetDate);
     return new Date(lastReset.getFullYear(), lastReset.getMonth() + 1, 1);
   }, [credits]);

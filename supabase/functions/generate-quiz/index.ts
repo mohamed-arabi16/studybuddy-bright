@@ -18,18 +18,6 @@ interface QuizQuestion {
   explanation: string;
 }
 
-interface QuizBankEntry {
-  id: string;
-  course_id: string;
-  topic_id: string;
-  difficulty: string;
-  version: number;
-  questions: QuizQuestion[];
-  question_count: number;
-  created_by: string;
-  created_at: string;
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -102,6 +90,7 @@ serve(async (req) => {
 
     if (!cacheError && cachedQuiz) {
       console.log(`[generate-quiz] Cache hit for topic ${topic_id}, difficulty ${difficulty}`);
+      const questions = cachedQuiz.questions as QuizQuestion[];
       return new Response(
         JSON.stringify({
           success: true,
@@ -111,8 +100,8 @@ serve(async (req) => {
             topic_id: cachedQuiz.topic_id,
             topic_title: topic.title,
             difficulty: cachedQuiz.difficulty,
-            questions: cachedQuiz.questions,
-            question_count: cachedQuiz.question_count,
+            questions: questions,
+            question_count: questions.length,
           },
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -144,17 +133,16 @@ serve(async (req) => {
       console.log("[generate-quiz] No ANTHROPIC_API_KEY, generating mock quiz");
       const mockQuestions = generateMockQuiz(topic.title, topic.description || '', difficulty, count);
       
-      // Save to quiz_bank
+      // Save to quiz_bank - only use columns that exist in the table
       const { data: savedQuiz, error: saveError } = await supabase
         .from("quiz_bank")
         .insert({
-          course_id,
           topic_id,
           difficulty,
           version: 1,
           questions: mockQuestions,
-          question_count: mockQuestions.length,
-          created_by: user.id,
+          generated_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
         })
         .select()
         .single();
@@ -166,6 +154,7 @@ serve(async (req) => {
           JSON.stringify({
             success: false,
             error: "Failed to save quiz to database",
+            details: saveError.message,
           }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
@@ -269,17 +258,16 @@ serve(async (req) => {
       questions = generateMockQuiz(topic.title, topic.description || '', difficulty, count);
     }
 
-    // Save to quiz_bank cache
+    // Save to quiz_bank cache - only use columns that exist in the table
     const { data: savedQuiz, error: saveError } = await supabase
       .from("quiz_bank")
       .insert({
-        course_id,
         topic_id,
         difficulty,
         version: 1,
         questions,
-        question_count: questions.length,
-        created_by: user.id,
+        generated_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
       })
       .select()
       .single();
@@ -291,6 +279,7 @@ serve(async (req) => {
         JSON.stringify({
           success: false,
           error: "Failed to save quiz to database",
+          details: saveError.message,
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
