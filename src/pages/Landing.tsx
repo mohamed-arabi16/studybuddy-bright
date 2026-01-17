@@ -21,7 +21,7 @@ const Landing = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] flex flex-col relative overflow-hidden" dir={dir}>
+    <div className="min-h-screen w-full bg-[#0A0A0F] flex flex-col relative" dir={dir}>
       {/* Unified Ambient Background - spans entire page for smooth transitions */}
       <div className="fixed inset-0 pointer-events-none z-0" aria-hidden="true">
         {/* Primary ambient glow - centered top */}
