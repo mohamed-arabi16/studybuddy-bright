@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Calendar, Sparkles, ArrowRight, ArrowLeft, Plus, GraduationCap, Target, Sun, Moon, Sunset,
-  Lightbulb, ListTodo, TrendingUp, RefreshCw
+  Lightbulb, ListTodo, TrendingUp, RefreshCw, Coffee
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +17,7 @@ import { CollapsibleInfoSection } from '@/components/CollapsibleInfoSection';
 import { StudyTipsSection } from '@/components/StudyTipsSection';
 import { supabase } from '@/integrations/supabase/client';
 import { usePlanGeneration } from '@/hooks/usePlanGeneration';
+import { useCredits } from '@/hooks/useCredits';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -36,14 +37,22 @@ export default function Dashboard() {
   const [syncing, setSyncing] = useState(false);
   const { t, dir, language } = useLanguage();
   const { toast } = useToast();
+  const { refresh: refreshCredits } = useCredits();
   
   const { 
     planDays, 
     isLoading: planLoading, 
-    generatePlan,
+    generatePlan: generatePlanOriginal,
     isGenerating,
     toggleItemCompletion 
   } = usePlanGeneration();
+
+  // Wrap generatePlan to refresh credits after generation
+  const generatePlan = async () => {
+    const result = await generatePlanOriginal();
+    await refreshCredits();
+    return result;
+  };
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -111,6 +120,17 @@ export default function Dashboard() {
     const planDate = new Date(d.date);
     const today = new Date();
     return planDate.toDateString() === today.toDateString();
+  });
+
+  // Detect if today is a day off
+  const isTodayDayOff = todayPlan?.is_day_off === true;
+
+  // Find next study day with items
+  const nextStudyDay = planDays.find(d => {
+    const planDate = new Date(d.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return planDate > today && !d.is_day_off && d.items.length > 0;
   });
 
   const greeting = getGreeting();
@@ -365,6 +385,19 @@ export default function Dashboard() {
                     <ArrowIcon className="w-3 h-3" />
                   </Link>
                 </Button>
+              </div>
+            ) : isTodayDayOff ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <Coffee className="w-6 h-6 text-primary" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-base font-medium mb-1">{t('dayOff')}</h3>
+                <p className="text-sm text-muted-foreground mb-3">{t('enjoyYourBreak')}</p>
+                {nextStudyDay && (
+                  <p className="text-xs text-muted-foreground">
+                    {t('nextStudyDay')}: {new Date(nextStudyDay.date).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                  </p>
+                )}
               </div>
             ) : (
               <EmptyState

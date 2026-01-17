@@ -5,6 +5,7 @@ interface CreditState {
   balance: number;
   monthlyAllowance: number;
   lastResetDate: string;
+  billingAnchorDate: string | null;
   planTier: 'free' | 'trial' | 'pro';
 }
 
@@ -60,7 +61,7 @@ export function useCredits(): UseCreditsReturn {
       // Fetch user credits
       const { data: creditData, error: creditError } = await supabase
         .from('user_credits')
-        .select('balance, monthly_allowance, last_reset_date, plan_tier')
+        .select('balance, monthly_allowance, last_reset_date, billing_anchor_date, plan_tier')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -72,6 +73,7 @@ export function useCredits(): UseCreditsReturn {
           balance: creditData.balance,
           monthlyAllowance: creditData.monthly_allowance,
           lastResetDate: creditData.last_reset_date,
+          billingAnchorDate: creditData.billing_anchor_date || null,
           planTier: creditData.plan_tier as 'free' | 'trial' | 'pro',
         });
         setError(null);
@@ -130,6 +132,7 @@ export function useCredits(): UseCreditsReturn {
           balance: allowance, // Full balance since no usage yet
           monthlyAllowance: allowance,
           lastResetDate: new Date().toISOString(),
+          billingAnchorDate: new Date().toISOString(), // Use today as anchor for new users
           planTier: tier,
         });
         setError(null);
@@ -185,12 +188,27 @@ export function useCredits(): UseCreditsReturn {
     return credits.monthlyAllowance - credits.balance;
   }, [credits]);
 
-  // Get next reset date (start of next month)
+  // Get next reset date
+  // For free users: rolling 30-day cycle from billing anchor
+  // For Pro/Trial users: calendar month
   const getResetDate = useCallback((): Date => {
-    if (!credits?.lastResetDate) {
+    if (!credits) {
       const now = new Date();
       return new Date(now.getFullYear(), now.getMonth() + 1, 1);
     }
+
+    // For free users: use rolling 30-day cycle from billing anchor
+    if (credits.planTier === 'free' && credits.billingAnchorDate) {
+      const anchor = new Date(credits.billingAnchorDate);
+      const now = new Date();
+      const daysSinceAnchor = Math.floor((now.getTime() - anchor.getTime()) / (1000 * 60 * 60 * 24));
+      const cyclesPassed = Math.floor(daysSinceAnchor / 30);
+      const nextReset = new Date(anchor);
+      nextReset.setDate(nextReset.getDate() + (cyclesPassed + 1) * 30);
+      return nextReset;
+    }
+
+    // For Pro/Trial: use calendar month from last reset
     const lastReset = new Date(credits.lastResetDate);
     return new Date(lastReset.getFullYear(), lastReset.getMonth() + 1, 1);
   }, [credits]);
