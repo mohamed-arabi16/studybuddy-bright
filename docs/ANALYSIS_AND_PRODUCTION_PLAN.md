@@ -148,6 +148,25 @@ The planning algorithm:
 - Skeleton loaders for async content
 - Toast notifications (sonner)
 
+### 2.5 Advanced Learning Tools
+
+**Past Exam Analysis (`analyze-past-exam`)**
+-   **Purpose:** Maps questions from past exams to course topics to identify "High Yield" areas.
+-   **Flow:** Upload PDF -> OCR/Text Extraction -> AI Analysis (Gemini) -> Topic Mapping -> Yield Metrics Update.
+-   **Output:** Topic Yield Metrics (prioritizes topics that appear frequently in exams).
+
+**Grade Calculator**
+-   **Purpose:** Allows students to simulate "What-If" scenarios for their grades.
+-   **Features:**
+    -   Supports complex aggregation rules (Weighted, Best Of, Drop Lowest).
+    -   Curve adjustments (Add, Multiply, Set).
+    -   Constraints (e.g., "Final Exam must be > 50%").
+    -   Pro Feature: Save/Load calculations.
+
+**Quiz Generation (`generate-quiz`)**
+-   **Purpose:** Generates practice questions based on specific topics.
+-   **Flow:** Select Topic -> AI Generates Question -> User Answers -> Immediate Feedback.
+
 ---
 
 ## 3. Database Schema Analysis
@@ -625,6 +644,11 @@ tests/
 | `export-user-data` | POST | Bearer | GDPR export |
 | `admin-stats` | POST | Admin | Dashboard metrics |
 | `admin-health-check` | POST | Admin | System health |
+| `analyze-past-exam` | POST | Bearer | Past exam analysis |
+| `generate-quiz` | POST | Bearer | Generate practice questions |
+| `submit-quiz-attempt` | POST | Bearer | Record quiz results |
+| `analyze-topic` | POST | Bearer | Deep dive topic analysis |
+| `get-yield-summary` | POST | Bearer | Fetch topic yield metrics |
 
 ### Request/Response Examples
 
