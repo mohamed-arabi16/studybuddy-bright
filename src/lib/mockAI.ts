@@ -15,15 +15,19 @@ export interface AIResponse {
   questions_for_student?: string[];
 }
 
+export function parseLines(text: string): string[] {
+  // Optimized parsing: Match non-newline sequences and trim/filter in one pass logic.
+  // Using match with reduce avoids splitting into a huge array of strings (including empty ones).
+  return (text.match(/[^\r\n]+/g) || []).reduce((acc, line) => {
+    const trimmed = line.trim();
+    if (trimmed.length > 0) acc.push(trimmed);
+    return acc;
+  }, [] as string[]);
+}
+
 export async function extractTopics(text: string): Promise<AIResponse> {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 1500));
-
-  // Simple heuristic parsing for the mock:
-  // Split by newlines, take non-empty lines as topics.
-  // Assign random weights for demonstration.
-
-  const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
 
   // If the text looks like JSON, try to parse it (easter egg or for testing)
   if (text.trim().startsWith('{') || text.trim().startsWith('[')) {
@@ -34,6 +38,10 @@ export async function extractTopics(text: string): Promise<AIResponse> {
           // ignore
       }
   }
+
+  // Simple heuristic parsing for the mock:
+  // Assign random weights for demonstration.
+  const lines = parseLines(text);
 
   const topics: ExtractedTopic[] = lines.map(line => ({
     title: line,

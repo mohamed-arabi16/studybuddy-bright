@@ -53,6 +53,16 @@ export function NextUnlockCard({ planDays, className }: NextUnlockCardProps) {
       item => !item.is_completed && item.topic_id
     );
 
+    // For performance, create a Set and Map of today's incomplete topics
+    const todaysIncompleteTopicIds = new Set<string>();
+    const todaysIncompleteMap = new Map<string, PlanItem>();
+    todaysIncomplete.forEach(item => {
+      if (item.topic_id) {
+        todaysIncompleteTopicIds.add(item.topic_id);
+        todaysIncompleteMap.set(item.topic_id, item);
+      }
+    });
+
     // Build set of completed topic IDs across all days
     const completedTopicIds = new Set<string>();
     planDays.forEach(day => {
@@ -82,17 +92,17 @@ export function NextUnlockCard({ planDays, className }: NextUnlockCardProps) {
       const prereqIds = futureItem.prereq_topic_ids || [];
       if (prereqIds.length === 0) return;
 
-      // Find which of today's items are prerequisites for this future item
-      const relevantTodayPrereqs = todaysIncomplete.filter(
-        todayItem => todayItem.topic_id && prereqIds.includes(todayItem.topic_id)
-      );
+      // Efficiently find which of today's items are prereqs for this future item
+      const relevantTodayPrereqs = prereqIds
+        .map(prereqId => todaysIncompleteMap.get(prereqId))
+        .filter((item): item is PlanItem => !!item);
 
       if (relevantTodayPrereqs.length > 0) {
         // Check if ALL prerequisites would be met after completing today's relevant items
         const wouldBeComplete = prereqIds.every(prereqId => {
-          // Either already completed OR one of today's items
+          // Either already completed OR one of today's items (using the Set)
           return completedTopicIds.has(prereqId) || 
-                 todaysIncomplete.some(ti => ti.topic_id === prereqId);
+                 todaysIncompleteTopicIds.has(prereqId);
         });
 
         if (wouldBeComplete) {
