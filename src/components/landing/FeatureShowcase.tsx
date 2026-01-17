@@ -56,7 +56,7 @@ export const FeatureShowcase = () => {
   ];
 
   return (
-    <section ref={sectionRef} className="py-32 relative overflow-hidden" dir={dir}>
+    <section id="features" ref={sectionRef} className="py-32 relative overflow-hidden" dir={dir}>
       {/* Top gradient fade for smooth transition */}
       <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-b from-[#0A0A0F] via-[#0A0A0F]/50 to-transparent pointer-events-none" />
 

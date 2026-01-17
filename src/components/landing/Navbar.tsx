@@ -16,6 +16,13 @@ export const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <nav 
       dir={dir}
@@ -30,6 +37,22 @@ export const Navbar = () => {
         <Link to="/" className="flex items-center gap-2">
           <span className="text-xl font-bold text-foreground">StudyBuddy</span>
         </Link>
+
+        {/* Navigation Links (Desktop) */}
+        <div className="hidden md:flex items-center gap-8">
+            <button
+                onClick={() => scrollToSection('how-it-works')}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+                {t('howItWorks')}
+            </button>
+            <button
+                onClick={() => scrollToSection('features')}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+                {t('features')}
+            </button>
+        </div>
 
         {/* Actions - Simplified */}
         <div className="flex items-center gap-3">
