@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { consumeCredits, updateTokenUsage, createInsufficientCreditsResponse } from "../_shared/credits.ts";
 
-// P0 Fix: Complete CORS headers with methods and max-age
+// Complete CORS headers with methods and max-age
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -57,7 +57,7 @@ serve(async (req) => {
       });
     }
 
-    // P1 Fix: Rate limiting - check recent analyze-topic calls
+    // Rate limiting - check recent analyze-topic calls
     const tenMinutesAgo = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
     
     const { count: recentCalls } = await supabase
@@ -93,12 +93,19 @@ serve(async (req) => {
       throw new Error("Failed to initialize job tracking");
     }
     
-    const jobId = job.id;
+    console.log(`Credits consumed for analyze_topic: charged ${creditResult.credits_charged}, balance ${creditResult.balance}`);
+    const creditEventId = creditResult.event_id;
+    const aiCallStartTime = Date.now();
 
-    // Use a try-catch block that ensures job status is updated
-    try {
-      // ============= P2: CONSUME CREDITS BEFORE AI CALL =============
-      const creditResult = await consumeCredits(supabase, user.id, 'analyze_topic', null, courseId);
+    // Fetch course context for better scoring
+    let courseContext = "";
+    if (courseId) {
+      const { data: course } = await supabase
+        .from('courses')
+        .select('title, description')
+        .eq('id', courseId)
+        .eq('user_id', user.id)
+        .single();
       
       if (!creditResult.success) {
         console.log(`Insufficient credits for analyze_topic: user ${user.id}, have ${creditResult.balance}, need ${creditResult.required}`);
@@ -395,12 +402,37 @@ You MUST call the analyze_topic function. Do not return text responses.`;
       const difficultyWeight = Math.min(5, Math.max(1, analysis.difficulty_weight || 3));
       const examImportance = Math.min(5, Math.max(1, analysis.exam_importance || 3));
 
-      console.log(`Analysis complete: difficulty=${difficultyWeight}, importance=${examImportance}`);
+    const aiResponse = await response.json();
+    const aiCallEndTime = Date.now();
+    const aiLatencyMs = aiCallEndTime - aiCallStartTime;
+    
+    // ============= P2: TRACK TOKEN USAGE =============
+    const usage = aiResponse.usage;
+    if (creditEventId && usage) {
+      await updateTokenUsage(
+        supabase,
+        creditEventId,
+        usage.prompt_tokens || 0,
+        usage.completion_tokens || 0,
+        aiLatencyMs,
+        aiResponse.model || 'google/gemini-2.5-flash',
+        { model: aiResponse.model, usage }
+      );
+    }
+    
+    // Log only metadata, not full response
+    console.log("AI response metadata:", {
+      model: aiResponse.model,
+      hasToolCalls: !!aiResponse.choices?.[0]?.message?.tool_calls?.length,
+      finishReason: aiResponse.choices?.[0]?.finish_reason,
+      usage: aiResponse.usage,
+      latencyMs: aiLatencyMs,
+    });
 
     // Extract tool call result
     const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
     
-    // P1 Fix: Add content fallback parsing if no tool call
+    // Add content fallback parsing if no tool call
     if (!toolCall?.function?.arguments) {
       // Try parsing message content as fallback
       const content = aiResponse.choices?.[0]?.message?.content;
@@ -473,8 +505,22 @@ You MUST call the analyze_topic function. Do not return text responses.`;
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
 
-    } catch (error) {
-      console.error("Error in analyze-topic:", error);
+    // Safe JSON parsing with try-catch
+    let analysis: { difficulty_weight?: number; exam_importance?: number };
+    try {
+      analysis = JSON.parse(toolCall.function.arguments);
+    } catch (parseError) {
+      console.warn("Failed to parse tool arguments:", parseError);
+      
+      // Log the analysis call with defaults
+      await supabase.from('ai_jobs').insert({
+        user_id: user.id,
+        course_id: courseId || null,
+        job_type: 'analyze_topic',
+        status: 'completed',
+        input_hash: title.toLowerCase().trim().substring(0, 100),
+        result_json: { difficulty_weight: 3, exam_importance: 3, parse_error: true },
+      });
       
       // Update job status to failed
       await supabase.from('ai_jobs').update({
@@ -489,6 +535,42 @@ You MUST call the analyze_topic function. Do not return text responses.`;
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    
+    // Validate and clamp values
+    const difficultyWeight = Math.min(5, Math.max(1, analysis.difficulty_weight || 3));
+    const examImportance = Math.min(5, Math.max(1, analysis.exam_importance || 3));
+
+    console.log(`Analysis complete: difficulty=${difficultyWeight}, importance=${examImportance}`);
+
+    // Log the successful analysis call
+    await supabase.from('ai_jobs').insert({
+      user_id: user.id,
+      course_id: courseId || null,
+      job_type: 'analyze_topic',
+      status: 'completed',
+      input_hash: title.toLowerCase().trim().substring(0, 100),
+      result_json: { difficulty_weight: difficultyWeight, exam_importance: examImportance },
+    });
+
+    // ============= TRACK SUBSCRIPTION USAGE FOR REFUND ELIGIBILITY =============
+    try {
+      await supabase.rpc('increment_subscription_usage', {
+        p_user_id: user.id,
+        p_counter_name: 'topic_deepdives_count',
+        p_increment_by: 1
+      });
+    } catch (usageErr) {
+      console.error("Failed to track topic deepdive usage:", usageErr);
+    }
+
+    // Return result with needs_review flag to distinguish AI vs defaults
+    return new Response(JSON.stringify({
+      difficulty_weight: difficultyWeight,
+      exam_importance: examImportance,
+      needs_review: false,
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
 
   } catch (error) {
     console.error("Error in analyze-topic top-level:", error);
