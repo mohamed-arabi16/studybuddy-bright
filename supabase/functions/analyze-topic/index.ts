@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { consumeCredits, updateTokenUsage, createInsufficientCreditsResponse } from "../_shared/credits.ts";
 
-// P0 Fix: Complete CORS headers with methods and max-age
+// Complete CORS headers with methods and max-age
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -57,7 +57,7 @@ serve(async (req) => {
       });
     }
 
-    // P1 Fix: Rate limiting - check recent analyze-topic calls
+    // Rate limiting - check recent analyze-topic calls
     const tenMinutesAgo = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
     
     const { count: recentCalls } = await supabase
@@ -94,7 +94,7 @@ serve(async (req) => {
     const creditEventId = creditResult.event_id;
     const aiCallStartTime = Date.now();
 
-    // P1 Fix: Fetch course context for better scoring
+    // Fetch course context for better scoring
     let courseContext = "";
     if (courseId) {
       const { data: course } = await supabase
@@ -274,7 +274,7 @@ You MUST call the analyze_topic function. Do not return text responses.`;
       );
     }
     
-    // P0 Fix: Log only metadata, not full response
+    // Log only metadata, not full response
     console.log("AI response metadata:", {
       model: aiResponse.model,
       hasToolCalls: !!aiResponse.choices?.[0]?.message?.tool_calls?.length,
@@ -286,7 +286,7 @@ You MUST call the analyze_topic function. Do not return text responses.`;
     // Extract tool call result
     const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
     
-    // P1 Fix: Add content fallback parsing if no tool call
+    // Add content fallback parsing if no tool call
     if (!toolCall?.function?.arguments) {
       // Try parsing message content as fallback
       const content = aiResponse.choices?.[0]?.message?.content;
@@ -341,7 +341,7 @@ You MUST call the analyze_topic function. Do not return text responses.`;
       });
     }
 
-    // P0 Fix: Safe JSON parsing with try-catch
+    // Safe JSON parsing with try-catch
     let analysis: { difficulty_weight?: number; exam_importance?: number };
     try {
       analysis = JSON.parse(toolCall.function.arguments);
@@ -395,7 +395,7 @@ You MUST call the analyze_topic function. Do not return text responses.`;
       console.error("Failed to track topic deepdive usage:", usageErr);
     }
 
-    // P1 Fix: Add needs_review flag to distinguish AI vs defaults
+    // Return result with needs_review flag to distinguish AI vs defaults
     return new Response(JSON.stringify({
       difficulty_weight: difficultyWeight,
       exam_importance: examImportance,
