@@ -24,6 +24,8 @@
 - Help students manage multiple courses with different exam dates
 - Extract study topics automatically from syllabi PDFs using AI
 - Generate smart, personalized study schedules based on topics, exam dates, and student preferences
+- Generate AI-powered quizzes to test knowledge
+- Calculate grades with "what-if" scenarios and different aggregation rules
 - Track progress with Pomodoro timer and completion tracking
 - Optional Google Calendar integration for schedule syncing
 
@@ -474,6 +476,26 @@ Supabase service role client for backend operations.
 - Bidirectional sync (optional)
 - Updates existing events on plan changes
 
+#### `analyze-past-exam`
+**Purpose**: Analyze past exam papers to identify key topics and patterns
+**Auth**: Required (JWT)
+
+#### `analyze-topic`
+**Purpose**: Deep analysis of a study topic
+**Auth**: Required (JWT)
+
+#### `generate-quiz`
+**Purpose**: Generate quiz questions from course material
+**Auth**: Required (JWT)
+
+#### `submit-quiz-attempt`
+**Purpose**: Submit and grade a quiz attempt
+**Auth**: Required (JWT)
+
+#### `get-yield-summary`
+**Purpose**: Get study yield and efficiency metrics
+**Auth**: Required (JWT)
+
 ### Admin Functions
 
 #### `admin-health-check`
@@ -547,6 +569,14 @@ Main landing page after login. Shows:
 - Overall progress statistics
 - Quick actions (create course, upload syllabus)
 
+#### Grade Calculator (`/grade-calculator`)
+Advanced grade calculation tool:
+- Calculate grades with custom weights
+- Support for different aggregation rules (average, sum, drop lowest, best of)
+- "What-if" analysis for target grades
+- Save calculations (Pro feature)
+- Curve adjustments and constraints
+
 #### Courses (`/courses`)
 Course management page:
 - List all courses
@@ -586,6 +616,11 @@ User settings:
 - Google Calendar connection
 - Account deletion
 
+#### Other Pages
+- **Auth**: Login and Signup
+- **Landing**: Public landing page
+- **Legal**: Privacy, Terms, Refund
+
 #### Admin Panel (`/admin`)
 Admin-only pages:
 - **Dashboard**: System metrics, health checks
@@ -594,6 +629,9 @@ Admin-only pages:
 - **Quotas**: Custom quota assignments
 - **Trials**: Trial extension management
 - **Feedback**: User feedback review
+- **Audit Log**: Track administrative actions
+- **Credits**: Monitor credit usage and costs
+- **Promos**: Manage promotional codes
 
 ### Key Components
 
@@ -742,6 +780,30 @@ startSession(topicId);
    - Creates/updates Google Calendar events
    - Stores event IDs for bidirectional sync
 5. Future updates to plan auto-sync (optional)
+
+### 7. Grade Calculation Flow
+1. User navigates to Grade Calculator
+2. Adds components (Midterm, Final, Homework, etc.)
+3. Sets weights and max scores
+4. Enters raw scores for graded items
+5. Defines aggregation rules (e.g., "Best 5 of 6 quizzes")
+6. **What-If Analysis**:
+   - Sets target grade (e.g., 90%)
+   - Calculator determines required score on remaining items
+7. **Saving (Pro)**:
+   - User saves calculation profile
+   - Saved to `grade_calculations` table
+
+### 8. Quiz Generation Flow
+1. User selects a topic or course
+2. Clicks "Generate Quiz"
+3. `generate-quiz` Edge Function:
+   - Analyzes course content/topics
+   - Generates questions (MCQ, Open-ended)
+   - Stores quiz in database
+4. User takes quiz
+5. Submits answers -> `submit-quiz-attempt`
+6. View results and explanations
 
 ---
 
