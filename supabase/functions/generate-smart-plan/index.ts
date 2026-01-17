@@ -382,6 +382,7 @@ interface FallbackContext {
   topicToCourse: Map<string, string>;
   dailyCapacity: number;
   coverageRatio: number;
+  today: Date;
 }
 
 function createFallbackSchedule(ctx: FallbackContext): ScheduledItem[] {
@@ -392,7 +393,7 @@ function createFallbackSchedule(ctx: FallbackContext): ScheduledItem[] {
   ctx.topics.forEach(t => prereqMap.set(t.id, t.prerequisites));
   
   // Calculate days until exam for each course
-  const today = new Date();
+  const today = ctx.today;
   const courseDaysUntilExam = new Map<string, number>();
   for (const [courseId, examDate] of ctx.courseExamDates) {
     const examDateObj = new Date(examDate);
@@ -1185,6 +1186,7 @@ REQUIREMENTS:
         topicToCourse: validationContext.topicToCourse,
         dailyCapacity: dailyStudyHours,
         coverageRatio: Math.max(0.25, feasibility.coverageRatio),
+        today,
       });
       
       if (fallbackSchedule.length > 0) {
@@ -1214,6 +1216,7 @@ REQUIREMENTS:
         topicToCourse: validationContext.topicToCourse,
         dailyCapacity: dailyStudyHours,
         coverageRatio: Math.max(0.25, feasibility.coverageRatio),
+        today,
       });
       
       parsed = { 
@@ -1245,6 +1248,7 @@ REQUIREMENTS:
         topicToCourse: validationContext.topicToCourse,
         dailyCapacity: dailyStudyHours,
         coverageRatio: Math.max(0.25, feasibility.coverageRatio),
+        today,
       });
       
       if (fallbackSchedule.length > 0) {
@@ -1287,6 +1291,7 @@ REQUIREMENTS:
         topicToCourse: validationContext.topicToCourse,
         dailyCapacity: dailyStudyHours,
         coverageRatio: Math.max(0.25, feasibility.coverageRatio),
+        today,
       });
       
       if (fallbackSchedule.length > 0) {
