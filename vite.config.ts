@@ -36,4 +36,7 @@ export default defineConfig(({ mode }) => ({
     },
     chunkSizeWarningLimit: 600,
   },
+  worker: {
+    format: 'es',
+  },
 }));

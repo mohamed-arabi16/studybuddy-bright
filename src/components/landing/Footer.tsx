@@ -1,12 +1,19 @@
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { motion } from "framer-motion";
 
 export const Footer = () => {
   const { t, dir } = useLanguage();
 
   return (
     <footer className="py-8 border-t border-border/10" dir={dir}>
-      <div className="container px-4">
+      <motion.div
+        className="container px-4"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+      >
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
@@ -31,7 +38,7 @@ export const Footer = () => {
             © {new Date().getFullYear()} StudyBuddy. {t('allRightsReserved')}
           </p>
         </div>
-      </div>
+      </motion.div>
     </footer>
   );
 };

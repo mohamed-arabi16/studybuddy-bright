@@ -177,7 +177,7 @@ export default function Plan() {
   );
 
   return (
-    <div className="space-y-6" dir={dir}>
+    <div className="space-y-6 w-full" dir={dir}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
