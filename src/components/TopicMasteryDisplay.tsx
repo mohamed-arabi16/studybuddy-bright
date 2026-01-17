@@ -218,7 +218,7 @@ export function TopicMasteryDisplay({ courseId, topics }: TopicMasteryDisplayPro
                     }}
                   >
                     <ClipboardCheck className="w-3 h-3" />
-                    {language === 'ar' ? 'قيّم' : 'Assess'}
+                    {t('assess')}
                   </Button>
                 ) : (
                   <Badge 

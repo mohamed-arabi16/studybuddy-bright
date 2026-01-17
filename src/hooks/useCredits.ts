@@ -132,7 +132,7 @@ export function useCredits(): UseCreditsReturn {
           balance: allowance, // Full balance since no usage yet
           monthlyAllowance: allowance,
           lastResetDate: new Date().toISOString(),
-          billingAnchorDate: new Date().toISOString(), // Use today as anchor for new users
+          billingAnchorDate: new Date().toISOString(), // Use current timestamp as anchor for new users
           planTier: tier,
         });
         setError(null);
@@ -188,20 +188,26 @@ export function useCredits(): UseCreditsReturn {
     return credits.monthlyAllowance - credits.balance;
   }, [credits]);
 
+  // Milliseconds per day constant for reset date calculations
+  const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
   // Get next reset date
   // For free users: rolling 30-day cycle from billing anchor
   // For Pro/Trial users: calendar month
   const getResetDate = useCallback((): Date => {
+    // Fallback for when credits aren't loaded yet: assume 30 days from now for new users
     if (!credits) {
       const now = new Date();
-      return new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const fallbackReset = new Date(now);
+      fallbackReset.setDate(fallbackReset.getDate() + 30);
+      return fallbackReset;
     }
 
     // For free users: use rolling 30-day cycle from billing anchor
     if (credits.planTier === 'free' && credits.billingAnchorDate) {
       const anchor = new Date(credits.billingAnchorDate);
       const now = new Date();
-      const daysSinceAnchor = Math.floor((now.getTime() - anchor.getTime()) / (1000 * 60 * 60 * 24));
+      const daysSinceAnchor = Math.floor((now.getTime() - anchor.getTime()) / MS_PER_DAY);
       const cyclesPassed = Math.floor(daysSinceAnchor / 30);
       const nextReset = new Date(anchor);
       nextReset.setDate(nextReset.getDate() + (cyclesPassed + 1) * 30);
