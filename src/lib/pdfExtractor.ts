@@ -2,6 +2,7 @@
 // Only loads the ~2.5MB library when actually needed
 
 import type { PDFDocumentProxy } from 'pdfjs-dist';
+import * as workerClient from './pdfWorkerClient';
 
 export type ExtractionMode = 'text' | 'ocr';
 
@@ -39,6 +40,17 @@ async function getPdfLib(): Promise<typeof import('pdfjs-dist')> {
  * Probe first N pages of a PDF to determine extraction mode
  */
 export async function probePdf(file: File): Promise<ProbeResult> {
+  if (typeof Worker !== 'undefined') {
+    try {
+      return await workerClient.probePdfAsync(file);
+    } catch (e) {
+      console.warn('Worker probe failed, falling back to main thread', e);
+    }
+  }
+  return probePdfMainThread(file);
+}
+
+async function probePdfMainThread(file: File): Promise<ProbeResult> {
   const lib = await getPdfLib();
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await lib.getDocument({ data: arrayBuffer }).promise;
@@ -71,6 +83,17 @@ export async function probePdf(file: File): Promise<ProbeResult> {
  * Extract full text from all pages (TEXT mode)
  */
 export async function extractFullText(file: File): Promise<string> {
+  if (typeof Worker !== 'undefined') {
+    try {
+      return await workerClient.extractFullTextAsync(file);
+    } catch (e) {
+      console.warn('Worker extraction failed, falling back to main thread', e);
+    }
+  }
+  return extractFullTextMainThread(file);
+}
+
+async function extractFullTextMainThread(file: File): Promise<string> {
   const lib = await getPdfLib();
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await lib.getDocument({ data: arrayBuffer }).promise;
@@ -144,6 +167,23 @@ export async function renderPagesToImages(
   scale: number = 1.5,
   quality: number = 0.75
 ): Promise<PageImage[]> {
+  if (typeof Worker !== 'undefined') {
+    try {
+      return await workerClient.renderPagesToImagesAsync(file, { startPage, endPage, scale, quality });
+    } catch (e) {
+      console.warn('Worker render failed, falling back to main thread', e);
+    }
+  }
+  return renderPagesToImagesMainThread(file, startPage, endPage, scale, quality);
+}
+
+async function renderPagesToImagesMainThread(
+  file: File,
+  startPage: number = 1,
+  endPage?: number,
+  scale: number = 1.5,
+  quality: number = 0.75
+): Promise<PageImage[]> {
   const lib = await getPdfLib();
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await lib.getDocument({ data: arrayBuffer }).promise;
@@ -163,6 +203,17 @@ export async function renderPagesToImages(
  * Get total page count of a PDF
  */
 export async function getPageCount(file: File): Promise<number> {
+  if (typeof Worker !== 'undefined') {
+    try {
+      return await workerClient.getPageCountAsync(file);
+    } catch (e) {
+      console.warn('Worker page count failed, falling back to main thread', e);
+    }
+  }
+  return getPageCountMainThread(file);
+}
+
+async function getPageCountMainThread(file: File): Promise<number> {
   const lib = await getPdfLib();
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await lib.getDocument({ data: arrayBuffer }).promise;
