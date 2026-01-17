@@ -19,15 +19,23 @@ export function OverallProgressSection({ courses }: OverallProgressSectionProps)
   const { t } = useLanguage();
   
   const stats = useMemo(() => {
-    const totalTopics = courses.reduce((sum, c) => sum + (c.topics?.length || 0), 0);
-    const completedTopics = courses.reduce(
-      (sum, c) => sum + (c.topics?.filter(t => t.status === 'done').length || 0), 
-      0
+    const { totalTopics, completedTopics, inProgressTopics } = courses.reduce(
+      (acc, c) => {
+        const topics = c.topics || [];
+        acc.totalTopics += topics.length;
+
+        for (const t of topics) {
+          if (t.status === 'done') {
+            acc.completedTopics++;
+          } else if (t.status === 'in_progress') {
+            acc.inProgressTopics++;
+          }
+        }
+        return acc;
+      },
+      { totalTopics: 0, completedTopics: 0, inProgressTopics: 0 }
     );
-    const inProgressTopics = courses.reduce(
-      (sum, c) => sum + (c.topics?.filter(t => t.status === 'in_progress').length || 0), 
-      0
-    );
+
     const overallProgress = totalTopics > 0 ? (completedTopics / totalTopics) * 100 : 0;
 
     return {
