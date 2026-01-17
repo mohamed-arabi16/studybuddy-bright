@@ -7,6 +7,9 @@ An intelligent study planning application that helps students organize their cou
 - 📚 **Course Management**: Create and organize courses with exam dates
 - 🤖 **AI Topic Extraction**: Upload syllabi (PDF) and let AI extract study topics
 - 📅 **Smart Study Plans**: Generate personalized study schedules
+- 🧠 **Quiz Generation**: Generate AI quizzes from course material
+- 🧮 **Grade Calculator**: Calculate grades with "what-if" analysis
+- 💳 **Credits System**: Usage tracking and cost analysis
 - 🍅 **Pomodoro Timer**: Built-in focus sessions
 - 📊 **Progress Tracking**: Track completed topics and study time
 - 📆 **Calendar Sync**: Optional Google Calendar integration
