@@ -16,7 +16,7 @@ export function ProgressOverview({ completedTasks }: ProgressOverviewProps) {
 
   return (
     <div className="bg-card border border-border p-4 mb-8">
-      <h3 className="text-lg font-bold text-foreground mb-4 text-right">التقدم العام</h3>
+      <h3 className="text-lg font-bold text-foreground mb-4 text-end">التقدم العام</h3>
       
       <div className="mb-4">
         <div className="flex justify-between mb-2">

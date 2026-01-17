@@ -9,10 +9,10 @@ interface DailyScheduleTableProps {
 export function DailyScheduleTable({ completedTasks, onToggleTask }: DailyScheduleTableProps) {
   return (
     <div className="mb-8">
-      <h2 className="text-xl font-bold text-foreground mb-2 text-right">
+      <h2 className="text-xl font-bold text-foreground mb-2 text-end">
         2) الخطة اليومية (كل يوم + كل مادة) — على شكل جدول
       </h2>
-      <p className="text-muted-foreground text-sm mb-4 text-right">
+      <p className="text-muted-foreground text-sm mb-4 text-end">
         القاعدة: كل يوم إله "مادة رئيسية" (عادة OS قبل 9/1)، ويبقى للمواد "جرعات مسائل" حتى ما تتراكم.
       </p>
       
@@ -20,10 +20,10 @@ export function DailyScheduleTable({ completedTasks, onToggleTask }: DailySchedu
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-border bg-card">
-              <th className="text-right p-3 text-foreground font-semibold whitespace-nowrap">التاريخ + اليوم</th>
-              <th className="text-right p-3 text-foreground font-semibold">OS (المادة الرئيسية قبل 9/1)</th>
-              <th className="text-right p-3 text-foreground font-semibold">Circuits (جرعة مسائل)</th>
-              <th className="text-right p-3 text-foreground font-semibold">Automata (جرعة مركزة على كويزاتك)</th>
+              <th className="text-end p-3 text-foreground font-semibold whitespace-nowrap">التاريخ + اليوم</th>
+              <th className="text-end p-3 text-foreground font-semibold">OS (المادة الرئيسية قبل 9/1)</th>
+              <th className="text-end p-3 text-foreground font-semibold">Circuits (جرعة مسائل)</th>
+              <th className="text-end p-3 text-foreground font-semibold">Automata (جرعة مركزة على كويزاتك)</th>
             </tr>
           </thead>
           <tbody>
@@ -114,7 +114,7 @@ function TaskItem({ task, isCompleted, onToggle }: TaskItemProps) {
       <span className={`text-sm ${isCompleted ? 'line-through text-muted-foreground' : 'text-foreground'} ${isExam ? 'font-bold' : ''}`}>
         {task.topic}
         {task.hasQuizLink && (
-          <span className="text-xs text-muted-foreground mr-1"> 📎</span>
+          <span className="text-xs text-muted-foreground me-1"> 📎</span>
         )}
       </span>
     </div>

@@ -634,6 +634,33 @@ export type Database = {
           },
         ]
       }
+      model_pricing: {
+        Row: {
+          created_at: string | null
+          id: string
+          input_cost_per_million: number
+          model_name: string
+          output_cost_per_million: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          input_cost_per_million?: number
+          model_name: string
+          output_cost_per_million?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          input_cost_per_million?: number
+          model_name?: string
+          output_cost_per_million?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       past_exams: {
         Row: {
           analysis_error: string | null

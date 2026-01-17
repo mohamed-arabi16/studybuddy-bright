@@ -209,16 +209,16 @@ export default function AdminTrials() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tight">{t('activeTrials')}</h1>
         <Button onClick={() => setShowGrantDialog(true)}>
-          <CalendarPlus className="h-4 w-4 mr-2" />
+          <CalendarPlus className="h-4 w-4 me-2" />
           {t('grantTrial')}
         </Button>
       </div>
 
       <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder={t('searchUser')}
-          className="pl-9"
+          className="ps-9"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -232,7 +232,7 @@ export default function AdminTrials() {
               <TableHead className="w-36 px-4 py-3">{t('originalEndDate')}</TableHead>
               <TableHead className="w-32 px-4 py-3">{t('extensions')}</TableHead>
               <TableHead className="w-32 px-4 py-3">{t('daysRemaining')}</TableHead>
-              <TableHead className="w-60 px-4 py-3 text-right">{t('actions')}</TableHead>
+              <TableHead className="w-60 px-4 py-3 text-end">{t('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -283,7 +283,7 @@ export default function AdminTrials() {
                       {user.days_remaining} {t('daysLabel')}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right px-4 py-3">
+                  <TableCell className="text-end px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
                       <Button size="sm" variant="outline" onClick={() => extendTrial(user.user_id, 7)}>
                         {t('plus7Days')}
@@ -292,7 +292,7 @@ export default function AdminTrials() {
                         {t('plus30Days')}
                       </Button>
                       <Button size="sm" variant="destructive" onClick={() => endTrialNow(user.user_id)}>
-                        <XCircle className="h-4 w-4 mr-1" />
+                        <XCircle className="h-4 w-4 me-1" />
                         {t('endTrial')}
                       </Button>
                     </div>
@@ -328,7 +328,7 @@ export default function AdminTrials() {
                 {grantFilteredUsers.slice(0, 10).map(user => (
                   <button
                     key={user.user_id}
-                    className={`w-full px-3 py-2 text-left hover:bg-muted transition-colors ${
+                    className={`w-full px-3 py-2 text-start hover:bg-muted transition-colors ${
                       selectedGrantUser === user.user_id ? 'bg-primary/10 text-primary' : ''
                     }`}
                     onClick={() => setSelectedGrantUser(user.user_id)}
