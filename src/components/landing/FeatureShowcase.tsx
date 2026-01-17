@@ -117,7 +117,7 @@ export const FeatureShowcase = () => {
               >
                 {/* Premium radial gradient overlay on hover - feathered edges */}
                 <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl pointer-events-none"
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out rounded-2xl pointer-events-none"
                   style={{
                     background: `radial-gradient(circle at center, ${feature.hoverColor} 0%, transparent 70%)`,
                     backdropFilter: 'blur(10px)',

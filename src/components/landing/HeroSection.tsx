@@ -147,7 +147,7 @@ export const HeroSection = () => {
   ], [language]);
 
   return (
-    <section ref={sectionRef} className="relative min-h-[100vh] flex items-center justify-center overflow-hidden" dir={dir}>
+    <section ref={sectionRef} className="relative min-h-[100vh] w-full flex items-center justify-center overflow-hidden" dir={dir}>
       {/* Animated gradient mesh background */}
       <div className="absolute inset-0 overflow-hidden">
         <GlowingOrb color="rgba(59, 130, 246, 0.25)" size={800} x={50} y={-20} />

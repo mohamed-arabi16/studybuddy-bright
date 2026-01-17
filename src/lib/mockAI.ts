@@ -17,12 +17,13 @@ export interface AIResponse {
 
 export function parseLines(text: string): string[] {
   // Optimized parsing: Match non-newline sequences and trim/filter in one pass logic.
-  // Using match with reduce avoids splitting into a huge array of strings (including empty ones).
-  return (text.match(/[^\r\n]+/g) || []).reduce((acc, line) => {
+  const matches = text.match(/[^\r\n]+/g) || [];
+  const result: string[] = [];
+  for (const line of matches) {
     const trimmed = line.trim();
-    if (trimmed.length > 0) acc.push(trimmed);
-    return acc;
-  }, [] as string[]);
+    if (trimmed.length > 0) result.push(trimmed);
+  }
+  return result;
 }
 
 export async function extractTopics(text: string): Promise<AIResponse> {
