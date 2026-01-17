@@ -746,13 +746,24 @@ export default function GradeCalculator() {
       warnings.push(t('weightsNotSum100') || `Weights sum to ${totalWeight.toFixed(1)}%, not 100%`);
     }
 
+    // Pre-calculate component curves for O(1) lookup
+    const componentCurvesMap = new Map<string, CurveAdjustment[]>();
+    for (const curve of curves) {
+      if (curve.targetType === 'component' && curve.targetId) {
+        if (!componentCurvesMap.has(curve.targetId)) {
+          componentCurvesMap.set(curve.targetId, []);
+        }
+        componentCurvesMap.get(curve.targetId)!.push(curve);
+      }
+    }
+
     // Calculate each component score
     const componentScores = components.map(comp => {
       const rawAvg = aggregateItems(comp.items, comp.aggregationRule, comp.dropCount, comp.bestOf);
       
       // Apply component-level curves
       let adjustedScore = rawAvg;
-      const componentCurves = curves.filter(c => c.targetType === 'component' && c.targetId === comp.id);
+      const componentCurves = componentCurvesMap.get(comp.id) || [];
       for (const curve of componentCurves) {
         adjustedScore = applyCurve(adjustedScore, curve);
       }
