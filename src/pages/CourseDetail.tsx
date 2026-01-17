@@ -409,7 +409,6 @@ export default function CourseDetail() {
                 <div className="space-y-3">
                   {files.map(file => {
                     const isExtracting = file.extraction_status === 'extracting';
-                    // FIX: Include 'completed' status (from OCR mode) along with 'extracted'
                     const isExtracted = file.extraction_status === 'extracted' || file.extraction_status === 'completed';
                     const isFailed = file.extraction_status === 'failed';
                     const isPending = file.extraction_status === 'pending';
