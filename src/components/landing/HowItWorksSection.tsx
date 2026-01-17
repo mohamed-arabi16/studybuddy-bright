@@ -2,12 +2,21 @@ import { BookOpen, Brain, Target, TrendingUp, Sparkles } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LiquidGlassCard } from "@/components/ui/LiquidGlassCard";
 import { motion, useInView, Variants } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useState, useCallback } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export const HowItWorksSection = () => {
   const { t, dir } = useLanguage();
   const sectionRef = useRef(null);
   const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
+  const isMobile = useIsMobile();
+  const [activeCard, setActiveCard] = useState<string | null>(null);
+
+  const handleCardTap = useCallback((key: string) => {
+    if (isMobile) {
+      setActiveCard(prev => prev === key ? null : key);
+    }
+  }, [isMobile]);
 
   const steps = [
     {
@@ -132,71 +141,79 @@ export const HowItWorksSection = () => {
 
         {/* Steps Grid */}
         <motion.div 
-          className="grid md:grid-cols-2 lg:grid-cols-4 gap-8"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 px-2 sm:px-0"
           variants={containerVariants}
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
         >
-          {steps.map((step, index) => (
-            <motion.div key={step.number} variants={itemVariants}>
-              <LiquidGlassCard 
-                hover
-                disableAnimation
-                className="p-5 sm:p-6 relative h-full group border border-white/10"
+          {steps.map((step, index) => {
+            const isCardActive = activeCard === step.number;
+            return (
+              <motion.div 
+                key={step.number} 
+                variants={itemVariants}
+                onTouchStart={() => handleCardTap(step.number)}
               >
-                {/* Premium radial gradient background on hover - feathered edges */}
-                <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 rounded-2xl pointer-events-none"
-                  style={{
-                    background: `radial-gradient(circle at center, ${step.hoverColor} 0%, transparent 70%)`,
-                    backdropFilter: 'blur(10px)',
-                    WebkitBackdropFilter: 'blur(10px)',
-                    transition: 'opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-                  }}
-                />
-                
-                {/* Step number with glow */}
-                <div className="relative text-right">
-                  <motion.span 
-                    className="text-6xl font-bold text-primary/5 absolute -top-2 right-0 rtl:right-auto rtl:left-0"
-                    animate={{ opacity: [0.03, 0.08, 0.03] }}
-                    transition={{ duration: 3, repeat: Infinity }}
-                  >
-                    {step.number}
-                  </motion.span>
-                  <span className="text-xs font-mono text-primary/60 mb-4 block relative">
-                    {step.number}
-                  </span>
-                </div>
-
-                {/* Icon with animated ring */}
-                <div className="relative mb-4 flex justify-end rtl:justify-start">
-                  <motion.div 
-                    className={`w-14 h-14 rounded-2xl backdrop-blur-md flex items-center justify-center ${step.iconColor}`}
+                <LiquidGlassCard 
+                  hover
+                  disableAnimation
+                  className="p-4 sm:p-5 md:p-6 relative h-full group border border-white/10"
+                >
+                  {/* Premium radial gradient background on hover - feathered edges */}
+                  <div 
+                    className={`absolute inset-0 rounded-2xl pointer-events-none transition-opacity duration-500 ${
+                      isCardActive || (!isMobile && 'group-hover:opacity-100')
+                    } ${isCardActive ? 'opacity-100' : 'opacity-0'}`}
                     style={{
-                      background: `radial-gradient(circle at center, ${step.hoverColor} 0%, transparent 100%)`,
+                      background: `radial-gradient(circle at center, ${step.hoverColor} 0%, transparent 70%)`,
+                      backdropFilter: 'blur(10px)',
+                      WebkitBackdropFilter: 'blur(10px)',
                     }}
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    transition={{ type: "spring", stiffness: 300 }}
-                  >
-                    <step.icon className="w-7 h-7" strokeWidth={1.5} />
-                  </motion.div>
-                  {/* Pulse ring */}
-                  <motion.div 
-                    className="absolute inset-0 rounded-2xl border-2 border-primary/20 w-14 h-14 right-0 rtl:right-auto rtl:left-0"
-                    animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
-                    transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
                   />
-                </div>
+                  
+                  {/* Step number with glow */}
+                  <div className="relative text-right">
+                    <motion.span 
+                      className="text-5xl sm:text-6xl font-bold text-primary/5 absolute -top-2 right-0 rtl:right-auto rtl:left-0"
+                      animate={{ opacity: [0.03, 0.08, 0.03] }}
+                      transition={{ duration: 3, repeat: Infinity }}
+                    >
+                      {step.number}
+                    </motion.span>
+                    <span className="text-xs font-mono text-primary/60 mb-3 sm:mb-4 block relative">
+                      {step.number}
+                    </span>
+                  </div>
 
-                {/* Content */}
-                <h3 className="text-lg font-bold mb-2 text-foreground/90 relative text-right">{t(step.titleKey)}</h3>
-                <p className="text-muted-foreground leading-relaxed relative text-sm text-right">
-                  {t(step.descKey)}
-                </p>
-              </LiquidGlassCard>
-            </motion.div>
-          ))}
+                  {/* Icon with animated ring */}
+                  <div className="relative mb-3 sm:mb-4 flex justify-end rtl:justify-start">
+                    <motion.div 
+                      className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl backdrop-blur-md flex items-center justify-center ${step.iconColor}`}
+                      style={{
+                        background: `radial-gradient(circle at center, ${step.hoverColor} 0%, transparent 100%)`,
+                      }}
+                      whileHover={{ scale: 1.1, rotate: 5 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                    >
+                      <step.icon className="w-6 h-6 sm:w-7 sm:h-7" strokeWidth={1.5} />
+                    </motion.div>
+                    {/* Pulse ring */}
+                    <motion.div 
+                      className="absolute inset-0 rounded-2xl border-2 border-primary/20 w-12 h-12 sm:w-14 sm:h-14 right-0 rtl:right-auto rtl:left-0"
+                      animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
+                    />
+                  </div>
+
+                  {/* Content */}
+                  <h3 className="text-base sm:text-lg font-bold mb-1 sm:mb-2 text-foreground/90 relative text-right">{t(step.titleKey)}</h3>
+                  <p className="text-muted-foreground leading-relaxed relative text-xs sm:text-sm text-right">
+                    {t(step.descKey)}
+                  </p>
+                </LiquidGlassCard>
+              </motion.div>
+            );
+          })}
         </motion.div>
       </div>
 
